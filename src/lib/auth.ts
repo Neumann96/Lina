@@ -87,7 +87,8 @@ export async function authenticateTelegramUser(telegramId: string, name: string)
   const result = await query<{ id: string; email: string | null; name: string }>(
     `INSERT INTO users (id, telegram_id, display_name)
      VALUES ($1, $2, $3)
-     ON CONFLICT (telegram_id) DO UPDATE SET display_name = EXCLUDED.display_name
+     ON CONFLICT (telegram_id) WHERE telegram_id IS NOT NULL
+     DO UPDATE SET display_name = EXCLUDED.display_name
      RETURNING id, email, display_name AS name`,
     [randomUUID(), telegramId, name],
   );
