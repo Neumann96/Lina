@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "db:migrate": "node scripts/migrate.mjs",
+    "db:import-legacy": "node scripts/import-legacy-users.mjs",
     "lint": "eslint",
     "test": "node --experimental-strip-types --test tests/*.test.mjs"
   },

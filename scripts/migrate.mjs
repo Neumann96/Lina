@@ -1,9 +1,10 @@
-import { loadEnvConfig } from "@next/env";
+import nextEnv from "@next/env";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { Pool } from "pg";
 
 const root = process.cwd();
+const { loadEnvConfig } = nextEnv;
 loadEnvConfig(root);
 
 if (!process.env.DATABASE_URL) {

@@ -35,7 +35,10 @@ jobs:
       - name: Package standalone release
         run: |
           cp -r public .next/standalone/
+          cp -r db .next/standalone/
+          cp -r scripts .next/standalone/
           cp deploy/lina.service .next/standalone/
+          cp deploy/nginx.conf .next/standalone/
           mkdir -p .next/standalone/.next
           cp -r .next/static .next/standalone/.next/
           tar -czf lina-${GITHUB_SHA}.tar.gz -C .next/standalone .
@@ -59,13 +62,15 @@ jobs:
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           AUTH_SECRET_B64="$(printf '%s' "$AUTH_SECRET" | base64 -w 0)"
+          DATABASE_URL_B64="$(printf '%s' "$DATABASE_URL" | base64 -w 0)"
           ssh -i ~/.ssh/lina root@${DEPLOY_HOST} \
-            "SHA='${GITHUB_SHA}' AUTH_SECRET_B64='$AUTH_SECRET_B64' bash -s" <<'REMOTE'
+            "SHA='${GITHUB_SHA}' AUTH_SECRET_B64='$AUTH_SECRET_B64' DATABASE_URL_B64='$DATABASE_URL_B64' bash -s" <<'REMOTE'
           set -euo pipefail
-          if [ -z "${AUTH_SECRET_B64:-}" ]; then
-            echo "AUTH_SECRET is not configured"
+          if [ -z "${AUTH_SECRET_B64:-}" ] || [ -z "${DATABASE_URL_B64:-}" ]; then
+            echo "AUTH_SECRET and DATABASE_URL must be configured"
             exit 1
           fi
           release="/opt/lina/releases/$SHA"
@@ -73,13 +78,32 @@ jobs:
           tar -xzf "/tmp/lina-$SHA.tar.gz" -C "$release"
           rm "/tmp/lina-$SHA.tar.gz"
           chown -R lina:lina "$release"
-          install -d -m 750 -o lina -g lina /opt/lina/data
           install -m 600 -o root -g root /dev/null /etc/lina.env
-          printf 'AUTH_SECRET=%s\n' "$(printf '%s' "$AUTH_SECRET_B64" | base64 -d)" > /etc/lina.env
+          {
+            printf 'AUTH_SECRET=%s\n' "$(printf '%s' "$AUTH_SECRET_B64" | base64 -d)"
+            printf 'DATABASE_URL=%s\n' "$(printf '%s' "$DATABASE_URL_B64" | base64 -d)"
+            printf 'DATABASE_SSL=false\n'
+          } > /etc/lina.env
+          AUTH_SECRET_LENGTH="$(printf '%s' "$AUTH_SECRET_B64" | base64 -d | wc -c)"
+          if [ "$AUTH_SECRET_LENGTH" -lt 32 ]; then
+            echo "AUTH_SECRET must contain at least 32 characters"
+            exit 1
+          fi
+          DATABASE_URL="$(printf '%s' "$DATABASE_URL_B64" | base64 -d)"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$release/db/migrations/001_auth.sql"
+          if [ -f /opt/lina/data/users.json ]; then
+            cd "$release"
+            DATABASE_URL="$DATABASE_URL" DATABASE_SSL=false \
+              /opt/node/bin/node scripts/import-legacy-users.mjs /opt/lina/data/users.json
+          fi
           install -m 644 "$release/lina.service" /etc/systemd/system/lina.service
+          install -m 644 "$release/nginx.conf" /etc/nginx/sites-available/lina
+          ln -sfn /etc/nginx/sites-available/lina /etc/nginx/sites-enabled/lina
+          nginx -t
           ln -sfn "$release" /opt/lina/current
           systemctl daemon-reload
           systemctl restart lina
+          systemctl reload nginx
           for attempt in {1..15}; do
             if curl --fail --silent http://127.0.0.1:3000/api/health >/dev/null; then
               find /opt/lina/releases -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' \

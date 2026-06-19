@@ -6,12 +6,17 @@
 
 ```bash
 npm ci
+npm run db:migrate
 npm run dev
 ```
 
 Откройте `http://localhost:3000`.
 
-Пользователи сохраняются в `data/users.json`. Для production задайте `AUTH_SECRET` (длинная случайная строка) и, если данные должны лежать вне каталога релиза, `LINA_DATA_DIR`. После включения HTTPS задайте `AUTH_COOKIE_SECURE=true`.
+Перед запуском скопируйте `.env.example` в `.env.local` и задайте подключение к PostgreSQL. Пользователи и счётчики ограничения запросов сохраняются в PostgreSQL. Все запросы авторизации параметризованы, а `users.email` защищён уникальным ограничением.
+
+Для переноса прежнего `data/users.json` выполните `npm run db:import-legacy -- data/users.json`. Импорт идемпотентен: повторный запуск не создаёт дубликаты.
+
+Для production обязательны `DATABASE_URL`, HTTPS и случайный `AUTH_SECRET` длиной не менее 32 символов. Production-cookie всегда получает флаги `HttpOnly`, `Secure` и `SameSite=Lax`.
 
 ## Проверки
 
@@ -28,11 +33,13 @@ npm run build
 
 - `DEPLOY_HOST` — IP сервера;
 - `DEPLOY_SSH_KEY` — приватный ключ деплоя.
+- `AUTH_SECRET` — случайная строка длиной не менее 32 символов;
+- `DATABASE_URL` — строка подключения к production PostgreSQL.
 
-Nginx проксирует публичный порт 80 на приложение по `127.0.0.1:3000`.
+Nginx перенаправляет HTTP на `https://5-129-195-206.sslip.io`, завершает TLS и проксирует приложение по `127.0.0.1:3000`. Сертификат Let’s Encrypt должен находиться в `/etc/letsencrypt/live/5-129-195-206.sslip.io/`.
 
 ## Figma
 
-- страница для послойного импорта: `http://5.129.195.206/figma-import`;
-- готовый комплект: `http://5.129.195.206/lina-figma-kit.zip`;
+- страница для послойного импорта: `https://5-129-195-206.sslip.io/figma-import`;
+- готовый комплект: `https://5-129-195-206.sslip.io/lina-figma-kit.zip`;
 - исходники комплекта находятся в `figma-kit/`.
