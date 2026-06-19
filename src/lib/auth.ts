@@ -9,7 +9,7 @@ const scrypt = promisify(scryptCallback);
 const SESSION_COOKIE = "lina_session";
 const SESSION_LIFETIME_SECONDS = 60 * 60 * 24 * 30;
 
-export type AuthUser = { id: string; email: string; name: string };
+export type AuthUser = { id: string; email: string | null; name: string };
 
 function displayName(email: string) {
   const localPart = email.split("@")[0].replace(/[._-]+/g, " ").trim();
@@ -83,6 +83,17 @@ export async function authenticateUser(email: string, password: string): Promise
   return { id: user.id, email: user.email, name: displayName(user.email) };
 }
 
+export async function authenticateTelegramUser(telegramId: string, name: string): Promise<AuthUser> {
+  const result = await query<{ id: string; email: string | null; name: string }>(
+    `INSERT INTO users (id, telegram_id, display_name)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (telegram_id) DO UPDATE SET display_name = EXCLUDED.display_name
+     RETURNING id, email, display_name AS name`,
+    [randomUUID(), telegramId, name],
+  );
+  return result.rows[0];
+}
+
 function sessionSecret() {
   const secret = process.env.AUTH_SECRET;
   if (process.env.NODE_ENV === "production" && (!secret || secret.length < 32)) {
@@ -109,7 +120,7 @@ function readSessionToken(token?: string): AuthUser | null {
   if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) return null;
   try {
     const session = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as AuthUser & { expiresAt: number };
-    if (!session.id || !session.email || session.expiresAt < Date.now()) return null;
+    if (!session.id || !session.name || session.expiresAt < Date.now()) return null;
     return { id: session.id, email: session.email, name: session.name };
   } catch {
     return null;

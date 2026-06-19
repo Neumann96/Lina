@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { query } from "@/lib/db";
 
 type RateLimitOptions = {
-  scope: "register-ip" | "register-email" | "login-ip" | "login-email";
+  scope: "register-ip" | "register-email" | "login-ip" | "login-email" | "telegram-ip" | "telegram-user";
   limit: number;
   windowSeconds: number;
 };
