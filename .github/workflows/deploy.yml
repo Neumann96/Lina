@@ -39,6 +39,7 @@ jobs:
           cp -r scripts .next/standalone/
           cp deploy/lina.service .next/standalone/
           cp deploy/nginx.conf .next/standalone/
+          cp deploy/certbot-reload-nginx.sh .next/standalone/
           mkdir -p .next/standalone/.next
           cp -r .next/static .next/standalone/.next/
           tar -czf lina-${GITHUB_SHA}.tar.gz -C .next/standalone .
@@ -98,6 +99,9 @@ jobs:
           fi
           install -m 644 "$release/lina.service" /etc/systemd/system/lina.service
           install -d -m 755 /var/www/letsencrypt/.well-known/acme-challenge
+          install -d -m 755 /etc/letsencrypt/renewal-hooks/deploy
+          install -m 755 "$release/certbot-reload-nginx.sh" \
+            /etc/letsencrypt/renewal-hooks/deploy/reload-nginx
           install -m 644 "$release/nginx.conf" /etc/nginx/sites-available/lina
           ln -sfn /etc/nginx/sites-available/lina /etc/nginx/sites-enabled/lina
           nginx -t
