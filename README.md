@@ -36,7 +36,7 @@ npm run build
 - `AUTH_SECRET` — случайная строка длиной не менее 32 символов;
 - `DATABASE_URL` — строка подключения к production PostgreSQL.
 
-Nginx перенаправляет HTTP на `https://5-129-195-206.sslip.io`, завершает TLS и проксирует приложение по `127.0.0.1:3000`. Сертификат Let’s Encrypt должен находиться в `/etc/letsencrypt/live/5-129-195-206.sslip.io/`.
+Nginx перенаправляет HTTP на `https://5-129-195-206.sslip.io`, завершает TLS и проксирует приложение по `127.0.0.1:3000`. Сертификат Let’s Encrypt находится в `/etc/letsencrypt/live/5-129-195-206.sslip.io/` и обновляется через webroot `/var/www/letsencrypt`.
 
 ## Figma
 

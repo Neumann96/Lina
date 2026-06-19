@@ -97,6 +97,7 @@ jobs:
               /opt/node/bin/node scripts/import-legacy-users.mjs /opt/lina/data/users.json
           fi
           install -m 644 "$release/lina.service" /etc/systemd/system/lina.service
+          install -d -m 755 /var/www/letsencrypt/.well-known/acme-challenge
           install -m 644 "$release/nginx.conf" /etc/nginx/sites-available/lina
           ln -sfn /etc/nginx/sites-available/lina /etc/nginx/sites-enabled/lina
           nginx -t
