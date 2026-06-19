@@ -16,6 +16,8 @@ button { cursor:pointer; }
 .main-nav { display:grid; gap:7px; }
 .nav-item { display:flex; align-items:center; gap:13px; padding:12px 13px; border-radius:12px; color:#77726c; text-decoration:none; font-size:14px; font-weight:600; transition:.18s ease; }
 .nav-item:hover { background:#faf7f3; color:var(--ink); }.nav-item.active { background:#fff0e8; color:var(--accent-dark); }
+.nav-item-disabled { color:#bbb6af; cursor:not-allowed; opacity:.58; }
+.nav-item-disabled:hover { background:transparent; color:#bbb6af; }
 .sidebar-spacer { flex:1; }
 .streak-card { display:flex; align-items:center; gap:10px; margin:0 2px 18px; padding:12px; border-radius:14px; background:#fff8e7; }
 .streak-emoji,.streak-count { font-size:24px; line-height:1; }.streak-count { display:none; }.streak-card strong { font-size:12px; }.streak-card p { margin:3px 0 0; color:#9b8c72; font-size:10px; }
@@ -27,8 +29,9 @@ button { cursor:pointer; }
 .sidebar.collapsed .brand { justify-content:center; padding-inline:0; }
 .sidebar.collapsed .brand>span:last-child,.sidebar.collapsed .nav-item span,.sidebar.collapsed .streak-details,.sidebar.collapsed .profile-button span:not(.avatar),.sidebar.collapsed .profile-button svg { display:none; }
 .sidebar.collapsed .nav-item { justify-content:center; gap:0; padding-inline:0; }
-.sidebar.collapsed .streak-card { justify-content:center; gap:3px; margin-inline:0; padding:12px 4px; }
-.sidebar.collapsed .streak-count { display:block; font-size:24px; }
+.sidebar.collapsed .streak-card { width:52px; height:52px; justify-content:center; gap:2px; margin-inline:0; padding:0; }
+.sidebar.collapsed .streak-emoji { font-size:17px; }
+.sidebar.collapsed .streak-count { display:block; font-size:14px; }
 .sidebar.collapsed .profile-button { justify-content:center; padding-inline:0; }
 .sidebar.collapsed + .content { margin-left:76px; }
 .topbar { height:80px; display:flex; align-items:center; gap:12px; padding:0 5.5vw; background:#fff; border-bottom:1px solid var(--line); }

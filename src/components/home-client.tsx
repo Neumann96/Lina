@@ -274,7 +274,7 @@ export function HomeClient({
         <nav className="main-nav" aria-label="Основная навигация">
           <a className="nav-item active" href="#" title={isSidebarCollapsed ? "Главная" : undefined}><Icon name="home" /><span>Главная</span></a>
           <a className="nav-item" href="#sets" title={isSidebarCollapsed ? "Мои наборы" : undefined}><Icon name="cards" /><span>Мои наборы</span></a>
-          <a className="nav-item" href="#progress" title={isSidebarCollapsed ? "Прогресс" : undefined}><Icon name="chart" /><span>Прогресс</span></a>
+          <span className="nav-item nav-item-disabled" aria-disabled="true" title="Пока недоступно"><Icon name="chart" /><span>Прогресс</span></span>
         </nav>
         <div className="sidebar-spacer" />
         <div className="streak-card">
