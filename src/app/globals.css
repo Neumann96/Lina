@@ -59,6 +59,15 @@ button { cursor:pointer; }
 .password-hint { margin-top:-8px; color:#aaa39c; font-size:10px; line-height:1.4; }.form-error { padding:10px 12px; border-radius:9px; background:#fff0ed; color:#b23f2e; font-size:11px; line-height:1.4; }
 .auth-submit { height:46px; margin-top:3px; border:0; border-radius:11px; background:var(--ink); color:#fff; font-size:12px; font-weight:750; box-shadow:0 8px 18px #25232024; }.auth-submit:hover { background:#37332f; }.auth-submit:disabled { opacity:.65; cursor:wait; }
 .auth-switch { display:flex; justify-content:center; align-items:center; gap:5px; margin-top:22px; color:#96908a; font-size:11px; }.auth-switch button { padding:0; border:0; background:none; color:var(--accent-dark); font-size:inherit; font-weight:750; }
+.logout-modal { width:min(430px,100%); }
+.logout-modal>p { margin-bottom:24px; }
+.logout-actions { display:grid; grid-template-columns:1fr 1.25fr; gap:10px; }
+.logout-actions button { height:46px; border:0; border-radius:11px; font-size:12px; font-weight:750; transition:background .18s,color .18s,transform .18s; }
+.logout-confirm { background:#f3f0ec; color:#aaa39c; }
+.logout-confirm:hover { background:#ebe7e2; color:#837c75; }
+.logout-return { background:var(--accent); color:#fff; box-shadow:0 8px 18px #f36f3d2b; }
+.logout-return:hover { background:var(--accent-dark); transform:translateY(-1px); }
+.logout-actions button:disabled { opacity:.65; cursor:wait; transform:none; }
 @keyframes overlay-in { from { opacity:0; } }
 @keyframes modal-in { from { opacity:0; transform:translateY(8px) scale(.985); } }
 @media (max-width:900px) { .sidebar { width:76px; padding-inline:12px; }.sidebar-toggle { display:none; }.brand { justify-content:center; padding-inline:0; }.brand>span:last-child,.nav-item span,.streak-details,.profile-button span:not(.avatar),.profile-button svg { display:none; }.nav-item { justify-content:center; gap:0; padding-inline:0; }.streak-card { justify-content:center; gap:3px; margin-inline:0; padding:12px 4px; }.streak-count { display:block; font-size:24px; }.profile-button { justify-content:center; padding-inline:0; }.content,.sidebar.collapsed + .content { margin-left:76px; }.sets-grid { grid-template-columns:1fr; }.editor-card { grid-template-columns:1fr; }.paste-panel { border-right:0; border-bottom:1px solid var(--line); } }

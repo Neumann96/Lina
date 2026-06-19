@@ -131,14 +131,64 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
   );
 }
 
+type LogoutModalProps = {
+  onClose: () => void;
+  onConfirm: () => Promise<void>;
+};
+
+function LogoutModal({ onClose, onConfirm }: LogoutModalProps) {
+  const [pending, setPending] = useState(false);
+  const returnButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    returnButtonRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => event.key === "Escape" && !pending && onClose();
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [onClose, pending]);
+
+  async function confirmLogout() {
+    setPending(true);
+    try {
+      await onConfirm();
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className="auth-overlay" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && !pending && onClose()}>
+      <section className="auth-modal logout-modal" role="dialog" aria-modal="true" aria-labelledby="logout-title" aria-describedby="logout-description">
+        <button className="modal-close" type="button" onClick={onClose} aria-label="Закрыть" disabled={pending}>×</button>
+        <div className="modal-brand"><span className="brand-mark">L</span><span>Lina</span></div>
+        <h2 id="logout-title">Вы уверены, что хотите выйти?</h2>
+        <p id="logout-description">Чтобы продолжить обучение, вам понадобится снова войти в аккаунт.</p>
+        <div className="logout-actions">
+          <button className="logout-confirm" type="button" onClick={confirmLogout} disabled={pending}>{pending ? "Выходим…" : "Выйти"}</button>
+          <button ref={returnButtonRef} className="logout-return" type="button" onClick={onClose} disabled={pending}>Вернуться</button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export function HomeClient({ initialUser }: { initialUser: AuthUser | null }) {
   const [user, setUser] = useState(initialUser);
   const [authMode, setAuthMode] = useState<AuthMode | null>(null);
+  const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   async function logout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    setUser(null);
+    const response = await fetch("/api/auth/logout", { method: "POST" });
+    if (response.ok) {
+      setUser(null);
+      setIsLogoutOpen(false);
+    }
   }
 
   return (
@@ -166,7 +216,7 @@ export function HomeClient({ initialUser }: { initialUser: AuthUser | null }) {
           <div className="streak-details"><strong>7 дней подряд</strong><p>Ещё немного — и рекорд</p></div>
         </div>
         {user ? (
-          <button className="profile-button" onClick={logout}><span className="avatar">{user.name.charAt(0)}</span><span><strong>{user.name}</strong><small>Выйти из аккаунта</small></span><Icon name="arrow" size={17}/></button>
+          <button className="profile-button" onClick={() => setIsLogoutOpen(true)}><span className="avatar">{user.name.charAt(0)}</span><span><strong>{user.name}</strong><small>Выйти из аккаунта</small></span><Icon name="arrow" size={17}/></button>
         ) : (
           <button className="profile-button guest-profile" onClick={() => setAuthMode("login")}><span className="avatar">?</span><span><strong>Войти</strong><small>Сохраняйте свой прогресс</small></span><Icon name="arrow" size={17}/></button>
         )}
@@ -214,6 +264,7 @@ export function HomeClient({ initialUser }: { initialUser: AuthUser | null }) {
         </section>}
       </main>
       {authMode && <AuthModal mode={authMode} onClose={() => setAuthMode(null)} onModeChange={setAuthMode} onSuccess={(nextUser) => { setUser(nextUser); setAuthMode(null); }} />}
+      {isLogoutOpen && <LogoutModal onClose={() => setIsLogoutOpen(false)} onConfirm={logout} />}
     </div>
   );
 }
