@@ -11,6 +11,8 @@ npm run dev
 
 Откройте `http://localhost:3000`.
 
+Пользователи сохраняются в `data/users.json`. Для production задайте `AUTH_SECRET` (длинная случайная строка) и, если данные должны лежать вне каталога релиза, `LINA_DATA_DIR`. После включения HTTPS задайте `AUTH_COOKIE_SECURE=true`.
+
 ## Проверки
 
 ```bash

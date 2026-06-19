@@ -35,6 +35,7 @@ jobs:
       - name: Package standalone release
         run: |
           cp -r public .next/standalone/
+          cp deploy/lina.service .next/standalone/
           mkdir -p .next/standalone/.next
           cp -r .next/static .next/standalone/.next/
           tar -czf lina-${GITHUB_SHA}.tar.gz -C .next/standalone .
@@ -57,16 +58,27 @@ jobs:
       - name: Activate release
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
         run: |
+          AUTH_SECRET_B64="$(printf '%s' "$AUTH_SECRET" | base64 -w 0)"
           ssh -i ~/.ssh/lina root@${DEPLOY_HOST} \
-            "SHA='${GITHUB_SHA}' bash -s" <<'REMOTE'
+            "SHA='${GITHUB_SHA}' AUTH_SECRET_B64='$AUTH_SECRET_B64' bash -s" <<'REMOTE'
           set -euo pipefail
+          if [ -z "${AUTH_SECRET_B64:-}" ]; then
+            echo "AUTH_SECRET is not configured"
+            exit 1
+          fi
           release="/opt/lina/releases/$SHA"
           mkdir -p "$release"
           tar -xzf "/tmp/lina-$SHA.tar.gz" -C "$release"
           rm "/tmp/lina-$SHA.tar.gz"
           chown -R lina:lina "$release"
+          install -d -m 750 -o lina -g lina /opt/lina/data
+          install -m 600 -o root -g root /dev/null /etc/lina.env
+          printf 'AUTH_SECRET=%s\n' "$(printf '%s' "$AUTH_SECRET_B64" | base64 -d)" > /etc/lina.env
+          install -m 644 "$release/lina.service" /etc/systemd/system/lina.service
           ln -sfn "$release" /opt/lina/current
+          systemctl daemon-reload
           systemctl restart lina
           for attempt in {1..15}; do
             if curl --fail --silent http://127.0.0.1:3000/api/health >/dev/null; then
