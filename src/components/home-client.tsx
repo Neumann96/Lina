@@ -33,6 +33,42 @@ type TelegramLoginResult = {
   hash: string;
 };
 
+type TelegramCandidate = {
+  botId: string;
+  payload: TelegramLoginResult;
+};
+
+const TELEGRAM_SWITCH_KEY = "lina:telegram-switch";
+const TELEGRAM_SWITCH_BOT_KEY = "lina:telegram-switch-bot";
+
+function telegramDisplayName(user: TelegramLoginResult) {
+  return [user.first_name, user.last_name].filter(Boolean).join(" ") || (user.username ? `@${user.username}` : "Пользователь Telegram");
+}
+
+function consumeTelegramAuthResult() {
+  const match = window.location.hash.match(/^#tgAuthResult=([A-Za-z0-9_=-]+)$/);
+  if (!match) return null;
+
+  window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+  try {
+    const encoded = match[1].replace(/-/g, "+").replace(/_/g, "/");
+    const parsed = JSON.parse(window.atob(encoded.padEnd(Math.ceil(encoded.length / 4) * 4, "="))) as Partial<TelegramLoginResult>;
+    if (!parsed.id || !parsed.first_name || !parsed.auth_date || !parsed.hash) return null;
+    return parsed as TelegramLoginResult;
+  } catch {
+    return null;
+  }
+}
+
+function consumeTelegramSwitchBotId() {
+  const url = new URL(window.location.href);
+  const botId = url.searchParams.get("telegram_switch");
+  if (!botId || !/^\d+$/.test(botId)) return null;
+  url.searchParams.delete("telegram_switch");
+  window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  return botId;
+}
+
 function telegramLoginApi() {
   return (window as typeof window & {
     Telegram?: {
@@ -57,6 +93,14 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
   const [error, setError] = useState("");
   const [errorField, setErrorField] = useState("");
   const [pending, setPending] = useState(false);
+  const [telegramCandidate, setTelegramCandidate] = useState<TelegramCandidate | null>(() => {
+    if (typeof window === "undefined") return null;
+    const botId = consumeTelegramSwitchBotId() ?? window.sessionStorage.getItem(TELEGRAM_SWITCH_BOT_KEY);
+    const result = consumeTelegramAuthResult();
+    window.sessionStorage.removeItem(TELEGRAM_SWITCH_KEY);
+    window.sessionStorage.removeItem(TELEGRAM_SWITCH_BOT_KEY);
+    return botId && result ? { botId, payload: result } : null;
+  });
   const emailRef = useRef<HTMLInputElement>(null);
   const isRegister = mode === "register";
 
@@ -130,29 +174,13 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
 
       telegramLogin.auth(
         { bot_id: Number(setup.botId), lang: "ru" },
-        async (result) => {
+        (result) => {
           if (!result) {
             setPending(false);
             return;
           }
-
-          try {
-            const response = await fetch("/api/auth/telegram", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ telegramUser: result }),
-            });
-            const authResult = await response.json() as { user?: AuthUser; error?: string };
-            if (!response.ok || !authResult.user) {
-              setError(authResult.error ?? "Не удалось войти через Telegram");
-              return;
-            }
-            onSuccess(authResult.user);
-          } catch {
-            setError("Не удалось связаться с сервером. Попробуйте ещё раз");
-          } finally {
-            setPending(false);
-          }
+          setTelegramCandidate({ botId: setup.botId!, payload: result });
+          setPending(false);
         },
       );
       popupOpened = true;
@@ -161,6 +189,40 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
     } finally {
       if (!popupOpened) setPending(false);
     }
+  }
+
+  async function confirmTelegramLogin() {
+    if (!telegramCandidate) return;
+    setError("");
+    setPending(true);
+    try {
+      const response = await fetch("/api/auth/telegram", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ telegramUser: telegramCandidate.payload }),
+      });
+      const authResult = await response.json() as { user?: AuthUser; error?: string };
+      if (!response.ok || !authResult.user) {
+        setError(authResult.error ?? "Не удалось войти через Telegram");
+        return;
+      }
+      onSuccess(authResult.user);
+    } catch {
+      setError("Не удалось связаться с сервером. Попробуйте ещё раз");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  function switchTelegramAccount() {
+    if (!telegramCandidate) return;
+    const returnTo = `${window.location.origin}/?telegram_switch=${encodeURIComponent(telegramCandidate.botId)}`;
+    window.sessionStorage.setItem(TELEGRAM_SWITCH_KEY, "1");
+    window.sessionStorage.setItem(TELEGRAM_SWITCH_BOT_KEY, telegramCandidate.botId);
+    window.location.assign(
+      `https://oauth.telegram.org/auth/logout?bot_id=${encodeURIComponent(telegramCandidate.botId)}`
+      + `&origin=${encodeURIComponent(window.location.origin)}&return_to=${encodeURIComponent(returnTo)}&lang=ru`,
+    );
   }
 
   function switchMode(nextMode: AuthMode) {
@@ -174,6 +236,20 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
       <section className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
         <button className="modal-close" type="button" onClick={onClose} aria-label="Закрыть">×</button>
         <div className="modal-brand"><span className="brand-mark">L</span><span>Lina</span></div>
+        {telegramCandidate ? <>
+          <h2 id="auth-title">Войти через Telegram?</h2>
+          <p>Проверьте аккаунт перед входом в Lina</p>
+          <div className="telegram-candidate">
+            <span className="telegram-candidate-avatar">{telegramDisplayName(telegramCandidate.payload).charAt(0).toUpperCase()}</span>
+            <span><strong>{telegramDisplayName(telegramCandidate.payload)}</strong>{telegramCandidate.payload.username && <small>@{telegramCandidate.payload.username}</small>}</span>
+          </div>
+          {error && <div className="form-error" role="alert">{error}</div>}
+          <div className="telegram-confirm-actions">
+            <button className="telegram-confirm" type="button" onClick={confirmTelegramLogin} disabled={pending}>{pending ? "Входим…" : "Продолжить"}</button>
+            <button className="telegram-switch-account" type="button" onClick={switchTelegramAccount} disabled={pending}>Войти с другого аккаунта</button>
+            <button className="telegram-cancel" type="button" onClick={() => { setTelegramCandidate(null); setError(""); }} disabled={pending}>Отмена</button>
+          </div>
+        </> : <>
         <h2 id="auth-title">{isRegister ? "Создайте аккаунт" : "С возвращением"}</h2>
         <p>{isRegister ? "Сохраняйте наборы и продолжайте с любого устройства" : "Войдите, чтобы продолжить обучение"}</p>
         <form className="auth-form" onSubmit={submit} noValidate>
@@ -204,6 +280,7 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
           {isRegister ? "Уже есть аккаунт?" : "Впервые в Lina?"}
           <button type="button" onClick={() => switchMode(isRegister ? "login" : "register")}>{isRegister ? "Войти" : "Зарегистрироваться"}</button>
         </div>
+        </>}
       </section>
     </div>
   );
@@ -257,6 +334,14 @@ function LogoutModal({ onClose, onConfirm }: LogoutModalProps) {
 
 function GuestLanding() {
   const [authMode, setAuthMode] = useState<AuthMode | null>(null);
+  useEffect(() => {
+    const restoreTelegramLogin = window.setTimeout(() => {
+      if (window.sessionStorage.getItem(TELEGRAM_SWITCH_KEY) === "1" || new URLSearchParams(window.location.search).has("telegram_switch")) {
+        setAuthMode("login");
+      }
+    }, 0);
+    return () => window.clearTimeout(restoreTelegramLogin);
+  }, []);
   return (
     <div className="landing">
       <header className="landing-header">
