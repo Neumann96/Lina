@@ -10,7 +10,6 @@ WorkingDirectory=/opt/lina/current
 Environment=NODE_ENV=production
 Environment=HOSTNAME=127.0.0.1
 Environment=PORT=3000
-Environment=LINA_DATA_DIR=/opt/lina/data
 EnvironmentFile=-/etc/lina.env
 ExecStart=/opt/node/bin/node /opt/lina/current/server.js
 Restart=always

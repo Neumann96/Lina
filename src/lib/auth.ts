@@ -1,56 +1,19 @@
 import "server-only";
 
 import { createHmac, randomBytes, randomUUID, scrypt as scryptCallback, timingSafeEqual } from "node:crypto";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { promisify } from "node:util";
+import { query } from "@/lib/db";
 import { cookies } from "next/headers";
 
 const scrypt = promisify(scryptCallback);
 const SESSION_COOKIE = "lina_session";
 const SESSION_LIFETIME_SECONDS = 60 * 60 * 24 * 30;
 
-type StoredUser = {
-  id: string;
-  email: string;
-  passwordHash: string;
-  salt: string;
-  createdAt: string;
-};
-
 export type AuthUser = { id: string; email: string; name: string };
-
-const dataDirectory = process.env.LINA_DATA_DIR ?? path.join(process.cwd(), "data");
-const usersFile = path.join(dataDirectory, "users.json");
-let writeQueue = Promise.resolve();
 
 function displayName(email: string) {
   const localPart = email.split("@")[0].replace(/[._-]+/g, " ").trim();
   return localPart ? localPart.charAt(0).toUpperCase() + localPart.slice(1) : "Пользователь";
-}
-
-async function readUsers(): Promise<StoredUser[]> {
-  try {
-    return JSON.parse(await readFile(usersFile, "utf8")) as StoredUser[];
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
-    throw error;
-  }
-}
-
-async function updateUsers<T>(operation: (users: StoredUser[]) => Promise<T> | T): Promise<T> {
-  let result!: T;
-  const run = writeQueue.then(async () => {
-    await mkdir(dataDirectory, { recursive: true });
-    const users = await readUsers();
-    result = await operation(users);
-    const temporaryFile = `${usersFile}.${randomUUID()}.tmp`;
-    await writeFile(temporaryFile, JSON.stringify(users, null, 2), { encoding: "utf8", mode: 0o600 });
-    await rename(temporaryFile, usersFile);
-  });
-  writeQueue = run.catch(() => undefined);
-  await run;
-  return result;
 }
 
 export function normalizeEmail(value: string) {
@@ -91,23 +54,28 @@ async function hashPassword(password: string, salt: string) {
 }
 
 export async function registerUser(email: string, password: string): Promise<AuthUser | null> {
-  return updateUsers(async (users) => {
-    if (users.some((user) => user.email === email)) return null;
-    const salt = randomBytes(16).toString("hex");
-    const user: StoredUser = {
-      id: randomUUID(),
-      email,
-      salt,
-      passwordHash: await hashPassword(password, salt),
-      createdAt: new Date().toISOString(),
-    };
-    users.push(user);
-    return { id: user.id, email: user.email, name: displayName(user.email) };
-  });
+  const salt = randomBytes(16).toString("hex");
+  const passwordHash = await hashPassword(password, salt);
+  const result = await query<{ id: string; email: string }>(
+    `INSERT INTO users (id, email, password_hash, salt)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (email) DO NOTHING
+     RETURNING id, email`,
+    [randomUUID(), email, passwordHash, salt],
+  );
+  const user = result.rows[0];
+  return user ? { ...user, name: displayName(user.email) } : null;
 }
 
 export async function authenticateUser(email: string, password: string): Promise<AuthUser | null> {
-  const user = (await readUsers()).find((candidate) => candidate.email === email);
+  const result = await query<{ id: string; email: string; passwordHash: string; salt: string }>(
+    `SELECT id, email, password_hash AS "passwordHash", salt
+     FROM users
+     WHERE email = $1
+     LIMIT 1`,
+    [email],
+  );
+  const user = result.rows[0];
   if (!user) return null;
   const actual = Buffer.from(await hashPassword(password, user.salt), "hex");
   const expected = Buffer.from(user.passwordHash, "hex");
@@ -116,7 +84,11 @@ export async function authenticateUser(email: string, password: string): Promise
 }
 
 function sessionSecret() {
-  return process.env.AUTH_SECRET ?? "lina-development-secret-change-in-production";
+  const secret = process.env.AUTH_SECRET;
+  if (process.env.NODE_ENV === "production" && (!secret || secret.length < 32)) {
+    throw new Error("AUTH_SECRET must contain at least 32 characters in production");
+  }
+  return secret ?? "lina-development-secret-change-in-production";
 }
 
 function sign(value: string) {
@@ -148,7 +120,7 @@ export async function setSession(user: AuthUser) {
   (await cookies()).set(SESSION_COOKIE, createSessionToken(user), {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.AUTH_COOKIE_SECURE === "true",
+    secure: process.env.NODE_ENV === "production" || process.env.AUTH_COOKIE_SECURE === "true",
     maxAge: SESSION_LIFETIME_SECONDS,
     path: "/",
   });
