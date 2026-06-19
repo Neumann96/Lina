@@ -10,6 +10,7 @@ export function getClientAddress(request: Request) {
 export function validateAuthRequest(request: Request): Response | null {
   const origin = request.headers.get("origin");
   const host = request.headers.get("host");
+  const requiresOrigin = !["GET", "HEAD", "OPTIONS"].includes(request.method.toUpperCase());
 
   if (origin) {
     try {
@@ -19,7 +20,7 @@ export function validateAuthRequest(request: Request): Response | null {
     } catch {
       return Response.json({ error: "Недопустимый источник запроса" }, { status: 403 });
     }
-  } else if (process.env.NODE_ENV === "production") {
+  } else if (process.env.NODE_ENV === "production" && requiresOrigin) {
     return Response.json({ error: "Не указан источник запроса" }, { status: 403 });
   }
 
