@@ -23,15 +23,23 @@ function Icon({ name, size = 20 }: { name: string; size?: number }) {
 
 type AuthMode = "register" | "login";
 
-type TelegramLoginResult = { id_token?: string; error?: string };
+type TelegramLoginResult = {
+  id: number;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  photo_url?: string;
+  auth_date: number;
+  hash: string;
+};
 
 function telegramLoginApi() {
   return (window as typeof window & {
     Telegram?: {
       Login?: {
         auth: (
-          options: { client_id: number; lang?: string; nonce?: string },
-          callback: (result: TelegramLoginResult) => void,
+          options: { bot_id: number; lang?: string },
+          callback: (result: TelegramLoginResult | false) => void,
         ) => void;
       };
     };
@@ -108,8 +116,8 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
 
     try {
       const setupResponse = await fetch("/api/auth/telegram", { cache: "no-store" });
-      const setup = await setupResponse.json() as { clientId?: string; nonce?: string; error?: string };
-      if (!setupResponse.ok || !setup.clientId || !setup.nonce) {
+      const setup = await setupResponse.json() as { botId?: string; error?: string };
+      if (!setupResponse.ok || !setup.botId) {
         setError(setup.error ?? "Вход через Telegram пока недоступен");
         return;
       }
@@ -121,11 +129,10 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
       }
 
       telegramLogin.auth(
-        { client_id: Number(setup.clientId), lang: "ru", nonce: setup.nonce },
+        { bot_id: Number(setup.botId), lang: "ru" },
         async (result) => {
-          if (!result.id_token) {
+          if (!result) {
             setPending(false);
-            if (result.error) setError("Telegram не подтвердил вход. Попробуйте ещё раз");
             return;
           }
 
@@ -133,7 +140,7 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
             const response = await fetch("/api/auth/telegram", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ idToken: result.id_token }),
+              body: JSON.stringify({ telegramUser: result }),
             });
             const authResult = await response.json() as { user?: AuthUser; error?: string };
             if (!response.ok || !authResult.user) {
