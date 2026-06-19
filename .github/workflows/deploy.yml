@@ -1,0 +1,81 @@
+name: Deploy production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: production
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate
+        run: npm run lint && npm run build
+
+      - name: Package standalone release
+        run: |
+          cp -r public .next/standalone/
+          mkdir -p .next/standalone/.next
+          cp -r .next/static .next/standalone/.next/
+          tar -czf lina-${GITHUB_SHA}.tar.gz -C .next/standalone .
+
+      - name: Configure SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/lina
+          chmod 600 ~/.ssh/lina
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Upload release
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: scp -i ~/.ssh/lina lina-${GITHUB_SHA}.tar.gz root@${DEPLOY_HOST}:/tmp/
+
+      - name: Activate release
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          ssh -i ~/.ssh/lina root@${DEPLOY_HOST} \
+            "SHA='${GITHUB_SHA}' bash -s" <<'REMOTE'
+          set -euo pipefail
+          release="/opt/lina/releases/$SHA"
+          mkdir -p "$release"
+          tar -xzf "/tmp/lina-$SHA.tar.gz" -C "$release"
+          rm "/tmp/lina-$SHA.tar.gz"
+          chown -R lina:lina "$release"
+          ln -sfn "$release" /opt/lina/current
+          systemctl restart lina
+          for attempt in {1..15}; do
+            if curl --fail --silent http://127.0.0.1:3000/api/health >/dev/null; then
+              find /opt/lina/releases -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' \
+                | sort -nr | tail -n +4 | cut -d' ' -f2- | xargs -r rm -rf
+              exit 0
+            fi
+            sleep 1
+          done
+          journalctl -u lina -n 50 --no-pager
+          exit 1
+          REMOTE

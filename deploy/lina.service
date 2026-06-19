@@ -1,0 +1,23 @@
+[Unit]
+Description=Lina web application
+After=network.target
+
+[Service]
+Type=simple
+User=lina
+Group=lina
+WorkingDirectory=/opt/lina/current
+Environment=NODE_ENV=production
+Environment=HOSTNAME=127.0.0.1
+Environment=PORT=3000
+ExecStart=/opt/node/bin/node /opt/lina/current/server.js
+Restart=always
+RestartSec=2
+TimeoutStopSec=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/opt/lina
+
+[Install]
+WantedBy=multi-user.target
