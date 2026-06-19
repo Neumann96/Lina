@@ -65,14 +65,16 @@ jobs:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          TELEGRAM_CLIENT_ID: ${{ vars.TELEGRAM_CLIENT_ID }}
         run: |
           AUTH_SECRET_B64="$(printf '%s' "$AUTH_SECRET" | base64 -w 0)"
           DATABASE_URL_B64="$(printf '%s' "$DATABASE_URL" | base64 -w 0)"
+          TELEGRAM_CLIENT_ID_B64="$(printf '%s' "$TELEGRAM_CLIENT_ID" | base64 -w 0)"
           ssh -i ~/.ssh/lina root@${DEPLOY_HOST} \
-            "SHA='${GITHUB_SHA}' AUTH_SECRET_B64='$AUTH_SECRET_B64' DATABASE_URL_B64='$DATABASE_URL_B64' bash -s" <<'REMOTE'
+            "SHA='${GITHUB_SHA}' AUTH_SECRET_B64='$AUTH_SECRET_B64' DATABASE_URL_B64='$DATABASE_URL_B64' TELEGRAM_CLIENT_ID_B64='$TELEGRAM_CLIENT_ID_B64' bash -s" <<'REMOTE'
           set -euo pipefail
-          if [ -z "${AUTH_SECRET_B64:-}" ] || [ -z "${DATABASE_URL_B64:-}" ]; then
-            echo "AUTH_SECRET and DATABASE_URL must be configured"
+          if [ -z "${AUTH_SECRET_B64:-}" ] || [ -z "${DATABASE_URL_B64:-}" ] || [ -z "${TELEGRAM_CLIENT_ID_B64:-}" ]; then
+            echo "AUTH_SECRET, DATABASE_URL and TELEGRAM_CLIENT_ID must be configured"
             exit 1
           fi
           release="/opt/lina/releases/$SHA"
@@ -85,14 +87,24 @@ jobs:
             printf 'AUTH_SECRET=%s\n' "$(printf '%s' "$AUTH_SECRET_B64" | base64 -d)"
             printf 'DATABASE_URL=%s\n' "$(printf '%s' "$DATABASE_URL_B64" | base64 -d)"
             printf 'DATABASE_SSL=false\n'
+            printf 'TELEGRAM_CLIENT_ID=%s\n' "$(printf '%s' "$TELEGRAM_CLIENT_ID_B64" | base64 -d)"
           } > /etc/lina.env
           AUTH_SECRET_LENGTH="$(printf '%s' "$AUTH_SECRET_B64" | base64 -d | wc -c)"
           if [ "$AUTH_SECRET_LENGTH" -lt 32 ]; then
             echo "AUTH_SECRET must contain at least 32 characters"
             exit 1
           fi
+          TELEGRAM_CLIENT_ID="$(printf '%s' "$TELEGRAM_CLIENT_ID_B64" | base64 -d)"
+          case "$TELEGRAM_CLIENT_ID" in
+            ''|*[!0-9]*)
+              echo "TELEGRAM_CLIENT_ID must be numeric"
+              exit 1
+              ;;
+          esac
           DATABASE_URL="$(printf '%s' "$DATABASE_URL_B64" | base64 -d)"
-          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$release/db/migrations/001_auth.sql"
+          for migration in "$release"/db/migrations/*.sql; do
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$migration"
+          done
           if [ -f /opt/lina/data/users.json ]; then
             cd "$release"
             DATABASE_URL="$DATABASE_URL" DATABASE_SSL=false \
