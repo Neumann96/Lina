@@ -39,6 +39,7 @@ jobs:
           cp -r scripts .next/standalone/
           cp deploy/lina.service .next/standalone/
           cp deploy/nginx.conf .next/standalone/
+          cp deploy/nginx.ssl.conf .next/standalone/
           cp deploy/certbot-reload-nginx.sh .next/standalone/
           mkdir -p .next/standalone/.next
           cp -r .next/static .next/standalone/.next/
@@ -102,8 +103,24 @@ jobs:
           install -d -m 755 /etc/letsencrypt/renewal-hooks/deploy
           install -m 755 "$release/certbot-reload-nginx.sh" \
             /etc/letsencrypt/renewal-hooks/deploy/reload-nginx
+          # Expose the webroot over HTTP before asking Let's Encrypt to verify
+          # the custom domain. The previous setup only selected a certificate
+          # if one already existed, so the first certificate was never issued.
           install -m 644 "$release/nginx.conf" /etc/nginx/sites-available/lina
           ln -sfn /etc/nginx/sites-available/lina /etc/nginx/sites-enabled/lina
+          nginx -t
+          systemctl reload nginx
+          command -v certbot >/dev/null || {
+            echo "certbot must be installed on the server"
+            exit 1
+          }
+          certbot certonly \
+            --webroot --webroot-path /var/www/letsencrypt \
+            --cert-name lina-lern.ru \
+            --domain lina-lern.ru --domain www.lina-lern.ru \
+            --non-interactive --agree-tos --register-unsafely-without-email \
+            --keep-until-expiring
+          install -m 644 "$release/nginx.ssl.conf" /etc/nginx/sites-available/lina
           nginx -t
           ln -sfn "$release" /opt/lina/current
           systemctl daemon-reload

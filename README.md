@@ -36,10 +36,10 @@ npm run build
 - `AUTH_SECRET` — случайная строка длиной не менее 32 символов;
 - `DATABASE_URL` — строка подключения к production PostgreSQL.
 
-Nginx перенаправляет HTTP на `https://5-129-195-206.sslip.io`, завершает TLS и проксирует приложение по `127.0.0.1:3000`. Сертификат Let’s Encrypt находится в `/etc/letsencrypt/live/5-129-195-206.sslip.io/` и обновляется через webroot `/var/www/letsencrypt`.
+Nginx перенаправляет HTTP на `https://lina-lern.ru`, завершает TLS и проксирует приложение по `127.0.0.1:3000`. Сертификат Let’s Encrypt находится в `/etc/letsencrypt/live/lina-lern.ru/` и обновляется через webroot `/var/www/letsencrypt`.
 
 ## Figma
 
-- страница для послойного импорта: `https://5-129-195-206.sslip.io/figma-import`;
-- готовый комплект: `https://5-129-195-206.sslip.io/lina-figma-kit.zip`;
+- страница для послойного импорта: `https://lina-lern.ru/figma-import`;
+- готовый комплект: `https://lina-lern.ru/lina-figma-kit.zip`;
 - исходники комплекта находятся в `figma-kit/`.
