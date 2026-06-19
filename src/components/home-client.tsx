@@ -23,6 +23,21 @@ function Icon({ name, size = 20 }: { name: string; size?: number }) {
 
 type AuthMode = "register" | "login";
 
+type TelegramLoginResult = { id_token?: string; error?: string };
+
+function telegramLoginApi() {
+  return (window as typeof window & {
+    Telegram?: {
+      Login?: {
+        auth: (
+          options: { client_id: number; lang?: string; nonce?: string },
+          callback: (result: TelegramLoginResult) => void,
+        ) => void;
+      };
+    };
+  }).Telegram?.Login;
+}
+
 type AuthModalProps = {
   mode: AuthMode;
   onClose: () => void;
@@ -85,6 +100,62 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
     }
   }
 
+  async function loginWithTelegram() {
+    setError("");
+    setErrorField("");
+    setPending(true);
+    let popupOpened = false;
+
+    try {
+      const setupResponse = await fetch("/api/auth/telegram", { cache: "no-store" });
+      const setup = await setupResponse.json() as { clientId?: string; nonce?: string; error?: string };
+      if (!setupResponse.ok || !setup.clientId || !setup.nonce) {
+        setError(setup.error ?? "Вход через Telegram пока недоступен");
+        return;
+      }
+
+      const telegramLogin = telegramLoginApi();
+      if (!telegramLogin) {
+        setError("Не удалось загрузить Telegram. Обновите страницу и попробуйте ещё раз");
+        return;
+      }
+
+      telegramLogin.auth(
+        { client_id: Number(setup.clientId), lang: "ru", nonce: setup.nonce },
+        async (result) => {
+          if (!result.id_token) {
+            setPending(false);
+            if (result.error) setError("Telegram не подтвердил вход. Попробуйте ещё раз");
+            return;
+          }
+
+          try {
+            const response = await fetch("/api/auth/telegram", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ idToken: result.id_token }),
+            });
+            const authResult = await response.json() as { user?: AuthUser; error?: string };
+            if (!response.ok || !authResult.user) {
+              setError(authResult.error ?? "Не удалось войти через Telegram");
+              return;
+            }
+            onSuccess(authResult.user);
+          } catch {
+            setError("Не удалось связаться с сервером. Попробуйте ещё раз");
+          } finally {
+            setPending(false);
+          }
+        },
+      );
+      popupOpened = true;
+    } catch {
+      setError("Не удалось связаться с сервером. Попробуйте ещё раз");
+    } finally {
+      if (!popupOpened) setPending(false);
+    }
+  }
+
   function switchMode(nextMode: AuthMode) {
     setError("");
     setErrorField("");
@@ -117,6 +188,11 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
           {error && <div className="form-error" role="alert">{error}</div>}
           <button className="auth-submit" type="submit" disabled={pending}>{pending ? "Подождите…" : isRegister ? "Зарегистрироваться" : "Войти"}</button>
         </form>
+        <div className="auth-divider"><span>или</span></div>
+        <button className="telegram-login" type="button" onClick={loginWithTelegram} disabled={pending}>
+          <svg viewBox="0 0 24 24" aria-hidden><path d="M21.6 3.2 18.5 20c-.2 1.2-.9 1.5-1.9.9l-4.7-3.5-2.3 2.2c-.2.3-.5.5-1 .5l.3-4.8 8.8-8c.4-.3-.1-.5-.6-.2L6.2 14 1.5 12.5c-1-.3-1-1 .2-1.5L20 3.9c.8-.3 1.6.2 1.6-.7Z"/></svg>
+          Войти через Telegram
+        </button>
         <div className="auth-switch">
           {isRegister ? "Уже есть аккаунт?" : "Впервые в Lina?"}
           <button type="button" onClick={() => switchMode(isRegister ? "login" : "register")}>{isRegister ? "Войти" : "Зарегистрироваться"}</button>
