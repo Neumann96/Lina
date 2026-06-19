@@ -3,12 +3,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { BulkCardEditor } from "@/components/bulk-card-editor";
 import type { AuthUser } from "@/lib/auth";
-
-const recentSets = [
-  { title: "English · Travel", count: 48, progress: 72, color: "coral" },
-  { title: "Испанский · База", count: 32, progress: 41, color: "cream" },
-  { title: "Product terms", count: 24, progress: 88, color: "violet" },
-];
+import type { DashboardData } from "@/lib/learning";
 
 function Icon({ name, size = 20 }: { name: string; size?: number }) {
   const paths: Record<string, React.ReactNode> = {
@@ -177,9 +172,61 @@ function LogoutModal({ onClose, onConfirm }: LogoutModalProps) {
   );
 }
 
-export function HomeClient({ initialUser }: { initialUser: AuthUser | null }) {
-  const [user, setUser] = useState(initialUser);
+function GuestLanding() {
   const [authMode, setAuthMode] = useState<AuthMode | null>(null);
+  return (
+    <div className="landing">
+      <header className="landing-header">
+        <a className="landing-brand" href="#top"><span className="brand-mark">L</span><span>Lina</span></a>
+        <nav aria-label="Навигация по странице"><a href="#how">Как это работает</a><a href="#features">Возможности</a></nav>
+        <div className="landing-auth"><button className="login-button" onClick={() => setAuthMode("login")}>Войти</button><button className="create-button" onClick={() => setAuthMode("register")}>Зарегистрироваться</button></div>
+      </header>
+
+      <main id="top">
+        <section className="landing-hero">
+          <div className="landing-hero-copy">
+            <div className="eyebrow"><Icon name="spark" size={16}/> Слова остаются с вами</div>
+            <h1>Запоминайте слова,<br/><em>а не списки</em></h1>
+            <p>Lina превращает любой список в удобные карточки и помогает повторять именно то, что вот-вот забудется.</p>
+            <div className="landing-cta"><button onClick={() => setAuthMode("register")}>Начать бесплатно <span>→</span></button><small>Без карты · займёт меньше минуты</small></div>
+          </div>
+          <div className="landing-demo" aria-label="Пример карточки Lina">
+            <div className="demo-toolbar"><span><i/> Lina · English</span><b>12 / 24</b></div>
+            <div className="demo-card-back" />
+            <article className="demo-card"><span>СЛОВО</span><strong>serendipity</strong><p>счастливая случайность</p><button type="button">Знаю это слово</button></article>
+            <div className="demo-progress"><span style={{ width: "62%" }}/></div>
+          </div>
+        </section>
+
+        <section className="landing-proof">
+          <p>Один спокойный ритуал вместо хаоса в заметках</p>
+          <div><span>Вставьте список</span><i>→</i><span>Получите карточки</span><i>→</i><span>Повторяйте с умом</span></div>
+        </section>
+
+        <section className="landing-how" id="how">
+          <div className="landing-section-title"><span>Как это работает</span><h2>От списка до знания — три шага</h2><p>Никакой ручной возни с каждой карточкой.</p></div>
+          <div className="landing-steps">
+            <article><b>01</b><div className="step-visual paste-lines"><i/><i/><i/></div><h3>Вставьте слова</h3><p>Скопируйте пары из таблицы, заметок или учебника. Lina разберёт разные разделители.</p></article>
+            <article><b>02</b><div className="step-visual cards-stack"><i/><i/><i/></div><h3>Проверьте карточки</h3><p>Исправьте перевод, добавьте контекст — всё видно сразу, ещё до сохранения.</p></article>
+            <article><b>03</b><div className="step-visual progress-ring">86<small>%</small></div><h3>Следите за ростом</h3><p>Точность, серии занятий и прогресс считаются отдельно для вашего аккаунта.</p></article>
+          </div>
+        </section>
+
+        <section className="landing-features" id="features">
+          <div><span>Меньше подготовки</span><h2>Учёба начинается сразу</h2><p>Массовое добавление карточек, аккуратная библиотека и честная статистика без лишнего шума.</p><button onClick={() => setAuthMode("register")}>Создать первый набор</button></div>
+          <ul><li><Icon name="spark"/><span><strong>Умный импорт</strong><small>Tab, тире, двоеточие, точка с запятой или запятая</small></span></li><li><Icon name="chart"/><span><strong>Настоящий прогресс</strong><small>Только ваши наборы, ответы и дни занятий</small></span></li><li><Icon name="cards"/><span><strong>Всё в одном месте</strong><small>Возвращайтесь к наборам с любого устройства</small></span></li></ul>
+        </section>
+
+        <section className="landing-final"><div className="eyebrow"><Icon name="spark" size={16}/> Начните с одного списка</div><h2>Пусть новые слова<br/>наконец останутся с вами</h2><button onClick={() => setAuthMode("register")}>Попробовать Lina бесплатно <span>→</span></button></section>
+      </main>
+      <footer className="landing-footer"><a className="landing-brand" href="#top"><span className="brand-mark">L</span><span>Lina</span></a><p>Учитесь быстрее, а не дольше.</p><span>© {new Date().getFullYear()} Lina</span></footer>
+      {authMode && <AuthModal mode={authMode} onClose={() => setAuthMode(null)} onModeChange={setAuthMode} onSuccess={() => window.location.reload()} />}
+    </div>
+  );
+}
+
+export function HomeClient({ initialUser, initialDashboard }: { initialUser: AuthUser | null; initialDashboard: DashboardData | null }) {
+  const [user, setUser] = useState(initialUser);
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -190,6 +237,12 @@ export function HomeClient({ initialUser }: { initialUser: AuthUser | null }) {
       setIsLogoutOpen(false);
     }
   }
+
+  if (!user || !initialDashboard) {
+    return <GuestLanding />;
+  }
+
+  const { stats, recentSets } = initialDashboard;
 
   return (
     <div className="app-shell">
@@ -212,43 +265,34 @@ export function HomeClient({ initialUser }: { initialUser: AuthUser | null }) {
         <div className="sidebar-spacer" />
         <div className="streak-card">
           <span className="streak-emoji">🔥</span>
-          <strong className="streak-count">7</strong>
-          <div className="streak-details"><strong>7 дней подряд</strong><p>Ещё немного — и рекорд</p></div>
+          <strong className="streak-count">{stats.streak}</strong>
+          <div className="streak-details"><strong>{stats.streak} {stats.streak === 1 ? "день" : "дней"} подряд</strong><p>{stats.streak ? "Продолжайте в том же духе" : "Начните серию сегодня"}</p></div>
         </div>
-        {user ? (
-          <button className="profile-button" onClick={() => setIsLogoutOpen(true)}><span className="avatar">{user.name.charAt(0)}</span><span><strong>{user.name}</strong><small>Выйти из аккаунта</small></span><Icon name="arrow" size={17}/></button>
-        ) : (
-          <button className="profile-button guest-profile" onClick={() => setAuthMode("login")}><span className="avatar">?</span><span><strong>Войти</strong><small>Сохраняйте свой прогресс</small></span><Icon name="arrow" size={17}/></button>
-        )}
+        <button className="profile-button" onClick={() => setIsLogoutOpen(true)}><span className="avatar">{user.name.charAt(0)}</span><span><strong>{user.name}</strong><small>Выйти из аккаунта</small></span><Icon name="arrow" size={17}/></button>
       </aside>
 
       <main className="content">
         <header className="topbar">
-          {user ? <>
-            <button className="icon-button" aria-label="Уведомления"><Icon name="bell" /></button>
-            <a className="create-button" href="#new-set"><Icon name="plus" size={19}/>Создать набор</a>
-          </> : <>
-            <button className="login-button" onClick={() => setAuthMode("login")}>Войти</button>
-            <button className="create-button" onClick={() => setAuthMode("register")}>Зарегистрироваться</button>
-          </>}
+          <button className="icon-button" aria-label="Уведомления"><Icon name="bell" /></button>
+          <a className="create-button" href="#new-set"><Icon name="plus" size={19}/>Создать набор</a>
         </header>
 
         <section className="hero">
           <div className="eyebrow"><Icon name="spark" size={16}/> Учись быстрее, а не дольше</div>
-          <h1>{user ? `Добрый день, ${user.name}` : "Учите слова легко"} <span>👋</span></h1>
-          <p>{user ? "Продолжим с того места, где остановились?" : "Создайте аккаунт, чтобы сохранять наборы и свой прогресс"}</p>
+          <h1>Добрый день, {user.name} <span>👋</span></h1>
+          <p>Продолжим с того места, где остановились?</p>
           <div className="hero-stats">
-            <div><strong>104</strong><span>слов изучено</span></div><i />
-            <div><strong>12</strong><span>наборов</span></div><i />
-            <div><strong>86%</strong><span>точность</span></div>
+            <div><strong>{stats.cardCount}</strong><span>карточек</span></div><i />
+            <div><strong>{stats.setCount}</strong><span>наборов</span></div><i />
+            <div><strong>{stats.accuracy}%</strong><span>точность</span></div>
           </div>
         </section>
 
         <section className="section" id="sets">
           <div className="section-heading"><div><span>Библиотека</span><h2>Недавние наборы</h2></div><button>Смотреть все <Icon name="arrow" size={16}/></button></div>
-          <div className="sets-grid">
-            {recentSets.map((set) => (
-              <article className={`set-card ${set.color}`} key={set.title}>
+          <div className={`sets-grid${recentSets.length === 0 ? " empty" : ""}`}>
+            {recentSets.length === 0 ? <div className="sets-empty"><span>Пока здесь тихо</span><h3>Создайте свой первый набор</h3><p>Вставьте список ниже — Lina соберёт карточки и сохранит их в вашем аккаунте.</p><a href="#new-set">Добавить слова →</a></div> : recentSets.map((set) => (
+              <article className={`set-card ${set.color}`} key={set.id}>
                 <div className="set-card-top"><span>{set.count} карточек</span><button aria-label="Открыть набор"><Icon name="arrow" size={18}/></button></div>
                 <h3>{set.title}</h3>
                 <div className="progress-label"><span>Прогресс</span><strong>{set.progress}%</strong></div>
@@ -258,12 +302,11 @@ export function HomeClient({ initialUser }: { initialUser: AuthUser | null }) {
           </div>
         </section>
 
-        {user && <section className="section editor-section" id="new-set">
+        <section className="section editor-section" id="new-set">
           <div className="section-heading"><div><span>Новый набор</span><h2>Добавь всё одним движением</h2></div></div>
-          <BulkCardEditor />
-        </section>}
+          <BulkCardEditor onCreated={() => window.location.reload()} />
+        </section>
       </main>
-      {authMode && <AuthModal mode={authMode} onClose={() => setAuthMode(null)} onModeChange={setAuthMode} onSuccess={(nextUser) => { setUser(nextUser); setAuthMode(null); }} />}
       {isLogoutOpen && <LogoutModal onClose={() => setIsLogoutOpen(false)} onConfirm={logout} />}
     </div>
   );
