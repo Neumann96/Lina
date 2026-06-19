@@ -1,0 +1,38 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "color": {
+    "ink": { "$type": "color", "$value": "#252320" },
+    "muted": { "$type": "color", "$value": "#85817B" },
+    "line": { "$type": "color", "$value": "#EBE7E1" },
+    "accent": { "$type": "color", "$value": "#F36F3D" },
+    "accent-dark": { "$type": "color", "$value": "#DF5726" },
+    "paper": { "$type": "color", "$value": "#FFFFFF" },
+    "canvas": { "$type": "color", "$value": "#F7F6F3" },
+    "accent-soft": { "$type": "color", "$value": "#FFF0E8" },
+    "success": { "$type": "color", "$value": "#62B47B" }
+  },
+  "radius": {
+    "small": { "$type": "dimension", "$value": { "value": 8, "unit": "px" } },
+    "control": { "$type": "dimension", "$value": { "value": 12, "unit": "px" } },
+    "card": { "$type": "dimension", "$value": { "value": 18, "unit": "px" } },
+    "panel": { "$type": "dimension", "$value": { "value": 20, "unit": "px" } }
+  },
+  "spacing": {
+    "xs": { "$type": "dimension", "$value": { "value": 4, "unit": "px" } },
+    "sm": { "$type": "dimension", "$value": { "value": 8, "unit": "px" } },
+    "md": { "$type": "dimension", "$value": { "value": 16, "unit": "px" } },
+    "lg": { "$type": "dimension", "$value": { "value": 24, "unit": "px" } },
+    "xl": { "$type": "dimension", "$value": { "value": 40, "unit": "px" } },
+    "section": { "$type": "dimension", "$value": { "value": 64, "unit": "px" } }
+  },
+  "typography": {
+    "family": { "$type": "fontFamily", "$value": "Inter" },
+    "hero": { "$type": "fontSize", "$value": { "value": 54, "unit": "px" } },
+    "title": { "$type": "fontSize", "$value": { "value": 22, "unit": "px" } },
+    "body": { "$type": "fontSize", "$value": { "value": 14, "unit": "px" } },
+    "caption": { "$type": "fontSize", "$value": { "value": 11, "unit": "px" } }
+  },
+  "shadow": {
+    "card": { "$type": "shadow", "$value": { "color": "#4A332310", "offsetX": "0px", "offsetY": "12px", "blur": "28px", "spread": "0px" } }
+  }
+}
