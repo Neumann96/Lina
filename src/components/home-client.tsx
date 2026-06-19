@@ -225,10 +225,24 @@ function GuestLanding() {
   );
 }
 
-export function HomeClient({ initialUser, initialDashboard }: { initialUser: AuthUser | null; initialDashboard: DashboardData | null }) {
+export function HomeClient({
+  initialUser,
+  initialDashboard,
+  initialSidebarCollapsed,
+}: {
+  initialUser: AuthUser | null;
+  initialDashboard: DashboardData | null;
+  initialSidebarCollapsed: boolean;
+}) {
   const [user, setUser] = useState(initialUser);
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(initialSidebarCollapsed);
+
+  function toggleSidebar() {
+    const collapsed = !isSidebarCollapsed;
+    setIsSidebarCollapsed(collapsed);
+    document.cookie = `lina-sidebar-collapsed=${collapsed}; Path=/; Max-Age=31536000; SameSite=Lax`;
+  }
 
   async function logout() {
     const response = await fetch("/api/auth/logout", { method: "POST" });
@@ -252,7 +266,7 @@ export function HomeClient({ initialUser, initialDashboard }: { initialUser: Aut
           type="button"
           aria-label={isSidebarCollapsed ? "Развернуть боковую панель" : "Свернуть боковую панель"}
           aria-expanded={!isSidebarCollapsed}
-          onClick={() => setIsSidebarCollapsed((collapsed) => !collapsed)}
+          onClick={toggleSidebar}
         >
           <Icon name={isSidebarCollapsed ? "expand" : "collapse"} size={17} />
         </button>
