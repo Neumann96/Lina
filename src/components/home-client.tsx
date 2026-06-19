@@ -19,6 +19,8 @@ function Icon({ name, size = 20 }: { name: string; size?: number }) {
     search: <><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></>,
     bell: <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></>,
     arrow: <path d="m9 18 6-6-6-6"/>,
+    collapse: <><path d="m15 18-6-6 6-6"/><path d="M20 5v14"/></>,
+    expand: <><path d="m9 18 6-6-6-6"/><path d="M4 5v14"/></>,
     spark: <><path d="m12 3 1.2 3.8L17 8l-3.8 1.2L12 13l-1.2-3.8L7 8l3.8-1.2L12 3Z"/><path d="m19 14 .7 2.3L22 17l-2.3.7L19 20l-.7-2.3L16 17l2.3-.7L19 14Z"/></>,
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{paths[name]}</svg>;
@@ -132,6 +134,7 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
 export function HomeClient({ initialUser }: { initialUser: AuthUser | null }) {
   const [user, setUser] = useState(initialUser);
   const [authMode, setAuthMode] = useState<AuthMode | null>(null);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -140,17 +143,27 @@ export function HomeClient({ initialUser }: { initialUser: AuthUser | null }) {
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
+      <aside className={`sidebar${isSidebarCollapsed ? " collapsed" : ""}`}>
+        <button
+          className="sidebar-toggle"
+          type="button"
+          aria-label={isSidebarCollapsed ? "Развернуть боковую панель" : "Свернуть боковую панель"}
+          aria-expanded={!isSidebarCollapsed}
+          onClick={() => setIsSidebarCollapsed((collapsed) => !collapsed)}
+        >
+          <Icon name={isSidebarCollapsed ? "expand" : "collapse"} size={17} />
+        </button>
         <div className="brand"><span className="brand-mark">L</span><span>Lina</span></div>
         <nav className="main-nav" aria-label="Основная навигация">
-          <a className="nav-item active" href="#"><Icon name="home" />Главная</a>
-          <a className="nav-item" href="#sets"><Icon name="cards" />Мои наборы</a>
-          <a className="nav-item" href="#progress"><Icon name="chart" />Прогресс</a>
+          <a className="nav-item active" href="#" title={isSidebarCollapsed ? "Главная" : undefined}><Icon name="home" /><span>Главная</span></a>
+          <a className="nav-item" href="#sets" title={isSidebarCollapsed ? "Мои наборы" : undefined}><Icon name="cards" /><span>Мои наборы</span></a>
+          <a className="nav-item" href="#progress" title={isSidebarCollapsed ? "Прогресс" : undefined}><Icon name="chart" /><span>Прогресс</span></a>
         </nav>
         <div className="sidebar-spacer" />
         <div className="streak-card">
           <span className="streak-emoji">🔥</span>
-          <div><strong>7 дней подряд</strong><p>Ещё немного — и рекорд</p></div>
+          <strong className="streak-count">7</strong>
+          <div className="streak-details"><strong>7 дней подряд</strong><p>Ещё немного — и рекорд</p></div>
         </div>
         {user ? (
           <button className="profile-button" onClick={logout}><span className="avatar">{user.name.charAt(0)}</span><span><strong>{user.name}</strong><small>Выйти из аккаунта</small></span><Icon name="arrow" size={17}/></button>
