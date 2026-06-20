@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   let botUsername: string;
   try {
     botId = getTelegramBotId();
-    botUsername = await getTelegramBotUsername();
+    botUsername = getTelegramBotUsername();
   } catch {
     return Response.json({ error: "Вход через Telegram пока не настроен" }, { status: 503 });
   }
