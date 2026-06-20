@@ -4,7 +4,8 @@ import { getClientAddress, validateAuthRequest } from "@/lib/request-security";
 import { verifyTelegramAuthPayload } from "@/lib/telegram-auth";
 
 function redirectHome(request: Request, status?: "failed" | "limited") {
-  const url = new URL("/", request.url);
+  const configuredOrigin = process.env.APP_ORIGIN?.trim();
+  const url = new URL("/", configuredOrigin || new URL(request.url).origin);
   if (status) url.searchParams.set("telegramAuth", status);
   return Response.redirect(url, 303);
 }

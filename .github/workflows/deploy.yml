@@ -87,6 +87,7 @@ jobs:
             printf 'AUTH_SECRET=%s\n' "$(printf '%s' "$AUTH_SECRET_B64" | base64 -d)"
             printf 'DATABASE_URL=%s\n' "$(printf '%s' "$DATABASE_URL_B64" | base64 -d)"
             printf 'DATABASE_SSL=false\n'
+            printf 'APP_ORIGIN=https://lina-lern.ru\n'
             printf 'TELEGRAM_BOT_TOKEN=%s\n' "$(printf '%s' "$TELEGRAM_BOT_TOKEN_B64" | base64 -d)"
             printf 'TELEGRAM_BOT_USERNAME=linalernbot\n'
           } > /etc/lina.env
