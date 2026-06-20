@@ -101,7 +101,6 @@ jobs:
             echo "TELEGRAM_BOT_TOKEN has an invalid format"
             exit 1
           fi
-          TELEGRAM_WEBHOOK_SECRET="$(printf '%s' "$TELEGRAM_BOT_TOKEN" | sha256sum | cut -d' ' -f1)"
           DATABASE_URL="$(printf '%s' "$DATABASE_URL_B64" | base64 -d)"
           for migration in "$release"/db/migrations/*.sql; do
             psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$migration"
@@ -142,10 +141,7 @@ jobs:
           for attempt in {1..15}; do
             if curl --fail --silent http://127.0.0.1:3000/api/health >/dev/null; then
               curl --fail --silent --show-error \
-                --request POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook" \
-                --data-urlencode "url=https://lina-lern.ru/api/telegram/webhook" \
-                --data-urlencode "secret_token=${TELEGRAM_WEBHOOK_SECRET}" \
-                --data-urlencode 'allowed_updates=["message"]' \
+                --request POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/deleteWebhook" \
                 | grep -q '"ok":true'
               find /opt/lina/releases -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' \
                 | sort -nr | tail -n +4 | cut -d' ' -f2- | xargs -r rm -rf

@@ -1,0 +1,21 @@
+[Unit]
+Description=Lina Telegram bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lina-bot
+Group=lina-bot
+EnvironmentFile=/etc/lina-telegram-bot.env
+ExecStart=/usr/bin/python3 /opt/lina-telegram-bot/lina_telegram_bot.py
+Restart=always
+RestartSec=3
+TimeoutStopSec=40
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
