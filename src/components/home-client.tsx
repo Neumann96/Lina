@@ -31,12 +31,23 @@ type AuthModalProps = {
   onSuccess: (user: AuthUser) => void;
 };
 
-function TelegramLoginWidget({ onError }: { onError: (message: string) => void }) {
+function TelegramLoginWidget({
+  onError,
+  onSuccess,
+}: {
+  onError: (message: string) => void;
+  onSuccess: (user: AuthUser) => void;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [miniAppPending, setMiniAppPending] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
     const container = containerRef.current;
+
+    // Telegram Mini Apps already provide signed user data. In that context we
+    // render an explicit button below instead of starting the browser widget.
+    if (window.Telegram?.WebApp?.initData) return;
 
     void (async () => {
       try {
@@ -73,7 +84,40 @@ function TelegramLoginWidget({ onError }: { onError: (message: string) => void }
     };
   }, [onError]);
 
-  return <div ref={containerRef} className="telegram-login-widget"><span>Загружаем Telegram…</span></div>;
+  async function loginWithMiniApp() {
+    const initData = window.Telegram?.WebApp?.initData;
+    if (!initData) {
+      onError("Telegram не передал данные для входа");
+      return;
+    }
+
+    setMiniAppPending(true);
+    onError("");
+    try {
+      const response = await fetch("/api/auth/telegram/mini-app", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ initData }),
+      });
+      const result = await response.json() as { user?: AuthUser; error?: string };
+      if (!response.ok || !result.user) {
+        onError(result.error ?? "Не удалось войти через Telegram");
+        return;
+      }
+      onSuccess(result.user);
+    } catch {
+      onError("Не удалось связаться с сервером. Попробуйте ещё раз");
+    } finally {
+      setMiniAppPending(false);
+    }
+  }
+
+  return <>
+    <div ref={containerRef} className="telegram-login-widget"><span>Загружаем Telegram…</span></div>
+    <button className="telegram-login telegram-mini-app-login" type="button" onClick={loginWithMiniApp} disabled={miniAppPending}>
+      {miniAppPending ? "Входим через Telegram…" : "Войти через Telegram"}
+    </button>
+  </>;
 }
 
 function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
@@ -164,7 +208,7 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
           <button className="auth-submit" type="submit" disabled={pending}>{pending ? "Подождите…" : isRegister ? "Зарегистрироваться" : "Войти"}</button>
         </form>
         <div className="auth-divider"><span>или</span></div>
-        <TelegramLoginWidget onError={setError} />
+        <TelegramLoginWidget onError={setError} onSuccess={onSuccess} />
         <div className="auth-switch">
           {isRegister ? "Уже есть аккаунт?" : "Впервые в Lina?"}
           <button type="button" onClick={() => switchMode(isRegister ? "login" : "register")}>{isRegister ? "Войти" : "Зарегистрироваться"}</button>
@@ -287,7 +331,6 @@ export function HomeClient({
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(initialSidebarCollapsed);
   const [telegramReturnError, setTelegramReturnError] = useState("");
-  const [miniAppAuthPending, setMiniAppAuthPending] = useState(false);
 
   useEffect(() => {
     const callbackStatus = new URLSearchParams(window.location.search).get("telegramAuth");
@@ -313,44 +356,6 @@ export function HomeClient({
     window.location.replace(callbackUrl);
   }, []);
 
-  useEffect(() => {
-    const webApp = window.Telegram?.WebApp;
-    if (initialUser || !webApp?.initData) return;
-
-    let cancelled = false;
-    let authenticating = false;
-    const authenticateMiniApp = async () => {
-      if (cancelled || authenticating || !webApp.initData) return;
-      authenticating = true;
-      setMiniAppAuthPending(true);
-      try {
-        const response = await fetch("/api/auth/telegram/mini-app", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ initData: webApp.initData }),
-        });
-        const result = await response.json() as { user?: AuthUser; error?: string };
-        if (!response.ok || !result.user) {
-          setTelegramReturnError(result.error ?? "Не удалось войти через Telegram");
-          return;
-        }
-        window.location.reload();
-      } catch {
-        setTelegramReturnError("Не удалось связаться с сервером. Попробуйте ещё раз");
-      } finally {
-        authenticating = false;
-        if (!cancelled) setMiniAppAuthPending(false);
-      }
-    };
-
-    webApp.onEvent("activated", authenticateMiniApp);
-    void authenticateMiniApp();
-    return () => {
-      cancelled = true;
-      webApp.offEvent("activated", authenticateMiniApp);
-    };
-  }, [initialUser]);
-
   function toggleSidebar() {
     const collapsed = !isSidebarCollapsed;
     setIsSidebarCollapsed(collapsed);
@@ -366,9 +371,6 @@ export function HomeClient({
   }
 
   if (!user || !initialDashboard) {
-    if (miniAppAuthPending) {
-      return <div className="telegram-mini-app-auth" role="status">Входим через Telegram…</div>;
-    }
     return <GuestLanding telegramError={telegramReturnError} />;
   }
 
