@@ -17,6 +17,7 @@ function Icon({ name, size = 20 }: { name: string; size?: number }) {
     arrow: <path d="m9 18 6-6-6-6"/>,
     collapse: <><path d="m15 18-6-6 6-6"/><path d="M20 5v14"/></>,
     expand: <><path d="m9 18 6-6-6-6"/><path d="M4 5v14"/></>,
+    logout: <><path d="M10 5V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5v-2"/><path d="m15 8 4 4-4 4M19 12H9"/></>,
     spark: <><path d="m12 3 1.2 3.8L17 8l-3.8 1.2L12 13l-1.2-3.8L7 8l3.8-1.2L12 3Z"/><path d="m19 14 .7 2.3L22 17l-2.3.7L19 20l-.7-2.3L16 17l2.3-.7L19 14Z"/></>,
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{paths[name]}</svg>;
@@ -393,6 +394,7 @@ export function HomeClient({
           <a className="nav-item active" href="#" title={isSidebarCollapsed ? "Главная" : undefined}><Icon name="home" /><span>Главная</span></a>
           <a className="nav-item" href="#sets" title={isSidebarCollapsed ? "Мои наборы" : undefined}><Icon name="cards" /><span>Мои наборы</span></a>
           <span className="nav-item nav-item-disabled" aria-disabled="true" title="Пока недоступно"><Icon name="chart" /><span>Прогресс</span></span>
+          <button className="nav-item mobile-logout-button" type="button" onClick={() => setIsLogoutOpen(true)}><Icon name="logout" /><span>Выйти</span></button>
         </nav>
         <div className="sidebar-spacer" />
         <div className="streak-card">
