@@ -18,7 +18,7 @@ class LinaTelegramBotTest(unittest.TestCase):
         payload = BOT.start_payload(42)
         button = payload["reply_markup"]["inline_keyboard"][0][0]
         self.assertEqual(payload["text"], BOT.START_MESSAGE)
-        self.assertEqual(button, {"text": "Спасти список →", "web_app": {"url": BOT.MINI_APP_URL}})
+        self.assertEqual(button, {"text": "Ладно, давайте учить →", "web_app": {"url": BOT.MINI_APP_URL}})
 
 
 if __name__ == "__main__":

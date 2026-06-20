@@ -1,9 +1,10 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 
 export const TELEGRAM_START_MESSAGE = `Привет! Я Lina ✨
-Превращаю списки слов в карточки быстрее, чем вы успеете отложить их до понедельника.
-Просто вставьте слова и переводы — я всё разберу и подготовлю к практике.
-Учить всё ещё придётся вам. Но сначала давайте спасём первый список 👇`;
+
+Превращаю списки слов в карточки быстрее, чем вы успеете отложить их до понедельника. Просто вставьте слова и переводы — я всё разберу и подготовлю к практике.
+
+Учить всё ещё придётся вам. Мы проверяли...`;
 
 export const TELEGRAM_MINI_APP_URL = "https://lina-lern.ru";
 
@@ -50,7 +51,7 @@ export async function sendTelegramStartMessage(botToken: string, chatId: number)
       text: TELEGRAM_START_MESSAGE,
       reply_markup: {
         inline_keyboard: [[{
-          text: "Спасти список →",
+          text: "Ладно, давайте учить →",
           web_app: { url: TELEGRAM_MINI_APP_URL },
         }]],
       },

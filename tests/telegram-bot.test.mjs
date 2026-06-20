@@ -12,9 +12,10 @@ import {
 
 test("uses the requested /start greeting", () => {
   assert.equal(TELEGRAM_START_MESSAGE, `Привет! Я Lina ✨
-Превращаю списки слов в карточки быстрее, чем вы успеете отложить их до понедельника.
-Просто вставьте слова и переводы — я всё разберу и подготовлю к практике.
-Учить всё ещё придётся вам. Но сначала давайте спасём первый список 👇`);
+
+Превращаю списки слов в карточки быстрее, чем вы успеете отложить их до понедельника. Просто вставьте слова и переводы — я всё разберу и подготовлю к практике.
+
+Учить всё ещё придётся вам. Мы проверяли...`);
   assert.equal(TELEGRAM_MINI_APP_URL, "https://lina-lern.ru");
 });
 
@@ -38,7 +39,7 @@ test("sends an inline button that opens the Mini App", async () => {
     text: TELEGRAM_START_MESSAGE,
     reply_markup: {
       inline_keyboard: [[{
-        text: "Спасти список →",
+        text: "Ладно, давайте учить →",
         web_app: { url: TELEGRAM_MINI_APP_URL },
       }]],
     },
