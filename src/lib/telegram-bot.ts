@@ -1,9 +1,11 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 
 export const TELEGRAM_START_MESSAGE = `Привет! Я Lina ✨
-Превращаю списки слов в карточки быстрее, чем вы успеете решить, что начнёте учить их с понедельника.
-Вставляйте слова и переводы — я всё разберу и подготовлю к практике.
-Ну что, спасаем первый список?`;
+Превращаю списки слов в карточки быстрее, чем вы успеете отложить их до понедельника.
+Просто вставьте слова и переводы — я всё разберу и подготовлю к практике.
+Учить всё ещё придётся вам. Но сначала давайте спасём первый список 👇`;
+
+export const TELEGRAM_MINI_APP_URL = "https://lina-lern.ru";
 
 type TelegramUpdate = {
   message?: {
@@ -43,7 +45,16 @@ export async function sendTelegramStartMessage(botToken: string, chatId: number)
   const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text: TELEGRAM_START_MESSAGE }),
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: TELEGRAM_START_MESSAGE,
+      reply_markup: {
+        inline_keyboard: [[{
+          text: "Спасти список →",
+          web_app: { url: TELEGRAM_MINI_APP_URL },
+        }]],
+      },
+    }),
     signal: AbortSignal.timeout(8_000),
   });
 
