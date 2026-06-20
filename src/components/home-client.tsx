@@ -426,7 +426,7 @@ export function HomeClient({
               <div className="mobile-resume-heading"><h2>{latestSet.title}</h2><button type="button" aria-label="Меню набора">•••</button></div>
               <div className="mobile-resume-progress"><span style={{ width: `${latestSet.progress}%` }} /></div>
               <p>{Math.round(latestSet.count * latestSet.progress / 100)}/{latestSet.count} карточек изучено</p>
-              <Link href={`/study/${latestSet.id}`}>Продолжить</Link>
+              <Link href={`/study/${latestSet.id}`} transitionTypes={["nav-forward"]}>Продолжить</Link>
             </article>
           ) : (
             <div className="sets-empty mobile-sets-empty"><span>Пока здесь тихо</span><h3>Создайте свой первый набор</h3><p>Lina соберёт карточки и сохранит их в вашем аккаунте.</p><button type="button" onClick={() => setMobileTab("create")}>Добавить слова →</button></div>
@@ -437,7 +437,7 @@ export function HomeClient({
               <h2>Недавние</h2>
               <div className="mobile-recents-list">
                 {recentSets.map((set) => (
-                  <Link href={`/study/${set.id}`} className="mobile-recent-set" key={set.id}>
+                  <Link href={`/study/${set.id}`} transitionTypes={["nav-forward"]} className="mobile-recent-set" key={set.id}>
                     <span className={`mobile-set-icon ${set.color}`}><Icon name="cards" size={25}/></span>
                     <span><strong>{set.title}</strong><small>{set.count} карточек · {set.progress}% изучено</small></span>
                     <Icon name="arrow" size={18}/>
@@ -461,7 +461,7 @@ export function HomeClient({
             {recentSets.length ? (
               <div className="mobile-recents-list">
                 {recentSets.map((set) => (
-                  <Link href={`/study/${set.id}`} className="mobile-recent-set" key={set.id}>
+                  <Link href={`/study/${set.id}`} transitionTypes={["nav-forward"]} className="mobile-recent-set" key={set.id}>
                     <span className={`mobile-set-icon ${set.color}`}><Icon name="cards" size={25}/></span>
                     <span><strong>{set.title}</strong><small>{set.count} карточек · {set.progress}% изучено</small></span>
                     <Icon name="arrow" size={18}/>

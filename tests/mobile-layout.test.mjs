@@ -26,7 +26,7 @@ test("renders the authenticated mobile dashboard and floating navigation", async
   assert.match(home, />Недавние</);
   assert.match(home, /className="mobile-bottom-nav"/);
   assert.match(home, /latestSet\.count \* latestSet\.progress/);
-  assert.match(home, /href=\{`\/study\/\$\{set\.id\}`\} className="mobile-recent-set"/);
+  assert.match(home, /href=\{`\/study\/\$\{set\.id\}`\} transitionTypes=\{\["nav-forward"\]\} className="mobile-recent-set"/);
   assert.match(home, /mobileTab === "create"/);
   assert.match(home, /mobileTab === "library"/);
   assert.match(home, /setMobileTab\("home"\)/);
@@ -48,10 +48,11 @@ test("keeps card practice fixed and swipe-only", () => {
 test("keeps mobile study controls clear of Telegram chrome and the card", () => {
   assert.match(css, /\.telegram-mini-app \.study-header \{ height:calc\(106px \+ var\(--tg-content-safe-area-inset-top,0px\)\); padding-top:calc\(28px \+ var\(--tg-content-safe-area-inset-top,0px\)\); \}/);
   assert.match(css, /\.telegram-mini-app \.study-stage \{ height:calc\(100dvh - 110px - var\(--tg-content-safe-area-inset-top,0px\)\);/);
-  assert.match(css, /\.study-counters \{ top:14px; \}/);
-  assert.match(css, /\.study-counter\.learning \{ left:-24px; \}\.study-counter\.known \{ right:-24px; \}/);
+  assert.match(css, /\.study-counters \{ top:16px; \}/);
+  assert.match(css, /\.study-counter \{ width:62px; height:42px; \}/);
+  assert.match(css, /\.study-counter\.learning \{ left:-8px; \}\.study-counter\.known \{ right:-8px; \}/);
 });
 
 test("gives interactive controls a pressed state", () => {
-  assert.match(css, /button:active:not\(:disabled\),a:active \{ filter:brightness\(\.86\); \}/);
+  assert.match(css, /button:active:not\(:disabled\),a:active \{ filter:brightness\(\.94\); transform:scale\(\.975\); \}/);
 });

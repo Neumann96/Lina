@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
+import { ViewTransition } from "react";
 import { TelegramMiniApp } from "@/components/telegram-mini-app";
 import "./globals.css";
 
@@ -20,7 +21,15 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ru">
-      <body>{children}</body>
+      <body>
+        <ViewTransition
+          default="app-route"
+          enter={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "app-route" }}
+          exit={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "app-route" }}
+        >
+          {children}
+        </ViewTransition>
+      </body>
       <Script src="https://telegram.org/js/telegram-web-app.js?61" strategy="beforeInteractive" />
       <TelegramMiniApp />
     </html>

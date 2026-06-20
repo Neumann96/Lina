@@ -67,7 +67,7 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
       setFavorite(false);
       setDragX(0);
       setExitDirection(0);
-    }, 210);
+    }, 320);
   }
 
   function onPointerDown(event: PointerEvent<HTMLButtonElement>) {
@@ -104,7 +104,7 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
   return (
     <main className="study-page">
       <header className="study-header">
-        <Link className="study-round-button" href="/" aria-label="Закрыть режим обучения"><StudyIcon name="close" size={27}/></Link>
+        <Link className="study-round-button" href="/" transitionTypes={["nav-back"]} aria-label="Закрыть режим обучения"><StudyIcon name="close" size={27}/></Link>
         <div className="study-heading"><strong>{studySet.title}</strong><span>{Math.min(reviewed + 1, studySet.cards.length)} / {studySet.cards.length}</span></div>
         <button className="study-round-button" type="button" aria-label="Настройки"><StudyIcon name="settings" size={26}/></button>
       </header>
@@ -120,7 +120,7 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
           <div className="study-complete">
             <span>✨</span><h1>Готово!</h1><p>Вы повторили весь набор.</p>
             <div><b>{learning}<small>ещё учу</small></b><b>{known}<small>знаю</small></b></div>
-            <Link href="/">Вернуться на главную</Link>
+            <Link href="/" transitionTypes={["nav-back"]}>Вернуться на главную</Link>
           </div>
         ) : (
           <div className="study-card-wrap">
