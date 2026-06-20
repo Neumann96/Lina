@@ -21,9 +21,11 @@ test("renders the authenticated mobile dashboard and floating navigation", async
   const home = await readFile(new URL("../src/components/home-client.tsx", import.meta.url), "utf8");
 
   assert.match(home, /className="mobile-dashboard"/);
-  assert.match(home, />Jump back in</);
+  assert.match(home, />Вернуться к учёбе</);
+  assert.match(home, />Недавние</);
   assert.match(home, /className="mobile-bottom-nav"/);
   assert.match(home, /latestSet\.count \* latestSet\.progress/);
   assert.match(css, /\.mobile-bottom-nav \{ position:fixed;/);
   assert.match(css, /border-radius:28px/);
+  assert.match(css, /\.mobile-dashboard \{ min-height:0; \}/);
 });

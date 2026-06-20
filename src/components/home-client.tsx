@@ -417,13 +417,13 @@ export function HomeClient({
         </header>
 
         <section className="mobile-dashboard" aria-label="Продолжить обучение">
-          <h1>Jump back in</h1>
+          <h1>Вернуться к учёбе</h1>
           {latestSet ? (
             <article className="mobile-resume-card">
               <div className="mobile-resume-heading"><h2>{latestSet.title}</h2><button type="button" aria-label="Меню набора">•••</button></div>
               <div className="mobile-resume-progress"><span style={{ width: `${latestSet.progress}%` }} /></div>
-              <p>{Math.round(latestSet.count * latestSet.progress / 100)}/{latestSet.count} cards sorted</p>
-              <a href="#sets">Continue</a>
+              <p>{Math.round(latestSet.count * latestSet.progress / 100)}/{latestSet.count} карточек изучено</p>
+              <a href="#sets">Продолжить</a>
             </article>
           ) : (
             <div className="sets-empty mobile-sets-empty"><span>Пока здесь тихо</span><h3>Создайте свой первый набор</h3><p>Вставьте список ниже — Lina соберёт карточки и сохранит их в вашем аккаунте.</p><a href="#new-set">Добавить слова →</a></div>
@@ -431,7 +431,7 @@ export function HomeClient({
 
           {recentSets.length > 0 && (
             <div className="mobile-recents" id="mobile-recents">
-              <h2>Recents</h2>
+              <h2>Недавние</h2>
               <div className="mobile-recents-list">
                 {recentSets.map((set) => (
                   <a href="#sets" className="mobile-recent-set" key={set.id}>
@@ -476,10 +476,10 @@ export function HomeClient({
         </section>
       </main>
       <nav className="mobile-bottom-nav" aria-label="Мобильная навигация">
-        <a className="mobile-nav-item active" href="#"><Icon name="home" size={24}/><span>Home</span></a>
-        <a className="mobile-nav-item" href="#new-set"><Icon name="plus" size={25}/><span>Create</span></a>
-        <a className="mobile-nav-item" href={recentSets.length ? "#mobile-recents" : "#new-set"}><Icon name="cards" size={24}/><span>Library</span></a>
-        <span className="mobile-nav-item mobile-nav-disabled" aria-disabled="true"><Icon name="spark" size={24}/><span>Free trial</span></span>
+        <a className="mobile-nav-item active" href="#"><Icon name="home" size={24}/><span>Главная</span></a>
+        <a className="mobile-nav-item" href="#new-set"><Icon name="plus" size={25}/><span>Создать</span></a>
+        <a className="mobile-nav-item" href={recentSets.length ? "#mobile-recents" : "#new-set"}><Icon name="cards" size={24}/><span>Библиотека</span></a>
+        <span className="mobile-nav-item mobile-nav-disabled" aria-disabled="true"><Icon name="spark" size={24}/><span>Пробный</span></span>
       </nav>
       {isLogoutOpen && <LogoutModal onClose={() => setIsLogoutOpen(false)} onConfirm={logout} />}
     </div>
