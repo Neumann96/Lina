@@ -40,3 +40,10 @@ test("keeps card practice fixed and swipe-only", () => {
   assert.match(studySession, /dragX > 8 \? " visible"/);
   assert.match(studySession, /key=\{card\.id\}/);
 });
+
+test("keeps mobile study controls clear of Telegram chrome and the card", () => {
+  assert.match(css, /\.telegram-mini-app \.study-header \{ height:calc\(96px \+ var\(--tg-content-safe-area-inset-top,0px\)\); padding-top:calc\(18px \+ var\(--tg-content-safe-area-inset-top,0px\)\); \}/);
+  assert.match(css, /\.telegram-mini-app \.study-stage \{ height:calc\(100dvh - 100px - var\(--tg-content-safe-area-inset-top,0px\)\);/);
+  assert.match(css, /\.study-counters \{ top:14px; \}/);
+  assert.match(css, /\.study-counter\.learning \{ left:-32px; \}\.study-counter\.known \{ right:-32px; \}/);
+});

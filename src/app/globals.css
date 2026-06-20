@@ -142,10 +142,10 @@ html:not(.telegram-mini-app) .telegram-mini-app-login { display:none; }
 .study-complete a { display:inline-grid; height:48px; padding:0 24px; place-items:center; border-radius:999px; color:#fff; background:var(--study-coral); text-decoration:none; font-weight:750; }
 
 @media (max-width:700px) {
-  .study-header { height:78px; grid-template-columns:46px minmax(0,1fr) 46px; gap:10px; padding:0 18px; }.telegram-mini-app .study-header { height:calc(78px + var(--tg-content-safe-area-inset-top,0px)); padding-top:var(--tg-content-safe-area-inset-top,0px); }
+  .study-header { height:78px; grid-template-columns:46px minmax(0,1fr) 46px; gap:10px; padding:0 18px; }.telegram-mini-app .study-header { height:calc(96px + var(--tg-content-safe-area-inset-top,0px)); padding-top:calc(18px + var(--tg-content-safe-area-inset-top,0px)); }
   .study-round-button { width:44px; height:44px; }.study-heading strong { display:none; }.study-heading span { font-size:21px; }.study-progress { height:4px; }
-  .study-stage { height:calc(100dvh - 82px); padding:18px; }.telegram-mini-app .study-stage { height:calc(100dvh - 82px - var(--tg-content-safe-area-inset-top,0px)); padding-bottom:calc(18px + var(--tg-content-safe-area-inset-bottom,0px)); }
-  .study-counters { top:22px; }.study-counter { width:82px; height:57px; }.study-counter.learning { left:-18px; }.study-counter.known { right:-18px; }.study-counter strong { font-size:27px; }
+  .study-stage { height:calc(100dvh - 82px); padding:18px; }.telegram-mini-app .study-stage { height:calc(100dvh - 100px - var(--tg-content-safe-area-inset-top,0px)); padding-bottom:calc(18px + var(--tg-content-safe-area-inset-bottom,0px)); }
+  .study-counters { top:14px; }.study-counter { width:82px; height:57px; }.study-counter.learning { left:-32px; }.study-counter.known { right:-32px; }.study-counter strong { font-size:27px; }
   .study-card-wrap { width:100%; height:min(66dvh,610px); min-height:360px; margin:18px 0; }.study-card { border-radius:28px; }.study-card-face { padding-inline:34px; }.study-card-face strong { font-size:clamp(31px,10vw,43px); }.study-card-face.back strong { font-size:clamp(25px,8vw,35px); }
   .study-complete { padding:45px 22px; }
 }
