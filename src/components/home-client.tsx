@@ -287,6 +287,7 @@ export function HomeClient({
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(initialSidebarCollapsed);
   const [telegramReturnError, setTelegramReturnError] = useState("");
+  const [miniAppAuthPending, setMiniAppAuthPending] = useState(false);
 
   useEffect(() => {
     const callbackStatus = new URLSearchParams(window.location.search).get("telegramAuth");
@@ -312,6 +313,44 @@ export function HomeClient({
     window.location.replace(callbackUrl);
   }, []);
 
+  useEffect(() => {
+    const webApp = window.Telegram?.WebApp;
+    if (initialUser || !webApp?.initData) return;
+
+    let cancelled = false;
+    let authenticating = false;
+    const authenticateMiniApp = async () => {
+      if (cancelled || authenticating || !webApp.initData) return;
+      authenticating = true;
+      setMiniAppAuthPending(true);
+      try {
+        const response = await fetch("/api/auth/telegram/mini-app", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ initData: webApp.initData }),
+        });
+        const result = await response.json() as { user?: AuthUser; error?: string };
+        if (!response.ok || !result.user) {
+          setTelegramReturnError(result.error ?? "Не удалось войти через Telegram");
+          return;
+        }
+        window.location.reload();
+      } catch {
+        setTelegramReturnError("Не удалось связаться с сервером. Попробуйте ещё раз");
+      } finally {
+        authenticating = false;
+        if (!cancelled) setMiniAppAuthPending(false);
+      }
+    };
+
+    webApp.onEvent("activated", authenticateMiniApp);
+    void authenticateMiniApp();
+    return () => {
+      cancelled = true;
+      webApp.offEvent("activated", authenticateMiniApp);
+    };
+  }, [initialUser]);
+
   function toggleSidebar() {
     const collapsed = !isSidebarCollapsed;
     setIsSidebarCollapsed(collapsed);
@@ -327,6 +366,9 @@ export function HomeClient({
   }
 
   if (!user || !initialDashboard) {
+    if (miniAppAuthPending) {
+      return <div className="telegram-mini-app-auth" role="status">Входим через Telegram…</div>;
+    }
     return <GuestLanding telegramError={telegramReturnError} />;
   }
 

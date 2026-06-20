@@ -3,6 +3,7 @@ import { createHash, createHmac } from "node:crypto";
 import test from "node:test";
 import { parseTelegramBotToken, verifyTelegramAuthSignature } from "../src/lib/telegram-auth-signature.ts";
 import { parseTelegramAuthResult } from "../src/lib/telegram-auth-result.ts";
+import { verifyTelegramMiniAppSignature } from "../src/lib/telegram-mini-app-signature.ts";
 
 const token = "123456789:test_token-for-signature";
 
@@ -68,4 +69,39 @@ test("parses the auth result returned by Telegram after a mobile redirect", () =
   assert.deepEqual(parseTelegramAuthResult(`#section&tgAuthResult=${encoded}`), payload);
   assert.equal(parseTelegramAuthResult("#tgAuthResult=broken"), null);
   assert.equal(parseTelegramAuthResult("#section"), null);
+});
+
+function signedMiniAppData(overrides = {}) {
+  const params = new URLSearchParams({
+    auth_date: "1800000000",
+    query_id: "AAHdF6IQAAAAAN0XohDhrOrc",
+    user: JSON.stringify({ id: 987654321, first_name: "Лина", username: "lina_user" }),
+    ...overrides,
+  });
+  const dataCheckString = [...params.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, value]) => `${key}=${value}`)
+    .join("\n");
+  const secret = createHmac("sha256", "WebAppData").update(token).digest();
+  params.set("hash", createHmac("sha256", secret).update(dataCheckString).digest("hex"));
+  return params.toString();
+}
+
+test("accepts fresh Telegram Mini App initData", () => {
+  assert.deepEqual(verifyTelegramMiniAppSignature(signedMiniAppData(), token, 1_800_000_020), {
+    telegramId: "987654321",
+    name: "Лина",
+  });
+});
+
+test("rejects tampered and expired Telegram Mini App initData", () => {
+  const signed = signedMiniAppData();
+  assert.throws(
+    () => verifyTelegramMiniAppSignature(signed.replace("lina_user", "attacker"), token, 1_800_000_020),
+    /signature/,
+  );
+  assert.throws(
+    () => verifyTelegramMiniAppSignature(signed, token, 1_800_000_901),
+    /Expired/,
+  );
 });

@@ -70,6 +70,7 @@ button { cursor:pointer; }
 .telegram-login-widget { position:relative; min-height:46px; display:grid; place-items:center; overflow:hidden; border-radius:11px; background:#2aabee; color:#fff; box-shadow:0 8px 20px #2aabee35; font-size:12px; font-weight:750; }
 .telegram-login-widget iframe { position:absolute; inset:3px 0; width:238px; height:40px; margin:auto; }
 .telegram-return-error { position:fixed; right:20px; bottom:20px; z-index:35; max-width:min(390px,calc(100vw - 40px)); padding:13px 16px; border:1px solid #f2c9c1; border-radius:12px; background:#fff0ed; color:#a63c2d; box-shadow:0 12px 35px #3f21172b; font-size:12px; }
+.telegram-mini-app-auth { min-height:100dvh; display:grid; place-items:center; padding:24px; background:var(--canvas); color:var(--muted); font-size:14px; }
 .auth-switch { display:flex; justify-content:center; align-items:center; gap:5px; margin-top:22px; color:#96908a; font-size:11px; }.auth-switch button { padding:0; border:0; background:none; color:var(--accent-dark); font-size:inherit; font-weight:750; }
 .logout-modal { width:min(430px,100%); }
 .logout-modal>p { margin-bottom:24px; }

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { parseTelegramBotToken, verifyTelegramAuthSignature } from "@/lib/telegram-auth-signature";
+import { verifyTelegramMiniAppSignature } from "@/lib/telegram-mini-app-signature";
 
 function telegramBotToken() {
   return parseTelegramBotToken(process.env.TELEGRAM_BOT_TOKEN?.trim() ?? "");
@@ -20,4 +21,8 @@ export function getTelegramBotId() {
 
 export function verifyTelegramAuthPayload(payload: Record<string, unknown>) {
   return verifyTelegramAuthSignature(payload, telegramBotToken().token);
+}
+
+export function verifyTelegramMiniAppData(initData: string) {
+  return verifyTelegramMiniAppSignature(initData, telegramBotToken().token);
 }
