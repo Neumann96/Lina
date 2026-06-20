@@ -23,6 +23,18 @@ export type DashboardData = {
   recentSets: RecentSet[];
 };
 
+export type StudyCard = {
+  id: string;
+  term: string;
+  definition: string;
+};
+
+export type StudySet = {
+  id: string;
+  title: string;
+  cards: StudyCard[];
+};
+
 export async function getDashboardData(userId: string): Promise<DashboardData> {
   const [countsResult, daysResult, setsResult] = await Promise.all([
     query<{ setCount: string; cardCount: string; reviewCount: string; correctCount: string }>(
@@ -120,4 +132,36 @@ export async function createStudySet(userId: string, title: string, cards: Array
   );
 
   return setId;
+}
+
+export async function getStudySet(userId: string, setId: string): Promise<StudySet | null> {
+  const result = await query<{ setId: string; title: string; cardId: string | null; term: string | null; definition: string | null }>(
+    `SELECT s.id AS "setId", s.title, c.id AS "cardId", c.term, c.definition
+     FROM study_sets s
+     LEFT JOIN cards c ON c.set_id = s.id
+     WHERE s.id = $1 AND s.user_id = $2
+     ORDER BY c.position`,
+    [setId, userId],
+  );
+
+  if (!result.rows.length) return null;
+  return {
+    id: result.rows[0].setId,
+    title: result.rows[0].title,
+    cards: result.rows.flatMap((row) => row.cardId && row.term && row.definition
+      ? [{ id: row.cardId, term: row.term, definition: row.definition }]
+      : []),
+  };
+}
+
+export async function recordCardReview(userId: string, cardId: string, isCorrect: boolean) {
+  const result = await query(
+    `INSERT INTO card_reviews (user_id, card_id, is_correct)
+     SELECT $1, c.id, $3
+     FROM cards c
+     JOIN study_sets s ON s.id = c.set_id
+     WHERE c.id = $2 AND s.user_id = $1`,
+    [userId, cardId, isCorrect],
+  );
+  return (result.rowCount ?? 0) > 0;
 }

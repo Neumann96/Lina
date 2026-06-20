@@ -423,7 +423,7 @@ export function HomeClient({
               <div className="mobile-resume-heading"><h2>{latestSet.title}</h2><button type="button" aria-label="Меню набора">•••</button></div>
               <div className="mobile-resume-progress"><span style={{ width: `${latestSet.progress}%` }} /></div>
               <p>{Math.round(latestSet.count * latestSet.progress / 100)}/{latestSet.count} карточек изучено</p>
-              <a href="#sets">Продолжить</a>
+              <a href={`/study/${latestSet.id}`}>Продолжить</a>
             </article>
           ) : (
             <div className="sets-empty mobile-sets-empty"><span>Пока здесь тихо</span><h3>Создайте свой первый набор</h3><p>Вставьте список ниже — Lina соберёт карточки и сохранит их в вашем аккаунте.</p><a href="#new-set">Добавить слова →</a></div>
