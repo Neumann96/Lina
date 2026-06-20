@@ -1,20 +1,22 @@
 import { authenticateTelegramUser, setSession } from "@/lib/auth";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { getClientAddress, rateLimitResponse, validateAuthRequest } from "@/lib/request-security";
-import { getTelegramBotId, verifyTelegramAuthPayload } from "@/lib/telegram-auth";
+import { getTelegramBotId, getTelegramBotUsername, verifyTelegramAuthPayload } from "@/lib/telegram-auth";
 
 export async function GET(request: Request) {
   const securityError = validateAuthRequest(request);
   if (securityError) return securityError;
 
   let botId: string;
+  let botUsername: string;
   try {
     botId = getTelegramBotId();
+    botUsername = await getTelegramBotUsername();
   } catch {
     return Response.json({ error: "Вход через Telegram пока не настроен" }, { status: 503 });
   }
 
-  return Response.json({ botId }, { headers: { "Cache-Control": "no-store" } });
+  return Response.json({ botId, botUsername }, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST(request: Request) {

@@ -36,6 +36,18 @@ test("accepts a fresh Telegram payload with a valid signature", () => {
   });
 });
 
+test("accepts Telegram callback query values serialized as strings", () => {
+  const signed = signedPayload();
+  assert.deepEqual(verifyTelegramAuthSignature({
+    ...signed,
+    id: String(signed.id),
+    auth_date: String(signed.auth_date),
+  }, token, 1_800_000_020), {
+    telegramId: "987654321",
+    name: "Лина",
+  });
+});
+
 test("rejects tampered and expired Telegram payloads", () => {
   const signed = signedPayload();
   assert.throws(

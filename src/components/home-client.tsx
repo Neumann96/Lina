@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { BulkCardEditor } from "@/components/bulk-card-editor";
 import type { AuthUser } from "@/lib/auth";
 import type { DashboardData } from "@/lib/learning";
-import { parseTelegramAuthResult, type TelegramAuthResult } from "@/lib/telegram-auth-result";
+import { parseTelegramAuthResult } from "@/lib/telegram-auth-result";
 
 function Icon({ name, size = 20 }: { name: string; size?: number }) {
   const paths: Record<string, React.ReactNode> = {
@@ -24,25 +24,57 @@ function Icon({ name, size = 20 }: { name: string; size?: number }) {
 
 type AuthMode = "register" | "login";
 
-function telegramLoginApi() {
-  return (window as typeof window & {
-    Telegram?: {
-      Login?: {
-        auth: (
-          options: { bot_id: number; lang?: string },
-          callback: (result: TelegramAuthResult | false) => void,
-        ) => void;
-      };
-    };
-  }).Telegram?.Login;
-}
-
 type AuthModalProps = {
   mode: AuthMode;
   onClose: () => void;
   onModeChange: (mode: AuthMode) => void;
   onSuccess: (user: AuthUser) => void;
 };
+
+function TelegramLoginWidget({ onError }: { onError: (message: string) => void }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const container = containerRef.current;
+
+    void (async () => {
+      try {
+        const response = await fetch("/api/auth/telegram", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const setup = await response.json() as { botUsername?: string; error?: string };
+        if (!response.ok || !setup.botUsername) {
+          throw new Error(setup.error ?? "Вход через Telegram пока недоступен");
+        }
+        if (!container || controller.signal.aborted) return;
+
+        const script = document.createElement("script");
+        script.src = "https://telegram.org/js/telegram-widget.js?23";
+        script.async = true;
+        script.setAttribute("data-telegram-login", setup.botUsername);
+        script.setAttribute("data-size", "large");
+        script.setAttribute("data-radius", "11");
+        script.setAttribute("data-userpic", "false");
+        script.setAttribute("data-lang", "ru");
+        script.setAttribute("data-auth-url", `${window.location.origin}/api/auth/telegram/callback`);
+        script.onerror = () => onError("Не удалось загрузить Telegram. Обновите страницу и попробуйте ещё раз");
+        container.replaceChildren(script);
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        onError(error instanceof Error ? error.message : "Вход через Telegram пока недоступен");
+      }
+    })();
+
+    return () => {
+      controller.abort();
+      container?.replaceChildren();
+    };
+  }, [onError]);
+
+  return <div ref={containerRef} className="telegram-login-widget"><span>Загружаем Telegram…</span></div>;
+}
 
 function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
   const [error, setError] = useState("");
@@ -99,65 +131,6 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
     }
   }
 
-  async function loginWithTelegram() {
-    setError("");
-    setErrorField("");
-    setPending(true);
-    let popupOpened = false;
-
-    try {
-      const setupResponse = await fetch("/api/auth/telegram", { cache: "no-store" });
-      const setup = await setupResponse.json() as { botId?: string; error?: string };
-      if (!setupResponse.ok || !setup.botId) {
-        setError(setup.error ?? "Вход через Telegram пока недоступен");
-        return;
-      }
-
-      const telegramLogin = telegramLoginApi();
-      if (!telegramLogin) {
-        setError("Не удалось загрузить Telegram. Обновите страницу и попробуйте ещё раз");
-        return;
-      }
-
-      telegramLogin.auth(
-        { bot_id: Number(setup.botId), lang: "ru" },
-        (result) => {
-          if (!result) {
-            setPending(false);
-            return;
-          }
-          void authenticateWithTelegram(result);
-        },
-      );
-      popupOpened = true;
-    } catch {
-      setError("Не удалось связаться с сервером. Попробуйте ещё раз");
-    } finally {
-      if (!popupOpened) setPending(false);
-    }
-  }
-
-  async function authenticateWithTelegram(telegramUser: TelegramAuthResult) {
-    setError("");
-    try {
-      const response = await fetch("/api/auth/telegram", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ telegramUser }),
-      });
-      const authResult = await response.json() as { user?: AuthUser; error?: string };
-      if (!response.ok || !authResult.user) {
-        setError(authResult.error ?? "Не удалось войти через Telegram");
-        return;
-      }
-      onSuccess(authResult.user);
-    } catch {
-      setError("Не удалось связаться с сервером. Попробуйте ещё раз");
-    } finally {
-      setPending(false);
-    }
-  }
-
   function switchMode(nextMode: AuthMode) {
     setError("");
     setErrorField("");
@@ -191,10 +164,7 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
           <button className="auth-submit" type="submit" disabled={pending}>{pending ? "Подождите…" : isRegister ? "Зарегистрироваться" : "Войти"}</button>
         </form>
         <div className="auth-divider"><span>или</span></div>
-        <button className="telegram-login" type="button" onClick={loginWithTelegram} disabled={pending}>
-          <svg viewBox="0 0 24 24" aria-hidden><path d="M21.6 3.2 18.5 20c-.2 1.2-.9 1.5-1.9.9l-4.7-3.5-2.3 2.2c-.2.3-.5.5-1 .5l.3-4.8 8.8-8c.4-.3-.1-.5-.6-.2L6.2 14 1.5 12.5c-1-.3-1-1 .2-1.5L20 3.9c.8-.3 1.6.2 1.6-.7Z"/></svg>
-          Войти через Telegram
-        </button>
+        <TelegramLoginWidget onError={setError} />
         <div className="auth-switch">
           {isRegister ? "Уже есть аккаунт?" : "Впервые в Lina?"}
           <button type="button" onClick={() => switchMode(isRegister ? "login" : "register")}>{isRegister ? "Войти" : "Зарегистрироваться"}</button>
@@ -316,37 +286,30 @@ export function HomeClient({
   const [user, setUser] = useState(initialUser);
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(initialSidebarCollapsed);
-  const [telegramReturnPending, setTelegramReturnPending] = useState(false);
   const [telegramReturnError, setTelegramReturnError] = useState("");
 
   useEffect(() => {
+    const callbackStatus = new URLSearchParams(window.location.search).get("telegramAuth");
+    if (callbackStatus) {
+      window.history.replaceState(null, "", window.location.pathname);
+      void Promise.resolve().then(() => {
+        setTelegramReturnError(callbackStatus === "limited"
+          ? "Слишком много попыток. Попробуйте позже"
+          : "Не удалось подтвердить вход через Telegram");
+      });
+    }
+
     const telegramUser = parseTelegramAuthResult(window.location.hash);
     if (!telegramUser) return;
 
-    // Telegram returns mobile authorization in the URL fragment. Remove the
-    // signed identity from browser history before exchanging it for a session.
-    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
-
-    void (async () => {
-      setTelegramReturnPending(true);
-      try {
-        const response = await fetch("/api/auth/telegram", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ telegramUser }),
-        });
-        const result = await response.json() as { user?: AuthUser; error?: string };
-        if (!response.ok || !result.user) {
-          setTelegramReturnError(result.error ?? "Не удалось войти через Telegram");
-          return;
-        }
-        window.location.replace("/");
-      } catch {
-        setTelegramReturnError("Не удалось связаться с сервером. Попробуйте ещё раз");
-      } finally {
-        setTelegramReturnPending(false);
-      }
-    })();
+    // A mobile Telegram client can finish in a different browser/WebView.
+    // Continue with a full navigation so session creation does not depend on
+    // the JavaScript context that originally opened Telegram.
+    const callbackUrl = new URL("/api/auth/telegram/callback", window.location.origin);
+    for (const [key, value] of Object.entries(telegramUser)) {
+      callbackUrl.searchParams.set(key, String(value));
+    }
+    window.location.replace(callbackUrl);
   }, []);
 
   function toggleSidebar() {
@@ -361,10 +324,6 @@ export function HomeClient({
       setUser(null);
       setIsLogoutOpen(false);
     }
-  }
-
-  if (telegramReturnPending) {
-    return <div className="telegram-return-status" role="status">Завершаем вход через Telegram…</div>;
   }
 
   if (!user || !initialDashboard) {
