@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { BulkCardEditor } from "@/components/bulk-card-editor";
 import type { AuthUser } from "@/lib/auth";
 import type { DashboardData } from "@/lib/learning";
+import { telegramAccountSwitchUrl } from "@/lib/telegram-login";
 
 function Icon({ name, size = 20 }: { name: string; size?: number }) {
   const paths: Record<string, React.ReactNode> = {
@@ -189,8 +190,9 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
     const screen = window.screen as Screen & { availLeft?: number; availTop?: number };
     const left = Math.max(0, (screen.width - width) / 2 + (screen.availLeft || 0));
     const top = Math.max(0, (screen.height - height) / 2 + (screen.availTop || 0));
+    const returnTo = `${window.location.origin}${window.location.pathname}`;
     const popup = window.open(
-      "https://oauth.telegram.org/logout",
+      telegramAccountSwitchUrl(botId, window.location.origin, returnTo),
       `telegram_oauth_bot${botId}`,
       `width=${width},height=${height},left=${left},top=${top},status=0,location=0,menubar=0,toolbar=0`,
     );
@@ -204,12 +206,10 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
     setSwitchingTelegramAccount(true);
     let finished = false;
     let closeCheck = 0;
-    let openLogin = 0;
 
     const cleanup = () => {
       window.removeEventListener("message", onTelegramMessage);
       window.clearInterval(closeCheck);
-      window.clearTimeout(openLogin);
     };
     const finish = (result?: TelegramLoginResult) => {
       if (finished) return;
@@ -238,13 +238,7 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
     closeCheck = window.setInterval(() => {
       if (popup.closed) finish();
     }, 200);
-    openLogin = window.setTimeout(() => {
-      if (popup.closed) return finish();
-      const returnTo = `${window.location.origin}${window.location.pathname}`;
-      popup.location.href = `https://oauth.telegram.org/auth?bot_id=${encodeURIComponent(botId)}`
-        + `&origin=${encodeURIComponent(window.location.origin)}&return_to=${encodeURIComponent(returnTo)}&lang=ru`;
-      popup.focus();
-    }, 1800);
+    popup.focus();
   }
 
   function switchMode(nextMode: AuthMode) {
