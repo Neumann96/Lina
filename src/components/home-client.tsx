@@ -4,7 +4,6 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { BulkCardEditor } from "@/components/bulk-card-editor";
 import type { AuthUser } from "@/lib/auth";
 import type { DashboardData } from "@/lib/learning";
-import { telegramAccountSwitchUrl } from "@/lib/telegram-login";
 
 function Icon({ name, size = 20 }: { name: string; size?: number }) {
   const paths: Record<string, React.ReactNode> = {
@@ -34,15 +33,6 @@ type TelegramLoginResult = {
   hash: string;
 };
 
-type TelegramCandidate = {
-  botId: string;
-  payload: TelegramLoginResult;
-};
-
-function telegramDisplayName(user: TelegramLoginResult) {
-  return [user.first_name, user.last_name].filter(Boolean).join(" ") || (user.username ? `@${user.username}` : "Пользователь Telegram");
-}
-
 function telegramLoginApi() {
   return (window as typeof window & {
     Telegram?: {
@@ -67,8 +57,6 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
   const [error, setError] = useState("");
   const [errorField, setErrorField] = useState("");
   const [pending, setPending] = useState(false);
-  const [switchingTelegramAccount, setSwitchingTelegramAccount] = useState(false);
-  const [telegramCandidate, setTelegramCandidate] = useState<TelegramCandidate | null>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const isRegister = mode === "register";
 
@@ -147,8 +135,7 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
             setPending(false);
             return;
           }
-          setTelegramCandidate({ botId: setup.botId!, payload: result });
-          setPending(false);
+          void authenticateWithTelegram(result);
         },
       );
       popupOpened = true;
@@ -159,15 +146,13 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
     }
   }
 
-  async function confirmTelegramLogin() {
-    if (!telegramCandidate) return;
+  async function authenticateWithTelegram(telegramUser: TelegramLoginResult) {
     setError("");
-    setPending(true);
     try {
       const response = await fetch("/api/auth/telegram", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ telegramUser: telegramCandidate.payload }),
+        body: JSON.stringify({ telegramUser }),
       });
       const authResult = await response.json() as { user?: AuthUser; error?: string };
       if (!response.ok || !authResult.user) {
@@ -182,65 +167,6 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
     }
   }
 
-  function switchTelegramAccount() {
-    if (!telegramCandidate) return;
-    const botId = telegramCandidate.botId;
-    const width = 550;
-    const height = 650;
-    const screen = window.screen as Screen & { availLeft?: number; availTop?: number };
-    const left = Math.max(0, (screen.width - width) / 2 + (screen.availLeft || 0));
-    const top = Math.max(0, (screen.height - height) / 2 + (screen.availTop || 0));
-    const returnTo = `${window.location.origin}${window.location.pathname}`;
-    const popup = window.open(
-      telegramAccountSwitchUrl(botId, window.location.origin, returnTo),
-      `telegram_oauth_bot${botId}`,
-      `width=${width},height=${height},left=${left},top=${top},status=0,location=0,menubar=0,toolbar=0`,
-    );
-    if (!popup) {
-      setError("Браузер заблокировал окно Telegram. Разрешите всплывающие окна и попробуйте ещё раз");
-      return;
-    }
-
-    setError("");
-    setPending(true);
-    setSwitchingTelegramAccount(true);
-    let finished = false;
-    let closeCheck = 0;
-
-    const cleanup = () => {
-      window.removeEventListener("message", onTelegramMessage);
-      window.clearInterval(closeCheck);
-    };
-    const finish = (result?: TelegramLoginResult) => {
-      if (finished) return;
-      finished = true;
-      cleanup();
-      setPending(false);
-      setSwitchingTelegramAccount(false);
-      if (result) {
-        setTelegramCandidate({ botId, payload: result });
-      } else {
-        setError("Выбор другого аккаунта отменён");
-      }
-    };
-    const onTelegramMessage = (event: MessageEvent) => {
-      if (event.origin !== "https://oauth.telegram.org" || event.source !== popup) return;
-      let data: { event?: string; result?: TelegramLoginResult | false } = {};
-      try {
-        data = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
-      } catch {
-        return;
-      }
-      if (data.event === "auth_result") finish(data.result || undefined);
-    };
-
-    window.addEventListener("message", onTelegramMessage);
-    closeCheck = window.setInterval(() => {
-      if (popup.closed) finish();
-    }, 200);
-    popup.focus();
-  }
-
   function switchMode(nextMode: AuthMode) {
     setError("");
     setErrorField("");
@@ -252,20 +178,6 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
       <section className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
         <button className="modal-close" type="button" onClick={onClose} aria-label="Закрыть">×</button>
         <div className="modal-brand"><span className="brand-mark">L</span><span>Lina</span></div>
-        {telegramCandidate ? <>
-          <h2 id="auth-title">Войти через Telegram?</h2>
-          <p>Проверьте аккаунт перед входом в Lina</p>
-          <div className="telegram-candidate">
-            <span className="telegram-candidate-avatar">{telegramDisplayName(telegramCandidate.payload).charAt(0).toUpperCase()}</span>
-            <span><strong>{telegramDisplayName(telegramCandidate.payload)}</strong>{telegramCandidate.payload.username && <small>@{telegramCandidate.payload.username}</small>}</span>
-          </div>
-          {error && <div className="form-error" role="alert">{error}</div>}
-          <div className="telegram-confirm-actions">
-            <button className="telegram-confirm" type="button" onClick={confirmTelegramLogin} disabled={pending}>{pending ? "Входим…" : "Продолжить"}</button>
-            <button className="telegram-switch-account" type="button" onClick={switchTelegramAccount} disabled={pending}>{switchingTelegramAccount ? "Открываем Telegram…" : "Войти с другого аккаунта"}</button>
-            <button className="telegram-cancel" type="button" onClick={() => { setTelegramCandidate(null); setError(""); }} disabled={pending}>Отмена</button>
-          </div>
-        </> : <>
         <h2 id="auth-title">{isRegister ? "Создайте аккаунт" : "С возвращением"}</h2>
         <p>{isRegister ? "Сохраняйте наборы и продолжайте с любого устройства" : "Войдите, чтобы продолжить обучение"}</p>
         <form className="auth-form" onSubmit={submit} noValidate>
@@ -296,7 +208,6 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
           {isRegister ? "Уже есть аккаунт?" : "Впервые в Lina?"}
           <button type="button" onClick={() => switchMode(isRegister ? "login" : "register")}>{isRegister ? "Войти" : "Зарегистрироваться"}</button>
         </div>
-        </>}
       </section>
     </div>
   );
