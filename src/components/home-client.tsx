@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { BulkCardEditor } from "@/components/bulk-card-editor";
 import type { AuthUser } from "@/lib/auth";
 import type { DashboardData } from "@/lib/learning";
@@ -24,6 +25,7 @@ function Icon({ name, size = 20 }: { name: string; size?: number }) {
 }
 
 type AuthMode = "register" | "login";
+type MobileTab = "home" | "create" | "library";
 
 type AuthModalProps = {
   mode: AuthMode;
@@ -331,6 +333,7 @@ export function HomeClient({
   const [user, setUser] = useState(initialUser);
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(initialSidebarCollapsed);
+  const [mobileTab, setMobileTab] = useState<MobileTab>("home");
   const [telegramReturnError, setTelegramReturnError] = useState("");
 
   useEffect(() => {
@@ -416,17 +419,17 @@ export function HomeClient({
           <a className="create-button" href="#new-set"><Icon name="plus" size={19}/>Создать набор</a>
         </header>
 
-        <section className="mobile-dashboard" aria-label="Продолжить обучение">
+        {mobileTab === "home" && <section className="mobile-dashboard" aria-label="Продолжить обучение">
           <h1>Вернуться к учёбе</h1>
           {latestSet ? (
             <article className="mobile-resume-card">
               <div className="mobile-resume-heading"><h2>{latestSet.title}</h2><button type="button" aria-label="Меню набора">•••</button></div>
               <div className="mobile-resume-progress"><span style={{ width: `${latestSet.progress}%` }} /></div>
               <p>{Math.round(latestSet.count * latestSet.progress / 100)}/{latestSet.count} карточек изучено</p>
-              <a href={`/study/${latestSet.id}`}>Продолжить</a>
+              <Link href={`/study/${latestSet.id}`}>Продолжить</Link>
             </article>
           ) : (
-            <div className="sets-empty mobile-sets-empty"><span>Пока здесь тихо</span><h3>Создайте свой первый набор</h3><p>Вставьте список ниже — Lina соберёт карточки и сохранит их в вашем аккаунте.</p><a href="#new-set">Добавить слова →</a></div>
+            <div className="sets-empty mobile-sets-empty"><span>Пока здесь тихо</span><h3>Создайте свой первый набор</h3><p>Lina соберёт карточки и сохранит их в вашем аккаунте.</p><button type="button" onClick={() => setMobileTab("create")}>Добавить слова →</button></div>
           )}
 
           {recentSets.length > 0 && (
@@ -434,16 +437,42 @@ export function HomeClient({
               <h2>Недавние</h2>
               <div className="mobile-recents-list">
                 {recentSets.map((set) => (
-                  <a href="#sets" className="mobile-recent-set" key={set.id}>
+                  <Link href={`/study/${set.id}`} className="mobile-recent-set" key={set.id}>
                     <span className={`mobile-set-icon ${set.color}`}><Icon name="cards" size={25}/></span>
                     <span><strong>{set.title}</strong><small>{set.count} карточек · {set.progress}% изучено</small></span>
                     <Icon name="arrow" size={18}/>
-                  </a>
+                  </Link>
                 ))}
               </div>
             </div>
           )}
-        </section>
+        </section>}
+
+        {mobileTab === "create" && (
+          <section className="mobile-tab-screen mobile-create-screen" aria-label="Создание набора">
+            <h1>Создать набор</h1>
+            <BulkCardEditor onCreated={() => window.location.reload()} />
+          </section>
+        )}
+
+        {mobileTab === "library" && (
+          <section className="mobile-tab-screen mobile-library-screen" aria-label="Библиотека наборов">
+            <h1>Библиотека</h1>
+            {recentSets.length ? (
+              <div className="mobile-recents-list">
+                {recentSets.map((set) => (
+                  <Link href={`/study/${set.id}`} className="mobile-recent-set" key={set.id}>
+                    <span className={`mobile-set-icon ${set.color}`}><Icon name="cards" size={25}/></span>
+                    <span><strong>{set.title}</strong><small>{set.count} карточек · {set.progress}% изучено</small></span>
+                    <Icon name="arrow" size={18}/>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="sets-empty mobile-sets-empty"><span>Пока здесь тихо</span><h3>Создайте свой первый набор</h3><button type="button" onClick={() => setMobileTab("create")}>Создать набор →</button></div>
+            )}
+          </section>
+        )}
 
         <section className="hero">
           <div className="eyebrow"><Icon name="spark" size={16}/> Учись быстрее, а не дольше</div>
@@ -470,15 +499,15 @@ export function HomeClient({
           </div>
         </section>
 
-        <section className="section editor-section" id="new-set">
+        <section className="section editor-section desktop-editor-section" id="new-set">
           <div className="section-heading"><div><span>Новый набор</span><h2>Добавь всё одним движением</h2></div></div>
           <BulkCardEditor onCreated={() => window.location.reload()} />
         </section>
       </main>
       <nav className="mobile-bottom-nav" aria-label="Мобильная навигация">
-        <a className="mobile-nav-item active" href="#"><Icon name="home" size={24}/><span>Главная</span></a>
-        <a className="mobile-nav-item" href="#new-set"><Icon name="plus" size={25}/><span>Создать</span></a>
-        <a className="mobile-nav-item" href={recentSets.length ? "#mobile-recents" : "#new-set"}><Icon name="cards" size={24}/><span>Библиотека</span></a>
+        <button className={`mobile-nav-item${mobileTab === "home" ? " active" : ""}`} type="button" onClick={() => setMobileTab("home")} aria-current={mobileTab === "home" ? "page" : undefined}><Icon name="home" size={24}/><span>Главная</span></button>
+        <button className={`mobile-nav-item${mobileTab === "create" ? " active" : ""}`} type="button" onClick={() => setMobileTab("create")} aria-current={mobileTab === "create" ? "page" : undefined}><Icon name="plus" size={25}/><span>Создать</span></button>
+        <button className={`mobile-nav-item${mobileTab === "library" ? " active" : ""}`} type="button" onClick={() => setMobileTab("library")} aria-current={mobileTab === "library" ? "page" : undefined}><Icon name="cards" size={24}/><span>Библиотека</span></button>
         <span className="mobile-nav-item mobile-nav-disabled" aria-disabled="true"><Icon name="spark" size={24}/><span>Пробный</span></span>
       </nav>
       {isLogoutOpen && <LogoutModal onClose={() => setIsLogoutOpen(false)} onConfirm={logout} />}

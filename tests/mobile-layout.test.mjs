@@ -26,6 +26,10 @@ test("renders the authenticated mobile dashboard and floating navigation", async
   assert.match(home, />Недавние</);
   assert.match(home, /className="mobile-bottom-nav"/);
   assert.match(home, /latestSet\.count \* latestSet\.progress/);
+  assert.match(home, /href=\{`\/study\/\$\{set\.id\}`\} className="mobile-recent-set"/);
+  assert.match(home, /mobileTab === "create"/);
+  assert.match(home, /mobileTab === "library"/);
+  assert.match(home, /setMobileTab\("home"\)/);
   assert.match(css, /\.mobile-bottom-nav \{ position:fixed;/);
   assert.match(css, /border-radius:28px/);
   assert.match(css, /\.mobile-dashboard \{ min-height:0; \}/);
@@ -42,8 +46,12 @@ test("keeps card practice fixed and swipe-only", () => {
 });
 
 test("keeps mobile study controls clear of Telegram chrome and the card", () => {
-  assert.match(css, /\.telegram-mini-app \.study-header \{ height:calc\(96px \+ var\(--tg-content-safe-area-inset-top,0px\)\); padding-top:calc\(18px \+ var\(--tg-content-safe-area-inset-top,0px\)\); \}/);
-  assert.match(css, /\.telegram-mini-app \.study-stage \{ height:calc\(100dvh - 100px - var\(--tg-content-safe-area-inset-top,0px\)\);/);
+  assert.match(css, /\.telegram-mini-app \.study-header \{ height:calc\(106px \+ var\(--tg-content-safe-area-inset-top,0px\)\); padding-top:calc\(28px \+ var\(--tg-content-safe-area-inset-top,0px\)\); \}/);
+  assert.match(css, /\.telegram-mini-app \.study-stage \{ height:calc\(100dvh - 110px - var\(--tg-content-safe-area-inset-top,0px\)\);/);
   assert.match(css, /\.study-counters \{ top:14px; \}/);
-  assert.match(css, /\.study-counter\.learning \{ left:-32px; \}\.study-counter\.known \{ right:-32px; \}/);
+  assert.match(css, /\.study-counter\.learning \{ left:-24px; \}\.study-counter\.known \{ right:-24px; \}/);
+});
+
+test("gives interactive controls a pressed state", () => {
+  assert.match(css, /button:active:not\(:disabled\),a:active \{ filter:brightness\(\.86\); \}/);
 });
