@@ -13,6 +13,8 @@ type TelegramWebApp = {
   initData?: string;
   ready: () => void;
   expand: () => void;
+  disableVerticalSwipes?: () => void;
+  enableVerticalSwipes?: () => void;
   requestFullscreen?: () => void;
   setHeaderColor?: (color: string) => void;
   setBackgroundColor?: (color: string) => void;
@@ -63,6 +65,9 @@ export function TelegramMiniApp() {
     webApp.expand();
 
     try {
+      // Keep downward page scrolling inside the app instead of letting
+      // Telegram interpret it as a request to collapse the Mini App.
+      webApp.disableVerticalSwipes?.();
       webApp.requestFullscreen?.();
     } catch {
       // Older Telegram clients still receive the expanded layout.
@@ -76,6 +81,7 @@ export function TelegramMiniApp() {
       webApp.offEvent("safeAreaChanged", updateInsets);
       webApp.offEvent("contentSafeAreaChanged", updateInsets);
       webApp.offEvent("viewportChanged", updateInsets);
+      webApp.enableVerticalSwipes?.();
       root.classList.remove("telegram-mini-app");
     };
   }, []);
