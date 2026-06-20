@@ -45,7 +45,9 @@ function writeInsets(prefix: string, insets?: EdgeInsets) {
 export function TelegramMiniApp() {
   useEffect(() => {
     const webApp = window.Telegram?.WebApp;
-    if (!webApp) return;
+    // The SDK is loaded on every page, including ordinary desktop browsers.
+    // Only signed initData proves that the page is running as a Mini App.
+    if (!webApp?.initData) return;
 
     const root = document.documentElement;
     const updateInsets = () => {
