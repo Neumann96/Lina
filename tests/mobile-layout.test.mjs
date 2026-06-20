@@ -6,14 +6,24 @@ const css = await readFile(new URL("../src/app/globals.css", import.meta.url), "
 const miniApp = await readFile(new URL("../src/components/telegram-mini-app.tsx", import.meta.url), "utf8");
 
 test("keeps the Mini App navigation at the bottom on mobile", () => {
-  const rules = [...css.matchAll(/\.telegram-mini-app \.sidebar,\.telegram-mini-app \.sidebar\.collapsed \{([^}]+)\}/g)];
-  const mobileRule = rules.at(-1)?.[1] ?? "";
+  const mobileRule = css.match(/\.telegram-mini-app \.mobile-bottom-nav \{([^}]+)\}/)?.[1] ?? "";
 
-  assert.match(mobileRule, /(?:^|;)\s*top:auto;/);
-  assert.match(mobileRule, /(?:^|;)\s*bottom:var\(--tg-content-safe-area-inset-bottom\);/);
+  assert.match(mobileRule, /bottom:calc\(14px \+ var\(--tg-content-safe-area-inset-bottom\)\);/);
+  assert.match(mobileRule, /left:calc\(18px \+ var\(--tg-content-safe-area-inset-left\)\);/);
 });
 
 test("keeps vertical scrolling inside the Telegram Mini App", () => {
   assert.match(miniApp, /webApp\.disableVerticalSwipes\?\.\(\)/);
   assert.match(miniApp, /webApp\.enableVerticalSwipes\?\.\(\)/);
+});
+
+test("renders the authenticated mobile dashboard and floating navigation", async () => {
+  const home = await readFile(new URL("../src/components/home-client.tsx", import.meta.url), "utf8");
+
+  assert.match(home, /className="mobile-dashboard"/);
+  assert.match(home, />Jump back in</);
+  assert.match(home, /className="mobile-bottom-nav"/);
+  assert.match(home, /latestSet\.count \* latestSet\.progress/);
+  assert.match(css, /\.mobile-bottom-nav \{ position:fixed;/);
+  assert.match(css, /border-radius:28px/);
 });

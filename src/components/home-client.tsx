@@ -376,6 +376,7 @@ export function HomeClient({
   }
 
   const { stats, recentSets } = initialDashboard;
+  const latestSet = recentSets[0];
 
   return (
     <div className="app-shell">
@@ -407,9 +408,42 @@ export function HomeClient({
 
       <main className="content">
         <header className="topbar">
+          <div className="mobile-topbar-brand"><span className="brand-mark">L</span><span>Lina</span></div>
+          <button className="mobile-profile-button" type="button" onClick={() => setIsLogoutOpen(true)} aria-label={`Открыть профиль ${user.name}`}>
+            <span className="avatar">{user.name.charAt(0)}</span>
+          </button>
           <button className="icon-button" aria-label="Уведомления"><Icon name="bell" /></button>
           <a className="create-button" href="#new-set"><Icon name="plus" size={19}/>Создать набор</a>
         </header>
+
+        <section className="mobile-dashboard" aria-label="Продолжить обучение">
+          <h1>Jump back in</h1>
+          {latestSet ? (
+            <article className="mobile-resume-card">
+              <div className="mobile-resume-heading"><h2>{latestSet.title}</h2><button type="button" aria-label="Меню набора">•••</button></div>
+              <div className="mobile-resume-progress"><span style={{ width: `${latestSet.progress}%` }} /></div>
+              <p>{Math.round(latestSet.count * latestSet.progress / 100)}/{latestSet.count} cards sorted</p>
+              <a href="#sets">Continue</a>
+            </article>
+          ) : (
+            <div className="sets-empty mobile-sets-empty"><span>Пока здесь тихо</span><h3>Создайте свой первый набор</h3><p>Вставьте список ниже — Lina соберёт карточки и сохранит их в вашем аккаунте.</p><a href="#new-set">Добавить слова →</a></div>
+          )}
+
+          {recentSets.length > 0 && (
+            <div className="mobile-recents" id="mobile-recents">
+              <h2>Recents</h2>
+              <div className="mobile-recents-list">
+                {recentSets.map((set) => (
+                  <a href="#sets" className="mobile-recent-set" key={set.id}>
+                    <span className={`mobile-set-icon ${set.color}`}><Icon name="cards" size={25}/></span>
+                    <span><strong>{set.title}</strong><small>{set.count} карточек · {set.progress}% изучено</small></span>
+                    <Icon name="arrow" size={18}/>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
 
         <section className="hero">
           <div className="eyebrow"><Icon name="spark" size={16}/> Учись быстрее, а не дольше</div>
@@ -422,7 +456,7 @@ export function HomeClient({
           </div>
         </section>
 
-        <section className="section" id="sets">
+        <section className="section desktop-sets-section" id="sets">
           <div className="section-heading"><div><span>Библиотека</span><h2>Недавние наборы</h2></div><button>Смотреть все <Icon name="arrow" size={16}/></button></div>
           <div className={`sets-grid${recentSets.length === 0 ? " empty" : ""}`}>
             {recentSets.length === 0 ? <div className="sets-empty"><span>Пока здесь тихо</span><h3>Создайте свой первый набор</h3><p>Вставьте список ниже — Lina соберёт карточки и сохранит их в вашем аккаунте.</p><a href="#new-set">Добавить слова →</a></div> : recentSets.map((set) => (
@@ -441,6 +475,12 @@ export function HomeClient({
           <BulkCardEditor onCreated={() => window.location.reload()} />
         </section>
       </main>
+      <nav className="mobile-bottom-nav" aria-label="Мобильная навигация">
+        <a className="mobile-nav-item active" href="#"><Icon name="home" size={24}/><span>Home</span></a>
+        <a className="mobile-nav-item" href="#new-set"><Icon name="plus" size={25}/><span>Create</span></a>
+        <a className="mobile-nav-item" href={recentSets.length ? "#mobile-recents" : "#new-set"}><Icon name="cards" size={24}/><span>Library</span></a>
+        <span className="mobile-nav-item mobile-nav-disabled" aria-disabled="true"><Icon name="spark" size={24}/><span>Free trial</span></span>
+      </nav>
       {isLogoutOpen && <LogoutModal onClose={() => setIsLogoutOpen(false)} onConfirm={logout} />}
     </div>
   );
