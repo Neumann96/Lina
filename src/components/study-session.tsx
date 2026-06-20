@@ -12,13 +12,9 @@ function StudyIcon({ name, size = 24 }: { name: string; size?: number }) {
     settings: <><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.08A1.7 1.7 0 0 0 8.95 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15 1.7 1.7 0 0 0 3.08 14H3v-4h.08A1.7 1.7 0 0 0 4.6 8.95a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6 1.7 1.7 0 0 0 10 3.08V3h4v.08A1.7 1.7 0 0 0 15.05 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9 1.7 1.7 0 0 0 20.92 10H21v4h-.08A1.7 1.7 0 0 0 19.4 15Z"/></>,
     volume: <><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18 6a8.5 8.5 0 0 1 0 12"/></>,
     star: <path d="m12 3 2.75 5.57 6.15.9-4.45 4.33 1.05 6.12L12 17.03l-5.5 2.89 1.05-6.12L3.1 9.47l6.15-.9L12 3Z"/>,
-    undo: <><path d="m9 7-5 5 5 5"/><path d="M20 17a7 7 0 0 0-7-7H4"/></>,
-    arrow: <path d="m9 18 6-6-6-6"/>,
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{paths[name]}</svg>;
 }
-
-type Answer = { cardIndex: number; correct: boolean };
 
 export function StudySession({ studySet }: { studySet: StudySet }) {
   const [index, setIndex] = useState(0);
@@ -29,10 +25,10 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [exitDirection, setExitDirection] = useState<-1 | 0 | 1>(0);
-  const [history, setHistory] = useState<Answer[]>([]);
   const startX = useRef(0);
   const moved = useRef(false);
   const card = studySet.cards[index];
+  const nextCard = studySet.cards[index + 1];
   const finished = index >= studySet.cards.length;
   const reviewed = known + learning;
 
@@ -63,7 +59,6 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
     setExitDirection(direction);
     setDragX(direction * Math.max(window.innerWidth, 540));
     window.setTimeout(() => {
-      setHistory((items) => [...items, { cardIndex: index, correct }]);
       if (correct) setKnown((value) => value + 1);
       else setLearning((value) => value + 1);
       saveReview(card.id, correct);
@@ -73,16 +68,6 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
       setDragX(0);
       setExitDirection(0);
     }, 210);
-  }
-
-  function undo() {
-    const previous = history.at(-1);
-    if (!previous || exitDirection) return;
-    setHistory((items) => items.slice(0, -1));
-    if (previous.correct) setKnown((value) => value - 1);
-    else setLearning((value) => value - 1);
-    setIndex(previous.cardIndex);
-    setFlipped(false);
   }
 
   function onPointerDown(event: PointerEvent<HTMLButtonElement>) {
@@ -127,9 +112,8 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
 
       <section className="study-stage">
         <div className="study-counters">
-          <span className="study-counter learning"><small>Ещё учу</small><strong>{learning}</strong></span>
-          <span className="study-hint">Смахните карточку</span>
-          <span className="study-counter known"><small>Знаю</small><strong>{known}</strong></span>
+          <span className="study-counter learning" aria-label={`Ещё учу: ${learning}`}><strong>{learning}</strong></span>
+          <span className="study-counter known" aria-label={`Знаю: ${known}`}><strong>{known}</strong></span>
         </div>
 
         {finished ? (
@@ -140,7 +124,9 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
           </div>
         ) : (
           <div className="study-card-wrap">
+            {nextCard && <div className="study-card-next" aria-hidden><strong>{nextCard.term}</strong></div>}
             <button
+              key={card.id}
               className={`study-card${flipped ? " flipped" : ""}${isDragging ? " dragging" : ""}`}
               type="button"
               aria-label={flipped ? `Значение: ${card.definition}` : `Слово: ${card.term}. Нажмите, чтобы увидеть значение`}
@@ -150,10 +136,11 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
               onPointerCancel={onPointerUp}
               style={{ transform: `translateX(${dragX}px) rotate(${dragX / 24}deg)`, opacity: exitDirection ? 0 : 1 }}
             >
-              <span className="study-swipe-label left">ЕЩЁ УЧУ</span><span className="study-swipe-label right">ЗНАЮ</span>
+              <span className={`study-swipe-label left${isDragging && dragX < -8 ? " visible" : ""}`}>ЕЩЁ УЧУ</span>
+              <span className={`study-swipe-label right${isDragging && dragX > 8 ? " visible" : ""}`}>ЗНАЮ</span>
               <span className="study-card-inner">
-                <span className="study-card-face front"><em>Слово</em><strong>{card.term}</strong><small>Нажмите, чтобы перевернуть</small></span>
-                <span className="study-card-face back"><em>Значение</em><strong>{card.definition}</strong><small>Нажмите, чтобы вернуть слово</small></span>
+                <span className="study-card-face front"><strong>{card.term}</strong><small>Нажмите, чтобы перевернуть</small></span>
+                <span className="study-card-face back"><strong>{card.definition}</strong><small>Нажмите, чтобы вернуть слово</small></span>
               </span>
             </button>
             <button className="study-card-action sound" type="button" onClick={speak} aria-label="Произнести вслух"><StudyIcon name="volume"/></button>
@@ -161,11 +148,6 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
           </div>
         )}
 
-        <div className="study-controls">
-          <button type="button" onClick={undo} disabled={!history.length || Boolean(exitDirection)} aria-label="Отменить последний ответ"><StudyIcon name="undo" size={22}/><span>Назад</span></button>
-          <span>Тап — перевернуть</span>
-          <button type="button" onClick={() => answer(true)} disabled={finished || Boolean(exitDirection)} aria-label="Я знаю это слово"><span>Знаю</span><StudyIcon name="arrow" size={22}/></button>
-        </div>
       </section>
     </main>
   );

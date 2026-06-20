@@ -4,6 +4,7 @@ import test from "node:test";
 
 const css = await readFile(new URL("../src/app/globals.css", import.meta.url), "utf8");
 const miniApp = await readFile(new URL("../src/components/telegram-mini-app.tsx", import.meta.url), "utf8");
+const studySession = await readFile(new URL("../src/components/study-session.tsx", import.meta.url), "utf8");
 
 test("keeps the Mini App navigation at the bottom on mobile", () => {
   const mobileRule = css.match(/\.telegram-mini-app \.mobile-bottom-nav \{([^}]+)\}/)?.[1] ?? "";
@@ -28,4 +29,14 @@ test("renders the authenticated mobile dashboard and floating navigation", async
   assert.match(css, /\.mobile-bottom-nav \{ position:fixed;/);
   assert.match(css, /border-radius:28px/);
   assert.match(css, /\.mobile-dashboard \{ min-height:0; \}/);
+});
+
+test("keeps card practice fixed and swipe-only", () => {
+  assert.match(css, /\.study-page \{[^}]*position:fixed;[^}]*overflow:hidden;/);
+  assert.match(css, /\.study-card \{[^}]*touch-action:none;/);
+  assert.doesNotMatch(studySession, /className="study-controls"/);
+  assert.doesNotMatch(studySession, /<em>Слово<\/em>|<em>Значение<\/em>/);
+  assert.match(studySession, /dragX < -8 \? " visible"/);
+  assert.match(studySession, /dragX > 8 \? " visible"/);
+  assert.match(studySession, /key=\{card\.id\}/);
 });
