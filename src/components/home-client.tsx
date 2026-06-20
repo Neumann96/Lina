@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { BulkCardEditor } from "@/components/bulk-card-editor";
 import type { AuthUser } from "@/lib/auth";
 import type { DashboardData } from "@/lib/learning";
+import { parseTelegramAuthResult, type TelegramAuthResult } from "@/lib/telegram-auth-result";
 
 function Icon({ name, size = 20 }: { name: string; size?: number }) {
   const paths: Record<string, React.ReactNode> = {
@@ -23,23 +24,13 @@ function Icon({ name, size = 20 }: { name: string; size?: number }) {
 
 type AuthMode = "register" | "login";
 
-type TelegramLoginResult = {
-  id: number;
-  first_name: string;
-  last_name?: string;
-  username?: string;
-  photo_url?: string;
-  auth_date: number;
-  hash: string;
-};
-
 function telegramLoginApi() {
   return (window as typeof window & {
     Telegram?: {
       Login?: {
         auth: (
           options: { bot_id: number; lang?: string },
-          callback: (result: TelegramLoginResult | false) => void,
+          callback: (result: TelegramAuthResult | false) => void,
         ) => void;
       };
     };
@@ -146,7 +137,7 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
     }
   }
 
-  async function authenticateWithTelegram(telegramUser: TelegramLoginResult) {
+  async function authenticateWithTelegram(telegramUser: TelegramAuthResult) {
     setError("");
     try {
       const response = await fetch("/api/auth/telegram", {
@@ -259,8 +250,8 @@ function LogoutModal({ onClose, onConfirm }: LogoutModalProps) {
   );
 }
 
-function GuestLanding() {
-  const [authMode, setAuthMode] = useState<AuthMode | null>(null);
+function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
+  const [authMode, setAuthMode] = useState<AuthMode | null>(telegramError ? "login" : null);
   return (
     <div className="landing">
       <header className="landing-header">
@@ -308,6 +299,7 @@ function GuestLanding() {
       </main>
       <footer className="landing-footer"><a className="landing-brand" href="#top"><span className="brand-mark">L</span><span>Lina</span></a><p>Учитесь быстрее, а не дольше.</p><span>© {new Date().getFullYear()} Lina</span></footer>
       {authMode && <AuthModal mode={authMode} onClose={() => setAuthMode(null)} onModeChange={setAuthMode} onSuccess={() => window.location.reload()} />}
+      {telegramError && <div className="telegram-return-error" role="alert">{telegramError}</div>}
     </div>
   );
 }
@@ -324,6 +316,38 @@ export function HomeClient({
   const [user, setUser] = useState(initialUser);
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(initialSidebarCollapsed);
+  const [telegramReturnPending, setTelegramReturnPending] = useState(false);
+  const [telegramReturnError, setTelegramReturnError] = useState("");
+
+  useEffect(() => {
+    const telegramUser = parseTelegramAuthResult(window.location.hash);
+    if (!telegramUser) return;
+
+    // Telegram returns mobile authorization in the URL fragment. Remove the
+    // signed identity from browser history before exchanging it for a session.
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+
+    void (async () => {
+      setTelegramReturnPending(true);
+      try {
+        const response = await fetch("/api/auth/telegram", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ telegramUser }),
+        });
+        const result = await response.json() as { user?: AuthUser; error?: string };
+        if (!response.ok || !result.user) {
+          setTelegramReturnError(result.error ?? "Не удалось войти через Telegram");
+          return;
+        }
+        window.location.replace("/");
+      } catch {
+        setTelegramReturnError("Не удалось связаться с сервером. Попробуйте ещё раз");
+      } finally {
+        setTelegramReturnPending(false);
+      }
+    })();
+  }, []);
 
   function toggleSidebar() {
     const collapsed = !isSidebarCollapsed;
@@ -339,8 +363,12 @@ export function HomeClient({
     }
   }
 
+  if (telegramReturnPending) {
+    return <div className="telegram-return-status" role="status">Завершаем вход через Telegram…</div>;
+  }
+
   if (!user || !initialDashboard) {
-    return <GuestLanding />;
+    return <GuestLanding telegramError={telegramReturnError} />;
   }
 
   const { stats, recentSets } = initialDashboard;

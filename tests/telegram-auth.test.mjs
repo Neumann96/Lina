@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { createHash, createHmac } from "node:crypto";
 import test from "node:test";
 import { parseTelegramBotToken, verifyTelegramAuthSignature } from "../src/lib/telegram-auth-signature.ts";
+import { parseTelegramAuthResult } from "../src/lib/telegram-auth-result.ts";
 
 const token = "123456789:test_token-for-signature";
 
@@ -45,4 +46,14 @@ test("rejects tampered and expired Telegram payloads", () => {
     () => verifyTelegramAuthSignature(signed, token, 1_800_000_301),
     /Expired/,
   );
+});
+
+test("parses the auth result returned by Telegram after a mobile redirect", () => {
+  const payload = signedPayload();
+  const encoded = Buffer.from(JSON.stringify(payload)).toString("base64url");
+
+  assert.deepEqual(parseTelegramAuthResult(`#tgAuthResult=${encoded}`), payload);
+  assert.deepEqual(parseTelegramAuthResult(`#section&tgAuthResult=${encoded}`), payload);
+  assert.equal(parseTelegramAuthResult("#tgAuthResult=broken"), null);
+  assert.equal(parseTelegramAuthResult("#section"), null);
 });
