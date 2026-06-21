@@ -27,3 +27,15 @@ test("keeps commas inside a tab-separated definition", () => {
   const [pair] = parseBulkTerms("resilient\tстойкий, устойчивый");
   assert.equal(pair.definition, "стойкий, устойчивый");
 });
+
+test("recognizes wide spaces produced by camera OCR", () => {
+  const pairs = parseBulkTerms("apple    яблоко\nbook  книга");
+
+  assert.deepEqual(
+    pairs.map(({ term, definition }) => ({ term, definition })),
+    [
+      { term: "apple", definition: "яблоко" },
+      { term: "book", definition: "книга" },
+    ],
+  );
+});

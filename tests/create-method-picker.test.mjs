@@ -1,0 +1,21 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import test from "node:test";
+
+const picker = await readFile(new URL("../src/components/create-method-picker.tsx", import.meta.url), "utf8");
+const home = await readFile(new URL("../src/components/home-client.tsx", import.meta.url), "utf8");
+
+test("offers all three creation methods in the mobile create tab", () => {
+  assert.match(home, /<CreateMethodPicker \/>/);
+  assert.match(picker, /Создать вручную/);
+  assert.match(picker, /Распознать камерой/);
+  assert.match(picker, /Импортировать файл/);
+});
+
+test("camera recognition stays client-side and supports Russian and English", () => {
+  assert.match(picker, /navigator\.mediaDevices\.getUserMedia/);
+  assert.match(picker, /createWorker\(\["eng", "rus"\]/);
+  assert.match(picker, /worker\.recognize\(canvas\)/);
+  assert.match(picker, /worker\.terminate\(\)/);
+  assert.match(picker, /parseBulkTerms\(recognized\)/);
+});

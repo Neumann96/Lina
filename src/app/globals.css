@@ -106,6 +106,37 @@ html:not(.telegram-mini-app) .telegram-mini-app-login { display:none; }
 @media (max-width:600px) { .mobile-resume-card>.mobile-resume-primary { width:100%; height:53px; display:grid; place-items:center; border:0; border-radius:18px; background:var(--accent); color:#fff; text-decoration:none; font-size:16px; font-weight:750; box-shadow:0 10px 22px #f36f3d35; }.mobile-resume-restart { width:100%; margin-top:11px; padding:8px; border:0; background:none; color:#756f80; font-size:13px; font-weight:700; }.mobile-resume-card button:disabled { opacity:.6; } }
 @media (prefers-reduced-motion:reduce) { .auth-overlay,.auth-modal { animation:none; }.sidebar,.content,.mobile-nav-indicator { transition:none; } }
 
+/* Mobile creation methods and camera OCR */
+.create-methods>p { margin:-8px 0 20px; color:#746f7d; font-size:15px; }
+.create-method-list { display:grid; gap:12px; }
+.create-method-list>button { min-height:92px; display:grid; grid-template-columns:58px minmax(0,1fr) auto; align-items:center; gap:15px; padding:15px; border:1px solid #ece9ef; border-radius:23px; background:#fff; color:var(--ink); text-align:left; box-shadow:0 12px 30px #302b460c; }
+.create-method-icon { width:58px; height:58px; display:grid; place-items:center; border-radius:18px; color:#6556b3; background:#efebff; }
+.create-method-icon.camera { color:var(--accent-dark); background:#fff0e8; }
+.create-method-icon.file { color:#997222; background:#fff6d8; }
+.create-method-copy strong,.create-method-copy small { display:block; }
+.create-method-copy strong { font-size:17px; letter-spacing:-.25px; }
+.create-method-copy small { margin-top:6px; color:#817b89; font-size:12px; line-height:1.35; }
+.create-method-list em { padding:5px 8px; border-radius:8px; color:#8c8493; background:#f3f1f4; font-size:9px; font-style:normal; font-weight:800; letter-spacing:.05em; text-transform:uppercase; }
+.create-method-arrow { color:#aaa5b1; font-size:31px; font-weight:300; line-height:1; }
+.create-tip { display:flex; gap:12px; margin-top:25px; padding:16px 17px; border-radius:18px; color:#5f5870; background:#f3f0ff; }
+.create-tip>span { color:#7563c5; font-size:20px; }.create-tip p { margin:0; font-size:12px; line-height:1.5; }.create-tip strong { display:block; margin-bottom:2px; }
+.create-back { display:flex; align-items:center; gap:5px; margin:-9px 0 22px -8px; padding:7px 8px; border:0; color:#706979; background:transparent; font-size:13px; font-weight:750; }
+.create-placeholder { min-height:420px; text-align:center; }.create-placeholder .create-back { margin-bottom:58px; }
+.create-placeholder-icon { width:76px; height:76px; display:grid; place-items:center; margin:0 auto 20px; border-radius:24px; color:#7163b5; background:#efebff; }
+.create-placeholder h2 { margin:0; font-size:25px; letter-spacing:-.7px; }.create-placeholder p { max-width:280px; margin:10px auto 17px; color:#797381; font-size:14px; line-height:1.55; }
+.coming-soon { display:inline-block; padding:7px 11px; border-radius:9px; color:#817b88; background:#eeecef; font-size:10px; font-weight:850; letter-spacing:.06em; text-transform:uppercase; }
+.camera-heading>span,.ocr-result-heading span { color:var(--accent-dark); font-size:10px; font-weight:850; letter-spacing:.08em; text-transform:uppercase; }.camera-heading h2 { margin:7px 0 7px; font-size:26px; letter-spacing:-.8px; }.camera-heading p { margin:0 0 19px; color:#787280; font-size:13px; line-height:1.45; }.camera-heading b { color:#4b4554; }
+.camera-frame { position:relative; aspect-ratio:3/4; max-height:54dvh; overflow:hidden; border-radius:25px; background:#29262d; box-shadow:0 14px 34px #302b4627; }
+.camera-frame video { width:100%; height:100%; display:block; object-fit:cover; }
+.camera-guide { position:absolute; inset:8%; border:2px solid #ffffffd4; border-radius:17px; box-shadow:0 0 0 999px #17131c30; }
+.camera-guide::before,.camera-guide::after { content:""; position:absolute; right:18px; left:18px; height:1px; background:#ffffff4d; }.camera-guide::before { top:33%; }.camera-guide::after { top:66%; }
+.camera-progress { position:absolute; inset:0; display:grid; place-content:center; gap:12px; padding:35px; color:#fff; background:#29232dcc; text-align:center; }.camera-progress strong { font-size:32px; }.camera-progress>span { width:190px; max-width:65vw; height:6px; overflow:hidden; border-radius:99px; background:#ffffff33; }.camera-progress i { display:block; height:100%; border-radius:inherit; background:var(--accent); transition:width .2s ease; }
+.camera-status { min-height:38px; margin:13px 5px 8px; color:#716b79; font-size:12px; line-height:1.45; text-align:center; }.camera-status.error { color:#b33b46; }
+.camera-capture,.camera-secondary { width:100%; min-height:52px; border:0; border-radius:17px; color:#fff; background:var(--accent); font-size:14px; font-weight:800; box-shadow:0 9px 20px #f36f3d2d; }.camera-capture { display:flex; align-items:center; justify-content:center; gap:10px; }.camera-capture>span { width:20px; height:20px; border:3px solid #fff; border-radius:50%; }
+.camera-secondary { margin-top:12px; color:#635c6b; background:#eeecef; box-shadow:none; }.camera-secondary:disabled { opacity:1; color:#817a87; }.camera-secondary small { margin-left:6px; font-size:9px; text-transform:uppercase; }
+.ocr-result { margin-top:26px; }.ocr-result-heading { display:flex; align-items:end; justify-content:space-between; gap:12px; }.ocr-result-heading h3 { margin:5px 0 0; font-size:19px; }.ocr-result-heading button { padding:7px; border:0; color:var(--accent-dark); background:transparent; font-size:12px; font-weight:800; }
+.ocr-pairs { display:grid; gap:8px; margin-top:14px; }.ocr-pairs>div { display:grid; grid-template-columns:22px minmax(0,1fr) 15px minmax(0,1fr); align-items:center; gap:7px; padding:12px 10px; border:1px solid #ece9ef; border-radius:14px; background:#fff; font-size:12px; }.ocr-pairs b { color:#aba5b0; font-size:9px; }.ocr-pairs i { color:#b8b2bc; font-style:normal; }.ocr-pairs .missing { color:#bd5660; }.ocr-result pre { overflow:auto; padding:14px; border-radius:14px; background:#f1eff2; white-space:pre-wrap; font:12px/1.5 inherit; }
+
 /* Focused card practice */
 .study-page { --study-coral:#f36f3d; --study-plum:#3d334b; --study-cream:#fffaf6; position:fixed; inset:0; height:100dvh; color:var(--study-plum); background:radial-gradient(circle at 50% 34%,#fff 0,#fffaf7 48%,#fff4ec 100%); overflow:hidden; overscroll-behavior:none; }
 .study-header { position:relative; z-index:5; height:92px; display:grid; grid-template-columns:52px minmax(0,1fr) 52px; align-items:center; gap:20px; padding:0 max(28px,calc((100vw - 1180px)/2)); background:#ffffffd9; backdrop-filter:blur(18px); }

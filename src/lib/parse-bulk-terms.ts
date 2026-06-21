@@ -1,6 +1,6 @@
 export type TermPair = { id: string; term: string; definition: string };
 
-const separators = [/\t+/, /\s+[—–-]\s+/, /\s*[:=]\s+/, /\s*;\s*/, /\s*,\s*/];
+const separators = [/\t+/, /\s+[—–-]\s+/, /\s{2,}/, /\s*[:=]\s+/, /\s*;\s*/, /\s*,\s*/];
 
 export function parseBulkTerms(value: string): TermPair[] {
   return value

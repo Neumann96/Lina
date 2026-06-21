@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { BulkCardEditor } from "@/components/bulk-card-editor";
+import { CreateMethodPicker } from "@/components/create-method-picker";
 import type { AuthUser } from "@/lib/auth";
 import type { DashboardData } from "@/lib/learning";
 import { parseTelegramAuthResult } from "@/lib/telegram-auth-result";
@@ -479,8 +480,8 @@ export function HomeClient({
 
         {mobileTab === "create" && (
           <section className="mobile-tab-screen mobile-create-screen" aria-label="Создание набора">
-            <h1>Создать набор</h1>
-            <BulkCardEditor onCreated={() => window.location.reload()} />
+            <h1>Создать</h1>
+            <CreateMethodPicker />
           </section>
         )}
 
