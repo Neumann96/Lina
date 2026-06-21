@@ -135,6 +135,7 @@ html:not(.telegram-mini-app) .telegram-mini-app-login { display:none; }
 .create-methods>p { margin:-8px 0 20px; color:#746f7d; font-size:15px; }
 .create-method-list { display:grid; gap:12px; }
 .create-method-list>button { min-height:92px; display:grid; grid-template-columns:58px minmax(0,1fr) auto; align-items:center; gap:15px; padding:15px; border:1px solid #ece9ef; border-radius:23px; background:#fff; color:var(--ink); text-align:left; box-shadow:0 12px 30px #302b460c; }
+.create-method-list>button:disabled { cursor:not-allowed; }
 .create-method-icon { width:58px; height:58px; display:grid; place-items:center; border-radius:18px; color:#6556b3; background:#efebff; }
 .create-method-icon.camera { color:var(--accent-dark); background:#fff0e8; }
 .create-method-icon.file { color:#997222; background:#fff6d8; }

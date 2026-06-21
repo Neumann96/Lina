@@ -22,3 +22,8 @@ test("camera recognition stays client-side and supports Russian and English", ()
   assert.match(picker, /tessedit_pageseg_mode: PSM\.SINGLE_BLOCK/);
   assert.match(picker, /prepareCameraFrame\(video\)/);
 });
+
+test("camera recognition entry is marked as coming soon and disabled", () => {
+  assert.match(picker, /id: "camera"[^\n]+badge: "Скоро", disabled: true/);
+  assert.match(picker, /disabled=\{item\.disabled\}/);
+});

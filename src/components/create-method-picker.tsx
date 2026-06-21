@@ -208,9 +208,9 @@ export function CreateMethodPicker() {
   if (method === "file") return <CardImporter onBack={() => setMethod(null)} />;
   if (method === "manual") return <Placeholder onBack={() => setMethod(null)} />;
 
-  const methods: Array<{ id: CreateMethod; title: string; description: string; badge?: string }> = [
+  const methods: Array<{ id: CreateMethod; title: string; description: string; badge?: string; disabled?: boolean }> = [
     { id: "manual", title: "Создать вручную", description: "Добавить слова и переводы по одному", badge: "Скоро" },
-    { id: "camera", title: "Распознать камерой", description: "Сфотографировать готовый список" },
+    { id: "camera", title: "Распознать камерой", description: "Сфотографировать готовый список", badge: "Скоро", disabled: true },
     { id: "file", title: "Импортировать", description: "Ссылка Quizlet или готовый текст" },
   ];
 
@@ -219,7 +219,7 @@ export function CreateMethodPicker() {
       <p>Как вы хотите добавить слова?</p>
       <div className="create-method-list">
         {methods.map((item) => (
-          <button key={item.id} type="button" onClick={() => setMethod(item.id)}>
+          <button key={item.id} type="button" disabled={item.disabled} onClick={() => setMethod(item.id)}>
             <span className={`create-method-icon ${item.id}`}><MethodIcon name={item.id} /></span>
             <span className="create-method-copy"><strong>{item.title}</strong><small>{item.description}</small></span>
             {item.badge ? <em>{item.badge}</em> : <span className="create-method-arrow">›</span>}
