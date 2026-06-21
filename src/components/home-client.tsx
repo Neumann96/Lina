@@ -387,7 +387,7 @@ function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
           <div className="telegram-showcase" data-reveal>
             <div className="telegram-phone-top"><span>9:41</span><b>•••</b></div>
             <div className="telegram-chat-head"><span><Icon name="telegram" size={21}/></span><div><strong>Lina</strong><small>бот для запоминания</small></div></div>
-            <div className="telegram-bubble"><p>На сегодня готово 7 карточек.</p><p>Я рассчитала момент, вы рассчитались пятью минутами времени 🤝</p><span>Начать повторение →</span></div>
+            <div className="telegram-bubble"><p>Привет! Пора немного освежить память 👋</p><p>На сегодня — 7 карточек. Займёт около пяти минут.</p><span>Начать повторение →</span></div>
           </div>
           <div className="landing-telegram-copy" data-reveal>
             <span className="section-kicker">Telegram-напоминания</span>
