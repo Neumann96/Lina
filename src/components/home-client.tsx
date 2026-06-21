@@ -338,14 +338,21 @@ export function HomeClient({
   const [restartingSetId, setRestartingSetId] = useState<string | null>(null);
 
   useEffect(() => {
-    const callbackStatus = new URLSearchParams(window.location.search).get("telegramAuth");
+    const searchParams = new URLSearchParams(window.location.search);
+    const callbackStatus = searchParams.get("telegramAuth");
     if (callbackStatus) {
-      window.history.replaceState(null, "", window.location.pathname);
       void Promise.resolve().then(() => {
         setTelegramReturnError(callbackStatus === "limited"
           ? "Слишком много попыток. Попробуйте позже"
           : "Не удалось подтвердить вход через Telegram");
       });
+    }
+
+    if (callbackStatus || searchParams.has("studyExit")) {
+      searchParams.delete("telegramAuth");
+      searchParams.delete("studyExit");
+      const query = searchParams.toString();
+      window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
     }
 
     const telegramUser = parseTelegramAuthResult(window.location.hash);

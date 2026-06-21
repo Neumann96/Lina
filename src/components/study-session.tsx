@@ -2,6 +2,7 @@
 
 import { MouseEvent, PointerEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { StudySet } from "@/lib/learning";
 
 const SWIPE_THRESHOLD = 82;
@@ -17,6 +18,7 @@ function StudyIcon({ name, size = 24 }: { name: string; size?: number }) {
 }
 
 export function StudySession({ studySet }: { studySet: StudySet }) {
+  const router = useRouter();
   const [index, setIndex] = useState(studySet.startIndex);
   const [known, setKnown] = useState(0);
   const [learning, setLearning] = useState(0);
@@ -29,6 +31,7 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
   const startX = useRef(0);
   const moved = useRef(false);
   const pendingReviews = useRef(new Set<Promise<void>>());
+  const exiting = useRef(false);
   const card = studySet.cards[index];
   const nextCard = studySet.cards[index + 1];
   const finished = index >= studySet.cards.length;
@@ -64,8 +67,10 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
 
   async function closeSession(event: MouseEvent<HTMLAnchorElement>) {
     event.preventDefault();
+    if (exiting.current) return;
+    exiting.current = true;
     await Promise.allSettled([...pendingReviews.current]);
-    window.location.assign("/");
+    router.push(`/?studyExit=${Date.now()}`, { transitionTypes: ["nav-back"] });
   }
 
   async function restartSession() {

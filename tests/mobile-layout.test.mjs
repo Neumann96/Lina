@@ -51,6 +51,8 @@ test("keeps card practice fixed and swipe-only", () => {
   assert.match(studySession, /key=\{card\.id\}/);
   assert.match(studySession, /keepalive: true/);
   assert.match(studySession, /await Promise\.allSettled\(\[\.\.\.pendingReviews\.current\]\)/);
+  assert.match(studySession, /router\.push\(`\/\?studyExit=\$\{Date\.now\(\)\}`/);
+  assert.doesNotMatch(studySession, /window\.location\.assign\("\/"\)/);
   assert.match(studySession, /aria-label="Начать набор заново"/);
 });
 
