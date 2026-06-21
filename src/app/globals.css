@@ -180,7 +180,7 @@ html:not(.telegram-mini-app) .telegram-mini-app-login { display:none; }
 .study-counter.learning strong { transform:translateX(12px); }.study-counter.known strong { transform:translateX(-12px); }
 .study-counter.learning { color:#d6323f; border-color:#eda3aa; background:#fff3f4; }
 .study-counter.known { color:#368d76; border-color:#a7ddce; background:#f2fcf8; }
-.study-card-wrap { position:relative; width:min(100%,570px); height:min(64dvh,620px); min-height:390px; align-self:center; justify-self:center; perspective:1400px; }
+.study-card-wrap { position:relative; width:min(100%,570px); height:min(60dvh,560px); min-height:390px; margin-bottom:78px; align-self:center; justify-self:center; perspective:1400px; }
 .study-card-next { position:absolute; inset:8px 10px -8px; display:grid; place-items:center; padding:54px; border:1px solid #ede3de; border-radius:34px; color:#c9c0c4; background:#fffdfb; box-shadow:0 16px 42px #51333e12; transform:scale(.985); overflow:hidden; }
 .study-card-next strong { max-width:100%; font-size:clamp(28px,4.5vw,42px); overflow-wrap:anywhere; }
 .study-card { position:absolute; inset:0; width:100%; padding:0; border:1px solid #eadfda; border-radius:34px; color:inherit; background:transparent; box-shadow:0 26px 70px #51333e19,0 4px 14px #51333e0a; cursor:grab; touch-action:none; user-select:none; animation:study-card-enter .42s var(--motion-ease) both; transition:transform .32s var(--motion-ease),opacity .28s ease,box-shadow .32s var(--motion-ease); }
@@ -194,6 +194,10 @@ html:not(.telegram-mini-app) .telegram-mini-app-login { display:none; }
 .study-card-face small { position:absolute; bottom:26px; color:#b7afb4; font-size:12px; font-weight:600; }
 .study-card-action { position:absolute; z-index:3; top:25px; width:44px; height:44px; display:grid; place-items:center; border:0; border-radius:50%; color:#685f74; background:#faf7f5; cursor:pointer; transition:color .3s var(--motion-ease),background-color .3s var(--motion-ease),transform .3s var(--motion-ease),box-shadow .3s var(--motion-ease); }
 .study-card-action.sound { left:25px; }.study-card-action.favorite { right:25px; }.study-card-action.favorite.active { color:var(--study-coral); background:#fff0e9; }.study-card-action.favorite.active svg { fill:currentColor; }
+.study-desktop-actions { position:absolute; top:calc(100% + 20px); left:50%; display:flex; gap:14px; transform:translateX(-50%); }
+.study-desktop-actions button { width:58px; height:58px; display:grid; place-items:center; padding:0; border:1px solid; border-radius:50%; background:#fff; box-shadow:0 12px 28px #51333e16; transition:color .2s ease,background-color .2s ease,box-shadow .2s ease,transform .2s var(--motion-ease); }
+.study-desktop-actions button:hover { transform:translateY(-2px); box-shadow:0 16px 32px #51333e20; }.study-desktop-actions button:disabled { opacity:.5; cursor:default; }
+.study-desktop-actions .learning { color:#d8545e; border-color:#efc2c6; background:#fff7f7; }.study-desktop-actions .known { color:#368d76; border-color:#b9dfd4; background:#f5fcfa; }
 .study-swipe-label { position:absolute; z-index:5; top:82px; padding:8px 12px; border:2px solid; border-radius:9px; opacity:0; font-size:13px; font-weight:900; letter-spacing:1px; pointer-events:none; }
 .study-swipe-label.left { right:28px; color:#df7147; transform:rotate(8deg); }.study-swipe-label.right { left:28px; color:#32957b; transform:rotate(-8deg); }
 .study-swipe-label.visible { opacity:.9; }
@@ -208,9 +212,11 @@ html:not(.telegram-mini-app) .telegram-mini-app-login { display:none; }
   .study-stage { height:calc(100dvh - 82px); padding:18px; }.telegram-mini-app .study-stage { height:calc(100dvh - 110px - var(--tg-content-safe-area-inset-top,0px)); padding-bottom:calc(18px + var(--tg-content-safe-area-inset-bottom,0px)); }
   .study-counters { top:16px; }.study-counter { width:62px; height:42px; }.study-counter.learning { left:-22px; }.study-counter.known { right:-22px; }.study-counter strong { font-size:21px; }.study-counter.learning strong { transform:translateX(11px); }.study-counter.known strong { transform:translateX(-11px); }
   .study-card-wrap { width:100%; height:min(66dvh,610px); min-height:360px; margin:18px 0; }.study-card { border-radius:28px; }.study-card-face { padding-inline:34px; }.study-card-face strong { font-size:clamp(31px,10vw,43px); }.study-card-face.back strong { font-size:clamp(25px,8vw,35px); }
+  .study-desktop-actions { display:none; }
   .study-complete { padding:45px 22px; }
 }
 @media (max-height:680px) { .study-stage { padding-top:14px; padding-bottom:12px; }.study-card-wrap { height:58dvh; min-height:300px; margin:10px 0; }.study-card-face small { bottom:18px; } }
+@media (min-width:701px) and (max-height:680px) { .study-card-wrap { height:50dvh; margin-bottom:68px; } }
 @keyframes study-card-enter { from { opacity:0; transform:translateY(10px) scale(.985); } }
 @keyframes mobile-screen-enter { from { opacity:0; transform:translateY(9px); } }
 @keyframes route-fade-in { from { opacity:0; transform:translateY(10px) scale(.995); } }

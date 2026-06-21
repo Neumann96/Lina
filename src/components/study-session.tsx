@@ -13,6 +13,8 @@ function StudyIcon({ name, size = 24 }: { name: string; size?: number }) {
     restart: <><path d="M20 11a8 8 0 1 0-2.34 5.66"/><path d="M20 4v7h-7"/></>,
     volume: <><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18 6a8.5 8.5 0 0 1 0 12"/></>,
     star: <path d="m12 3 2.75 5.57 6.15.9-4.45 4.33 1.05 6.12L12 17.03l-5.5 2.89 1.05-6.12L3.1 9.47l6.15-.9L12 3Z"/>,
+    left: <><path d="m14.5 6-6 6 6 6"/><path d="M9 12h10"/></>,
+    right: <><path d="m9.5 6 6 6-6 6"/><path d="M15 12H5"/></>,
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{paths[name]}</svg>;
 }
@@ -179,6 +181,10 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
             </button>
             <button className="study-card-action sound" type="button" onClick={speak} aria-label="Произнести вслух"><StudyIcon name="volume"/></button>
             <button className={`study-card-action favorite${favorite ? " active" : ""}`} type="button" onClick={() => setFavorite((value) => !value)} aria-label="Добавить в избранное"><StudyIcon name="star"/></button>
+            <div className="study-desktop-actions" aria-label="Ответить на карточку">
+              <button className="learning" type="button" onClick={() => answer(false)} disabled={Boolean(exitDirection)} aria-label="Ещё учу — отправить карточку влево"><StudyIcon name="left" size={29}/></button>
+              <button className="known" type="button" onClick={() => answer(true)} disabled={Boolean(exitDirection)} aria-label="Знаю — отправить карточку вправо"><StudyIcon name="right" size={29}/></button>
+            </div>
           </div>
         )}
 

@@ -63,7 +63,7 @@ test("exposes the mobile feature set in the desktop workspace", async () => {
   assert.match(css, /\.mobile-create-screen \.create-method-list \{ grid-template-columns:repeat\(3,minmax\(0,1fr\)\); \}/);
 });
 
-test("keeps card practice fixed and swipe-only", () => {
+test("keeps card practice fixed and preserves swipe behavior", () => {
   assert.match(css, /\.study-page \{[^}]*position:fixed;[^}]*overflow:hidden;/);
   assert.match(css, /\.study-card \{[^}]*touch-action:none;/);
   assert.doesNotMatch(studySession, /className="study-controls"/);
@@ -76,6 +76,16 @@ test("keeps card practice fixed and swipe-only", () => {
   assert.match(studySession, /router\.push\(`\/\?studyExit=\$\{Date\.now\(\)\}`/);
   assert.doesNotMatch(studySession, /window\.location\.assign\("\/"\)/);
   assert.match(studySession, /aria-label="Начать набор заново"/);
+});
+
+test("adds desktop arrow controls without removing swipe answers", () => {
+  assert.match(studySession, /className="study-desktop-actions"/);
+  assert.match(studySession, /onClick=\{\(\) => answer\(false\)\}/);
+  assert.match(studySession, /onClick=\{\(\) => answer\(true\)\}/);
+  assert.match(studySession, /Ещё учу — отправить карточку влево/);
+  assert.match(studySession, /Знаю — отправить карточку вправо/);
+  assert.match(css, /\.study-desktop-actions \{ position:absolute; top:calc\(100% \+ 20px\); left:50%;/);
+  assert.match(css, /@media \(max-width:700px\)[\s\S]*\.study-desktop-actions \{ display:none; \}/);
 });
 
 test("keeps mobile study controls clear of Telegram chrome and the card", () => {
