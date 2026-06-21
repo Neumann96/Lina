@@ -2,7 +2,6 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { BulkCardEditor } from "@/components/bulk-card-editor";
 import { CreateMethodPicker } from "@/components/create-method-picker";
 import type { AuthUser } from "@/lib/auth";
 import type { DashboardData } from "@/lib/learning";
@@ -26,7 +25,7 @@ function Icon({ name, size = 20 }: { name: string; size?: number }) {
 }
 
 type AuthMode = "register" | "login";
-type MobileTab = "home" | "create" | "library";
+type AppTab = "home" | "create" | "library";
 
 type AuthModalProps = {
   mode: AuthMode;
@@ -334,7 +333,7 @@ export function HomeClient({
   const [user, setUser] = useState(initialUser);
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(initialSidebarCollapsed);
-  const [mobileTab, setMobileTab] = useState<MobileTab>("home");
+  const [activeTab, setActiveTab] = useState<AppTab>("home");
   const [telegramReturnError, setTelegramReturnError] = useState("");
   const [restartingSetId, setRestartingSetId] = useState<string | null>(null);
 
@@ -418,8 +417,8 @@ export function HomeClient({
         </button>
         <div className="brand"><span className="brand-mark">L</span><span>Lina</span></div>
         <nav className="main-nav" aria-label="Основная навигация">
-          <a className="nav-item active" href="#" title={isSidebarCollapsed ? "Главная" : undefined}><Icon name="home" /><span>Главная</span></a>
-          <a className="nav-item" href="#sets" title={isSidebarCollapsed ? "Мои наборы" : undefined}><Icon name="cards" /><span>Мои наборы</span></a>
+          <button className={`nav-item${activeTab === "home" ? " active" : ""}`} type="button" onClick={() => setActiveTab("home")} aria-current={activeTab === "home" ? "page" : undefined} title={isSidebarCollapsed ? "Главная" : undefined}><Icon name="home" /><span>Главная</span></button>
+          <button className={`nav-item${activeTab === "library" ? " active" : ""}`} type="button" onClick={() => setActiveTab("library")} aria-current={activeTab === "library" ? "page" : undefined} title={isSidebarCollapsed ? "Мои наборы" : undefined}><Icon name="cards" /><span>Мои наборы</span></button>
           <span className="nav-item nav-item-disabled" aria-disabled="true" title="Пока недоступно"><Icon name="chart" /><span>Прогресс</span></span>
           <button className="nav-item mobile-logout-button" type="button" onClick={() => setIsLogoutOpen(true)}><Icon name="logout" /><span>Выйти</span></button>
         </nav>
@@ -439,11 +438,17 @@ export function HomeClient({
             <span className="avatar">{user.name.charAt(0)}</span>
           </button>
           <button className="icon-button" aria-label="Уведомления"><Icon name="bell" /></button>
-          <a className="create-button" href="#new-set"><Icon name="plus" size={19}/>Создать набор</a>
+          <button className="create-button" type="button" onClick={() => setActiveTab("create")}><Icon name="plus" size={19}/>Создать набор</button>
         </header>
 
-        {mobileTab === "home" && <section className="mobile-dashboard" aria-label="Продолжить обучение">
-          <h1>Вернуться к учёбе</h1>
+        {activeTab === "home" && <section className="mobile-dashboard app-view" aria-label="Продолжить обучение">
+          <div className="dashboard-heading"><div><span>Главная</span><h1>Вернуться к учёбе</h1></div><p>Добрый день, {user.name} <span>👋</span></p></div>
+          <div className="desktop-dashboard-stats" aria-label="Статистика обучения">
+            <div><strong>{stats.cardCount}</strong><span>карточек</span></div>
+            <div><strong>{stats.setCount}</strong><span>наборов</span></div>
+            <div><strong>{stats.accuracy}%</strong><span>точность</span></div>
+          </div>
+          <div className="dashboard-grid">
           {latestSet ? (
             <article className="mobile-resume-card">
               <div className="mobile-resume-heading"><h2>{latestSet.title}</h2></div>
@@ -459,7 +464,7 @@ export function HomeClient({
               )}
             </article>
           ) : (
-            <div className="sets-empty mobile-sets-empty"><span>Пока здесь тихо</span><h3>Создайте свой первый набор</h3><p>Lina соберёт карточки и сохранит их в вашем аккаунте.</p><button type="button" onClick={() => setMobileTab("create")}>Добавить слова →</button></div>
+            <div className="sets-empty mobile-sets-empty"><span>Пока здесь тихо</span><h3>Создайте свой первый набор</h3><p>Lina соберёт карточки и сохранит их в вашем аккаунте.</p><button type="button" onClick={() => setActiveTab("create")}>Добавить слова →</button></div>
           )}
 
           {recentSets.length > 0 && (
@@ -476,18 +481,19 @@ export function HomeClient({
               </div>
             </div>
           )}
+          </div>
         </section>}
 
-        {mobileTab === "create" && (
-          <section className="mobile-tab-screen mobile-create-screen" aria-label="Создание набора">
-            <h1>Создать</h1>
+        {activeTab === "create" && (
+          <section className="mobile-tab-screen mobile-create-screen app-view" aria-label="Создание набора">
+            <div className="dashboard-heading"><div><span>Новый набор</span><h1>Создать</h1></div><p>Добавьте слова удобным способом</p></div>
             <CreateMethodPicker />
           </section>
         )}
 
-        {mobileTab === "library" && (
-          <section className="mobile-tab-screen mobile-library-screen" aria-label="Библиотека наборов">
-            <h1>Библиотека</h1>
+        {activeTab === "library" && (
+          <section className="mobile-tab-screen mobile-library-screen app-view" aria-label="Библиотека наборов">
+            <div className="dashboard-heading"><div><span>Все материалы</span><h1>Библиотека</h1></div><button type="button" onClick={() => setActiveTab("create")}><Icon name="plus" size={18}/> Новый набор</button></div>
             {recentSets.length ? (
               <div className="mobile-recents-list">
                 {recentSets.map((set) => (
@@ -499,46 +505,16 @@ export function HomeClient({
                 ))}
               </div>
             ) : (
-              <div className="sets-empty mobile-sets-empty"><span>Пока здесь тихо</span><h3>Создайте свой первый набор</h3><button type="button" onClick={() => setMobileTab("create")}>Создать набор →</button></div>
+              <div className="sets-empty mobile-sets-empty"><span>Пока здесь тихо</span><h3>Создайте свой первый набор</h3><button type="button" onClick={() => setActiveTab("create")}>Создать набор →</button></div>
             )}
           </section>
         )}
-
-        <section className="hero">
-          <div className="eyebrow"><Icon name="spark" size={16}/> Учись быстрее, а не дольше</div>
-          <h1>Добрый день, {user.name} <span>👋</span></h1>
-          <p>Продолжим с того места, где остановились?</p>
-          <div className="hero-stats">
-            <div><strong>{stats.cardCount}</strong><span>карточек</span></div><i />
-            <div><strong>{stats.setCount}</strong><span>наборов</span></div><i />
-            <div><strong>{stats.accuracy}%</strong><span>точность</span></div>
-          </div>
-        </section>
-
-        <section className="section desktop-sets-section" id="sets">
-          <div className="section-heading"><div><span>Библиотека</span><h2>Недавние наборы</h2></div><button>Смотреть все <Icon name="arrow" size={16}/></button></div>
-          <div className={`sets-grid${recentSets.length === 0 ? " empty" : ""}`}>
-            {recentSets.length === 0 ? <div className="sets-empty"><span>Пока здесь тихо</span><h3>Создайте свой первый набор</h3><p>Вставьте список ниже — Lina соберёт карточки и сохранит их в вашем аккаунте.</p><a href="#new-set">Добавить слова →</a></div> : recentSets.map((set) => (
-              <article className={`set-card ${set.color}`} key={set.id}>
-                <div className="set-card-top"><span>{set.count} карточек</span><button aria-label="Открыть набор"><Icon name="arrow" size={18}/></button></div>
-                <h3>{set.title}</h3>
-                <div className="progress-label"><span>Прогресс</span><strong>{set.progress}%</strong></div>
-                <div className="progress-track"><span style={{ width: `${set.progress}%` }} /></div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="section editor-section desktop-editor-section" id="new-set">
-          <div className="section-heading"><div><span>Новый набор</span><h2>Добавь всё одним движением</h2></div></div>
-          <BulkCardEditor onCreated={() => window.location.reload()} />
-        </section>
       </main>
-      <nav className="mobile-bottom-nav" data-active-tab={mobileTab} aria-label="Мобильная навигация">
+      <nav className="mobile-bottom-nav" data-active-tab={activeTab} aria-label="Мобильная навигация">
         <span className="mobile-nav-indicator" aria-hidden="true" />
-        <button className={`mobile-nav-item${mobileTab === "home" ? " active" : ""}`} type="button" onClick={() => setMobileTab("home")} aria-current={mobileTab === "home" ? "page" : undefined}><Icon name="home" size={24}/><span>Главная</span></button>
-        <button className={`mobile-nav-item${mobileTab === "create" ? " active" : ""}`} type="button" onClick={() => setMobileTab("create")} aria-current={mobileTab === "create" ? "page" : undefined}><Icon name="plus" size={25}/><span>Создать</span></button>
-        <button className={`mobile-nav-item${mobileTab === "library" ? " active" : ""}`} type="button" onClick={() => setMobileTab("library")} aria-current={mobileTab === "library" ? "page" : undefined}><Icon name="cards" size={24}/><span>Библиотека</span></button>
+        <button className={`mobile-nav-item${activeTab === "home" ? " active" : ""}`} type="button" onClick={() => setActiveTab("home")} aria-current={activeTab === "home" ? "page" : undefined}><Icon name="home" size={24}/><span>Главная</span></button>
+        <button className={`mobile-nav-item${activeTab === "create" ? " active" : ""}`} type="button" onClick={() => setActiveTab("create")} aria-current={activeTab === "create" ? "page" : undefined}><Icon name="plus" size={25}/><span>Создать</span></button>
+        <button className={`mobile-nav-item${activeTab === "library" ? " active" : ""}`} type="button" onClick={() => setActiveTab("library")} aria-current={activeTab === "library" ? "page" : undefined}><Icon name="cards" size={24}/><span>Библиотека</span></button>
         <span className="mobile-nav-item mobile-nav-disabled" aria-disabled="true"><Icon name="spark" size={24}/><span>Пробный</span></span>
       </nav>
       {isLogoutOpen && <LogoutModal onClose={() => setIsLogoutOpen(false)} onConfirm={logout} />}

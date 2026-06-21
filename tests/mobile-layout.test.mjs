@@ -28,24 +28,39 @@ test("uses one white background across the mobile app shell", () => {
 test("renders the authenticated mobile dashboard and floating navigation", async () => {
   const home = await readFile(new URL("../src/components/home-client.tsx", import.meta.url), "utf8");
 
-  assert.match(home, /className="mobile-dashboard"/);
+  assert.match(home, /className="mobile-dashboard app-view"/);
   assert.match(home, />Вернуться к учёбе</);
   assert.match(home, />Недавние</);
   assert.match(home, /className="mobile-bottom-nav"/);
-  assert.match(home, /data-active-tab=\{mobileTab\}/);
+  assert.match(home, /data-active-tab=\{activeTab\}/);
   assert.match(home, /className="mobile-nav-indicator"/);
   assert.match(home, /latestSet\.studiedCount/);
   assert.match(home, /"Пройти заново"/);
   assert.match(home, /↻ Начать заново/);
   assert.match(home, /href=\{`\/study\/\$\{set\.id\}`\} transitionTypes=\{\["nav-forward"\]\} className="mobile-recent-set"/);
-  assert.match(home, /mobileTab === "create"/);
-  assert.match(home, /mobileTab === "library"/);
-  assert.match(home, /setMobileTab\("home"\)/);
+  assert.match(home, /activeTab === "create"/);
+  assert.match(home, /activeTab === "library"/);
+  assert.match(home, /setActiveTab\("home"\)/);
   assert.match(css, /\.mobile-bottom-nav \{ position:fixed;/);
   assert.match(css, /border-radius:28px/);
   assert.match(css, /\.mobile-nav-indicator \{[^}]*transition:transform/);
   assert.match(css, /\[data-active-tab="library"\] \.mobile-nav-indicator \{ transform:translate3d\(200%,0,0\); \}/);
   assert.match(css, /\.mobile-dashboard \{ min-height:0; \}/);
+});
+
+test("exposes the mobile feature set in the desktop workspace", async () => {
+  const home = await readFile(new URL("../src/components/home-client.tsx", import.meta.url), "utf8");
+
+  assert.match(home, /type AppTab = "home" \| "create" \| "library"/);
+  assert.match(home, /className="desktop-dashboard-stats"/);
+  assert.match(home, /className="mobile-tab-screen mobile-create-screen app-view"/);
+  assert.match(home, /className="mobile-tab-screen mobile-library-screen app-view"/);
+  assert.match(home, /<CreateMethodPicker \/>/);
+  assert.match(home, /onClick=\{\(\) => setActiveTab\("library"\)\}/);
+  assert.match(home, /onClick=\{\(\) => setActiveTab\("create"\)\}/);
+  assert.match(css, /\.app-view \{ min-height:calc\(100dvh - 80px\);/);
+  assert.match(css, /\.dashboard-grid \{ display:grid; grid-template-columns:/);
+  assert.match(css, /\.mobile-create-screen \.create-method-list \{ grid-template-columns:repeat\(3,minmax\(0,1fr\)\); \}/);
 });
 
 test("keeps card practice fixed and swipe-only", () => {
