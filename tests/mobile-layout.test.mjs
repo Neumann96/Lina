@@ -28,6 +28,8 @@ test("renders the authenticated mobile dashboard and floating navigation", async
   assert.match(home, /data-active-tab=\{mobileTab\}/);
   assert.match(home, /className="mobile-nav-indicator"/);
   assert.match(home, /latestSet\.studiedCount/);
+  assert.match(home, /"Пройти заново"/);
+  assert.match(home, /↻ Начать заново/);
   assert.match(home, /href=\{`\/study\/\$\{set\.id\}`\} transitionTypes=\{\["nav-forward"\]\} className="mobile-recent-set"/);
   assert.match(home, /mobileTab === "create"/);
   assert.match(home, /mobileTab === "library"/);
@@ -49,6 +51,7 @@ test("keeps card practice fixed and swipe-only", () => {
   assert.match(studySession, /key=\{card\.id\}/);
   assert.match(studySession, /keepalive: true/);
   assert.match(studySession, /await Promise\.allSettled\(\[\.\.\.pendingReviews\.current\]\)/);
+  assert.match(studySession, /aria-label="Начать набор заново"/);
 });
 
 test("keeps mobile study controls clear of Telegram chrome and the card", () => {

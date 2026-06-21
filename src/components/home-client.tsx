@@ -335,6 +335,7 @@ export function HomeClient({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(initialSidebarCollapsed);
   const [mobileTab, setMobileTab] = useState<MobileTab>("home");
   const [telegramReturnError, setTelegramReturnError] = useState("");
+  const [restartingSetId, setRestartingSetId] = useState<string | null>(null);
 
   useEffect(() => {
     const callbackStatus = new URLSearchParams(window.location.search).get("telegramAuth");
@@ -374,12 +375,26 @@ export function HomeClient({
     }
   }
 
+  async function restartSet(setId: string, openAfterRestart: boolean) {
+    if (restartingSetId || !window.confirm("Начать этот набор заново? Текущий прогресс будет сброшен.")) return;
+    setRestartingSetId(setId);
+    try {
+      const response = await fetch(`/api/sets/${setId}/restart`, { method: "POST" });
+      if (!response.ok) throw new Error();
+      window.location.assign(openAfterRestart ? `/study/${setId}` : "/");
+    } catch {
+      window.alert("Не удалось начать набор заново. Попробуйте ещё раз.");
+      setRestartingSetId(null);
+    }
+  }
+
   if (!user || !initialDashboard) {
     return <GuestLanding telegramError={telegramReturnError} />;
   }
 
   const { stats, recentSets } = initialDashboard;
   const latestSet = recentSets[0];
+  const latestSetComplete = Boolean(latestSet && latestSet.count > 0 && latestSet.studiedCount >= latestSet.count);
 
   return (
     <div className="app-shell">
@@ -423,10 +438,17 @@ export function HomeClient({
           <h1>Вернуться к учёбе</h1>
           {latestSet ? (
             <article className="mobile-resume-card">
-              <div className="mobile-resume-heading"><h2>{latestSet.title}</h2><button type="button" aria-label="Меню набора">•••</button></div>
+              <div className="mobile-resume-heading"><h2>{latestSet.title}</h2></div>
               <div className="mobile-resume-progress"><span style={{ width: `${latestSet.progress}%` }} /></div>
               <p>{latestSet.studiedCount}/{latestSet.count} карточек изучено</p>
-              <Link href={`/study/${latestSet.id}`} transitionTypes={["nav-forward"]}>Продолжить</Link>
+              {latestSetComplete ? (
+                <button className="mobile-resume-primary" type="button" onClick={() => restartSet(latestSet.id, true)} disabled={restartingSetId === latestSet.id}>{restartingSetId === latestSet.id ? "Начинаем…" : "Пройти заново"}</button>
+              ) : (
+                <Link className="mobile-resume-primary" href={`/study/${latestSet.id}`} transitionTypes={["nav-forward"]}>Продолжить</Link>
+              )}
+              {latestSet.studiedCount > 0 && !latestSetComplete && (
+                <button className="mobile-resume-restart" type="button" onClick={() => restartSet(latestSet.id, true)} disabled={restartingSetId === latestSet.id}>↻ Начать заново</button>
+              )}
             </article>
           ) : (
             <div className="sets-empty mobile-sets-empty"><span>Пока здесь тихо</span><h3>Создайте свой первый набор</h3><p>Lina соберёт карточки и сохранит их в вашем аккаунте.</p><button type="button" onClick={() => setMobileTab("create")}>Добавить слова →</button></div>

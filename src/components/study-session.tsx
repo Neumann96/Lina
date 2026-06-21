@@ -9,7 +9,7 @@ const SWIPE_THRESHOLD = 82;
 function StudyIcon({ name, size = 24 }: { name: string; size?: number }) {
   const paths: Record<string, React.ReactNode> = {
     close: <path d="m6 6 12 12M18 6 6 18" />,
-    settings: <><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.08A1.7 1.7 0 0 0 8.95 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15 1.7 1.7 0 0 0 3.08 14H3v-4h.08A1.7 1.7 0 0 0 4.6 8.95a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6 1.7 1.7 0 0 0 10 3.08V3h4v.08A1.7 1.7 0 0 0 15.05 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9 1.7 1.7 0 0 0 20.92 10H21v4h-.08A1.7 1.7 0 0 0 19.4 15Z"/></>,
+    restart: <><path d="M20 11a8 8 0 1 0-2.34 5.66"/><path d="M20 4v7h-7"/></>,
     volume: <><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18 6a8.5 8.5 0 0 1 0 12"/></>,
     star: <path d="m12 3 2.75 5.57 6.15.9-4.45 4.33 1.05 6.12L12 17.03l-5.5 2.89 1.05-6.12L3.1 9.47l6.15-.9L12 3Z"/>,
   };
@@ -17,7 +17,7 @@ function StudyIcon({ name, size = 24 }: { name: string; size?: number }) {
 }
 
 export function StudySession({ studySet }: { studySet: StudySet }) {
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(studySet.startIndex);
   const [known, setKnown] = useState(0);
   const [learning, setLearning] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -25,13 +25,13 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [exitDirection, setExitDirection] = useState<-1 | 0 | 1>(0);
+  const [restarting, setRestarting] = useState(false);
   const startX = useRef(0);
   const moved = useRef(false);
   const pendingReviews = useRef(new Set<Promise<void>>());
   const card = studySet.cards[index];
   const nextCard = studySet.cards[index + 1];
   const finished = index >= studySet.cards.length;
-  const reviewed = known + learning;
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -66,6 +66,20 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
     event.preventDefault();
     await Promise.allSettled([...pendingReviews.current]);
     window.location.assign("/");
+  }
+
+  async function restartSession() {
+    if (restarting || !window.confirm("Начать этот набор заново? Текущий прогресс будет сброшен.")) return;
+    setRestarting(true);
+    await Promise.allSettled([...pendingReviews.current]);
+    try {
+      const response = await fetch(`/api/sets/${studySet.id}/restart`, { method: "POST" });
+      if (!response.ok) throw new Error();
+      window.location.reload();
+    } catch {
+      window.alert("Не удалось начать набор заново. Попробуйте ещё раз.");
+      setRestarting(false);
+    }
   }
 
   function answer(correct: boolean) {
@@ -120,10 +134,10 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
     <main className="study-page">
       <header className="study-header">
         <Link className="study-round-button" href="/" transitionTypes={["nav-back"]} onClick={closeSession} aria-label="Закрыть режим обучения"><StudyIcon name="close" size={27}/></Link>
-        <div className="study-heading"><strong>{studySet.title}</strong><span>{Math.min(reviewed + 1, studySet.cards.length)} / {studySet.cards.length}</span></div>
-        <button className="study-round-button" type="button" aria-label="Настройки"><StudyIcon name="settings" size={26}/></button>
+        <div className="study-heading"><strong>{studySet.title}</strong><span>{Math.min(index + 1, studySet.cards.length)} / {studySet.cards.length}</span></div>
+        <button className="study-round-button" type="button" onClick={restartSession} disabled={restarting} aria-label="Начать набор заново"><StudyIcon name="restart" size={25}/></button>
       </header>
-      <div className="study-progress" aria-label={`Пройдено ${reviewed} из ${studySet.cards.length}`}><span style={{ width: `${studySet.cards.length ? reviewed / studySet.cards.length * 100 : 0}%` }}/></div>
+      <div className="study-progress" aria-label={`Пройдено ${index} из ${studySet.cards.length}`}><span style={{ width: `${studySet.cards.length ? index / studySet.cards.length * 100 : 0}%` }}/></div>
 
       <section className="study-stage">
         <div className="study-counters">

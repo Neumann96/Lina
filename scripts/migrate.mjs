@@ -1,5 +1,5 @@
 import nextEnv from "@next/env";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { Pool } from "pg";
 
@@ -17,8 +17,14 @@ const pool = new Pool({
 });
 
 try {
-  const sql = await readFile(path.join(root, "db/migrations/001_auth.sql"), "utf8");
-  await pool.query(sql);
+  const migrationsDirectory = path.join(root, "db/migrations");
+  const migrations = (await readdir(migrationsDirectory))
+    .filter((file) => file.endsWith(".sql"))
+    .sort();
+  for (const migration of migrations) {
+    const sql = await readFile(path.join(migrationsDirectory, migration), "utf8");
+    await pool.query(sql);
+  }
   console.log("PostgreSQL migrations completed");
 } finally {
   await pool.end();

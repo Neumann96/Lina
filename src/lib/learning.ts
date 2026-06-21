@@ -33,6 +33,7 @@ export type StudyCard = {
 export type StudySet = {
   id: string;
   title: string;
+  startIndex: number;
   cards: StudyCard[];
 };
 
@@ -59,20 +60,13 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
     query<{ id: string; title: string; cardCount: string; studiedCount: string }>(
       `SELECT s.id, s.title,
          COUNT(c.id) AS "cardCount",
-         COUNT(c.id) FILTER (WHERE EXISTS (
-           SELECT 1 FROM card_reviews r
-           WHERE r.card_id = c.id AND r.user_id = $1
-         )) AS "studiedCount"
+         LEAST(COALESCE(p.next_position, 0), COUNT(c.id)) AS "studiedCount"
        FROM study_sets s
        LEFT JOIN cards c ON c.set_id = s.id
+       LEFT JOIN study_set_progress p ON p.set_id = s.id AND p.user_id = $1
        WHERE s.user_id = $1
-       GROUP BY s.id
-       ORDER BY COALESCE((
-         SELECT MAX(r.reviewed_at)
-         FROM card_reviews r
-         JOIN cards reviewed_card ON reviewed_card.id = r.card_id
-         WHERE reviewed_card.set_id = s.id AND r.user_id = $1
-       ), s.created_at) DESC
+       GROUP BY s.id, p.next_position, p.updated_at
+       ORDER BY COALESCE(p.updated_at, s.created_at) DESC
        LIMIT 3`,
       [userId],
     ),
@@ -146,33 +140,61 @@ export async function createStudySet(userId: string, title: string, cards: Array
 }
 
 export async function getStudySet(userId: string, setId: string): Promise<StudySet | null> {
-  const result = await query<{ setId: string; title: string; cardId: string | null; term: string | null; definition: string | null }>(
-    `SELECT s.id AS "setId", s.title, c.id AS "cardId", c.term, c.definition
+  const result = await query<{ setId: string; title: string; nextPosition: number | null; cardId: string | null; term: string | null; definition: string | null }>(
+    `SELECT s.id AS "setId", s.title, p.next_position AS "nextPosition", c.id AS "cardId", c.term, c.definition
      FROM study_sets s
      LEFT JOIN cards c ON c.set_id = s.id
+     LEFT JOIN study_set_progress p ON p.set_id = s.id AND p.user_id = $2
      WHERE s.id = $1 AND s.user_id = $2
      ORDER BY c.position`,
     [setId, userId],
   );
 
   if (!result.rows.length) return null;
+  const cards = result.rows.flatMap((row) => row.cardId && row.term && row.definition
+    ? [{ id: row.cardId, term: row.term, definition: row.definition }]
+    : []);
   return {
     id: result.rows[0].setId,
     title: result.rows[0].title,
-    cards: result.rows.flatMap((row) => row.cardId && row.term && row.definition
-      ? [{ id: row.cardId, term: row.term, definition: row.definition }]
-      : []),
+    startIndex: Math.min(result.rows[0].nextPosition ?? 0, cards.length),
+    cards,
   };
 }
 
 export async function recordCardReview(userId: string, cardId: string, isCorrect: boolean) {
   const result = await query(
-    `INSERT INTO card_reviews (user_id, card_id, is_correct)
-     SELECT $1, c.id, $3
-     FROM cards c
-     JOIN study_sets s ON s.id = c.set_id
-     WHERE c.id = $2 AND s.user_id = $1`,
+    `WITH target_card AS (
+       SELECT c.id, c.set_id, c.position
+       FROM cards c
+       JOIN study_sets s ON s.id = c.set_id
+       WHERE c.id = $2 AND s.user_id = $1
+     ), saved_review AS (
+       INSERT INTO card_reviews (user_id, card_id, is_correct)
+       SELECT $1, id, $3 FROM target_card
+     )
+     INSERT INTO study_set_progress (user_id, set_id, next_position, updated_at)
+     SELECT $1, set_id, position + 1, NOW()
+     FROM target_card
+     ON CONFLICT (user_id, set_id) DO UPDATE
+     SET next_position = GREATEST(study_set_progress.next_position, EXCLUDED.next_position),
+         updated_at = NOW()
+     RETURNING set_id`,
     [userId, cardId, isCorrect],
+  );
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function restartStudySet(userId: string, setId: string) {
+  const result = await query(
+    `INSERT INTO study_set_progress (user_id, set_id, next_position, updated_at)
+     SELECT $1, s.id, 0, NOW()
+     FROM study_sets s
+     WHERE s.id = $2 AND s.user_id = $1
+     ON CONFLICT (user_id, set_id) DO UPDATE
+     SET next_position = 0, updated_at = NOW()
+     RETURNING set_id`,
+    [userId, setId],
   );
   return (result.rowCount ?? 0) > 0;
 }
