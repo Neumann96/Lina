@@ -366,11 +366,11 @@ function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
         </section>
 
         <section className="landing-methods">
-          <div className="landing-section-title" data-reveal><span>Три принципа</span><h2>Не магия. Хорошо изученная механика памяти.</h2><p>Lina соединяет техники, которые помогают знаниям задержаться надолго.</p></div>
+          <div className="landing-section-title" data-reveal><span>Три принципа</span><h2>Не магия. Хорошо изученная механика мозга.</h2><p>Lina соединяет техники, которые помогают знаниям задержаться надолго.</p></div>
           <div className="method-grid">
-            <article data-reveal style={{ "--reveal-delay": "0ms" } as React.CSSProperties}><span><Icon name="chart"/></span><b>01</b><h3>Интервальное повторение</h3><p>Интервалы постепенно увеличиваются: знакомое возвращается реже, сложное — раньше.</p></article>
-            <article data-reveal style={{ "--reveal-delay": "90ms" } as React.CSSProperties}><span><Icon name="brain"/></span><b>02</b><h3>Активное воспроизведение</h3><p>Сначала вы пытаетесь вспомнить ответ и только потом смотрите его. Так память работает, а не наблюдает.</p></article>
-            <article data-reveal style={{ "--reveal-delay": "180ms" } as React.CSSProperties}><span><Icon name="spark"/></span><b>03</b><h3>Адаптация под вас</h3><p>Lina учитывает ответы и обновляет расписание. Одинаковых интервалов для всего подряд не будет.</p></article>
+            <article data-reveal style={{ "--reveal-delay": "0ms" } as React.CSSProperties}><span><Icon name="chart"/></span><h3>Интервальное повторение</h3><p>Интервалы постепенно увеличиваются: знакомое возвращается реже, сложное — раньше.</p></article>
+            <article data-reveal style={{ "--reveal-delay": "90ms" } as React.CSSProperties}><span><Icon name="brain"/></span><h3>Активное воспроизведение</h3><p>Сначала вы пытаетесь вспомнить ответ и только потом смотрите его. Так память работает, а не наблюдает.</p></article>
+            <article data-reveal style={{ "--reveal-delay": "180ms" } as React.CSSProperties}><span><Icon name="spark"/></span><h3>Адаптация под вас</h3><p>Lina учитывает ответы и обновляет расписание. Одинаковых интервалов для всего подряд не будет.</p></article>
           </div>
         </section>
 
