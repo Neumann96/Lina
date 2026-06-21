@@ -118,9 +118,10 @@ html:not(.telegram-mini-app) .telegram-mini-app-login { display:none; }
 .study-stage { position:relative; width:100%; height:calc(100dvh - 97px); display:grid; place-items:center; padding:26px 20px 24px; overflow:hidden; }
 .study-counters { position:absolute; z-index:4; top:26px; right:0; left:0; pointer-events:none; }
 .study-counter { position:absolute; top:0; width:68px; height:46px; display:grid; place-items:center; border:1px solid; border-radius:999px; background:#fff; box-shadow:0 6px 16px #432c3b09; }
-.study-counter.learning { left:-10px; }.study-counter.known { right:-10px; }
+.study-counter.learning { left:-24px; }.study-counter.known { right:-24px; }
 .study-counter strong { font-size:22px; line-height:1; }
-.study-counter.learning { color:#dc6a3e; border-color:#f3c2ac; background:#fff8f3; }
+.study-counter.learning strong { transform:translateX(16px); }.study-counter.known strong { transform:translateX(-16px); }
+.study-counter.learning { color:#d6323f; border-color:#eda3aa; background:#fff3f4; }
 .study-counter.known { color:#368d76; border-color:#a7ddce; background:#f2fcf8; }
 .study-card-wrap { position:relative; width:min(100%,570px); height:min(64dvh,620px); min-height:390px; align-self:center; justify-self:center; perspective:1400px; }
 .study-card-next { position:absolute; inset:8px 10px -8px; display:grid; place-items:center; padding:54px; border:1px solid #ede3de; border-radius:34px; color:#c9c0c4; background:#fffdfb; box-shadow:0 16px 42px #51333e12; transform:scale(.985); overflow:hidden; }
@@ -148,7 +149,7 @@ html:not(.telegram-mini-app) .telegram-mini-app-login { display:none; }
   .study-header { height:78px; grid-template-columns:46px minmax(0,1fr) 46px; gap:10px; padding:0 18px; }.telegram-mini-app .study-header { height:calc(106px + var(--tg-content-safe-area-inset-top,0px)); padding-top:calc(28px + var(--tg-content-safe-area-inset-top,0px)); }
   .study-round-button { width:44px; height:44px; }.study-heading strong { display:none; }.study-heading span { font-size:21px; }.study-progress { height:4px; }
   .study-stage { height:calc(100dvh - 82px); padding:18px; }.telegram-mini-app .study-stage { height:calc(100dvh - 110px - var(--tg-content-safe-area-inset-top,0px)); padding-bottom:calc(18px + var(--tg-content-safe-area-inset-bottom,0px)); }
-  .study-counters { top:16px; }.study-counter { width:62px; height:42px; }.study-counter.learning { left:-8px; }.study-counter.known { right:-8px; }.study-counter strong { font-size:21px; }
+  .study-counters { top:16px; }.study-counter { width:62px; height:42px; }.study-counter.learning { left:-22px; }.study-counter.known { right:-22px; }.study-counter strong { font-size:21px; }.study-counter.learning strong { transform:translateX(15px); }.study-counter.known strong { transform:translateX(-15px); }
   .study-card-wrap { width:100%; height:min(66dvh,610px); min-height:360px; margin:18px 0; }.study-card { border-radius:28px; }.study-card-face { padding-inline:34px; }.study-card-face strong { font-size:clamp(31px,10vw,43px); }.study-card-face.back strong { font-size:clamp(25px,8vw,35px); }
   .study-complete { padding:45px 22px; }
 }
