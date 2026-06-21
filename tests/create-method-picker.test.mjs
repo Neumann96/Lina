@@ -18,4 +18,6 @@ test("camera recognition stays client-side and supports Russian and English", ()
   assert.match(picker, /worker\.recognize\(canvas\)/);
   assert.match(picker, /worker\.terminate\(\)/);
   assert.match(picker, /parseBulkTerms\(recognized\)/);
+  assert.match(picker, /tessedit_pageseg_mode: PSM\.SINGLE_BLOCK/);
+  assert.match(picker, /prepareCameraFrame\(video\)/);
 });

@@ -39,3 +39,33 @@ test("recognizes wide spaces produced by camera OCR", () => {
     ],
   );
 });
+
+test("recognizes a single space produced by camera OCR", () => {
+  const pairs = parseBulkTerms("apple яблоко\nwell-being благополучие");
+
+  assert.deepEqual(
+    pairs.map(({ term, definition }) => ({ term, definition })),
+    [
+      { term: "apple", definition: "яблоко" },
+      { term: "well-being", definition: "благополучие" },
+    ],
+  );
+});
+
+test("keeps the rest of a definition intact after the first separator", () => {
+  const [pair] = parseBulkTerms("resilient, стойкий, устойчивый");
+  assert.equal(pair.definition, "стойкий, устойчивый");
+});
+
+test("recognizes punctuation even when OCR removes surrounding spaces", () => {
+  const pairs = parseBulkTerms("apple—яблоко\nfast:быстрый\nbook;книга\nhome,дом");
+  assert.deepEqual(
+    pairs.map(({ term, definition }) => ({ term, definition })),
+    [
+      { term: "apple", definition: "яблоко" },
+      { term: "fast", definition: "быстрый" },
+      { term: "book", definition: "книга" },
+      { term: "home", definition: "дом" },
+    ],
+  );
+});

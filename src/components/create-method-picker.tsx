@@ -4,6 +4,54 @@ import { useEffect, useRef, useState } from "react";
 import { parseBulkTerms, type TermPair } from "@/lib/parse-bulk-terms";
 
 type CreateMethod = "manual" | "camera" | "file";
+const CAMERA_GUIDE_INSET = 0.08;
+
+function prepareCameraFrame(video: HTMLVideoElement) {
+  const sourceWidth = video.videoWidth;
+  const sourceHeight = video.videoHeight;
+  const displayAspect = video.clientWidth / video.clientHeight;
+  const sourceAspect = sourceWidth / sourceHeight;
+
+  let visibleWidth = sourceWidth;
+  let visibleHeight = sourceHeight;
+  let visibleX = 0;
+  let visibleY = 0;
+
+  // The preview uses object-fit: cover. Map its visible guide back to the
+  // original camera pixels so OCR does not scan the surrounding background.
+  if (sourceAspect > displayAspect) {
+    visibleWidth = sourceHeight * displayAspect;
+    visibleX = (sourceWidth - visibleWidth) / 2;
+  } else {
+    visibleHeight = sourceWidth / displayAspect;
+    visibleY = (sourceHeight - visibleHeight) / 2;
+  }
+
+  const cropX = visibleX + visibleWidth * CAMERA_GUIDE_INSET;
+  const cropY = visibleY + visibleHeight * CAMERA_GUIDE_INSET;
+  const cropWidth = visibleWidth * (1 - CAMERA_GUIDE_INSET * 2);
+  const cropHeight = visibleHeight * (1 - CAMERA_GUIDE_INSET * 2);
+  const scale = Math.min(2, 2400 / Math.max(cropWidth, cropHeight));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(cropWidth * scale);
+  canvas.height = Math.round(cropHeight * scale);
+
+  const context = canvas.getContext("2d");
+  if (!context) return null;
+  context.filter = "grayscale(1) contrast(1.6)";
+  context.drawImage(
+    video,
+    cropX,
+    cropY,
+    cropWidth,
+    cropHeight,
+    0,
+    0,
+    canvas.width,
+    canvas.height,
+  );
+  return canvas;
+}
 
 function MethodIcon({ name }: { name: CreateMethod | "back" }) {
   const paths: Record<string, React.ReactNode> = {
@@ -48,7 +96,14 @@ function CameraRecognizer({ onBack }: { onBack: () => void }) {
         return;
       }
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: "environment" },
+            width: { ideal: 1920 },
+            height: { ideal: 2560 },
+          },
+          audio: false,
+        });
         if (cancelled) {
           stream.getTracks().forEach((track) => track.stop());
           return;
@@ -77,18 +132,14 @@ function CameraRecognizer({ onBack }: { onBack: () => void }) {
     const video = videoRef.current;
     if (!video || !video.videoWidth || status !== "ready") return;
 
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const context = canvas.getContext("2d");
-    if (!context) return;
-    context.drawImage(video, 0, 0);
+    const canvas = prepareCameraFrame(video);
+    if (!canvas) return;
 
     setStatus("recognizing");
     setProgress(0);
     setMessage("Готовим распознавание…");
     try {
-      const { createWorker } = await import("tesseract.js");
+      const { createWorker, PSM } = await import("tesseract.js");
       const worker = await createWorker(["eng", "rus"], 1, {
         logger: ({ status: workerStatus, progress: workerProgress }) => {
           if (workerStatus === "recognizing text") {
@@ -98,7 +149,11 @@ function CameraRecognizer({ onBack }: { onBack: () => void }) {
         },
       });
       try {
-        await worker.setParameters({ preserve_interword_spaces: "1" });
+        await worker.setParameters({
+          tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
+          preserve_interword_spaces: "1",
+          user_defined_dpi: "300",
+        });
         const result = await worker.recognize(canvas);
         const recognized = result.data.text.trim();
         const recognizedPairs = parseBulkTerms(recognized);
@@ -126,7 +181,7 @@ function CameraRecognizer({ onBack }: { onBack: () => void }) {
   return (
     <div className="camera-recognizer">
       <button className="create-back" type="button" onClick={onBack}><MethodIcon name="back" /> Все способы</button>
-      <div className="camera-heading"><span>Распознавание</span><h2>Наведи камеру на список</h2><p>Лучше всего работают строки вида: <b>word — перевод</b></p></div>
+      <div className="camera-heading"><span>Распознавание</span><h2>Наведи камеру на список</h2><p>Разделяйте слово и перевод <b>пробелом, тире, двоеточием, точкой с запятой или запятой</b></p></div>
       <div className="camera-frame">
         <video ref={videoRef} muted playsInline aria-label="Изображение с камеры" />
         <span className="camera-guide" aria-hidden="true" />

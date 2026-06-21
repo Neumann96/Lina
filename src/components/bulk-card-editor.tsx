@@ -53,7 +53,7 @@ export function BulkCardEditor({ onCreated }: { onCreated: () => void }) {
         <div className="panel-title"><span className="step">1</span><div><strong>Вставь список</strong><small>Каждая пара — с новой строки</small></div></div>
         <input className="set-title-input" value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Название набора" maxLength={120} aria-label="Название набора" />
         <textarea value={raw} onChange={(event) => setRaw(event.target.value)} aria-label="Список слов" spellCheck={false} />
-        <div className="separator-hint"><span>Распознаём</span><kbd>Tab</kbd><kbd>—</kbd><kbd>:</kbd><kbd>;</kbd><kbd>,</kbd></div>
+        <div className="separator-hint"><span>Распознаём</span><kbd>Пробел</kbd><kbd>—</kbd><kbd>:</kbd><kbd>;</kbd><kbd>,</kbd></div>
         <button className="recognize-button" onClick={recognize}>Распознать слова <span>→</span></button>
       </div>
       <div className="preview-panel">

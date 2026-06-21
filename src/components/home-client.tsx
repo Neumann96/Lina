@@ -310,7 +310,7 @@ function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
 
         <section className="landing-features" id="features">
           <div><span>Меньше подготовки</span><h2>Учёба начинается сразу</h2><p>Массовое добавление карточек, аккуратная библиотека и честная статистика без лишнего шума.</p><button onClick={() => setAuthMode("register")}>Создать первый набор</button></div>
-          <ul><li><Icon name="spark"/><span><strong>Умный импорт</strong><small>Tab, тире, двоеточие, точка с запятой или запятая</small></span></li><li><Icon name="chart"/><span><strong>Настоящий прогресс</strong><small>Только ваши наборы, ответы и дни занятий</small></span></li><li><Icon name="cards"/><span><strong>Всё в одном месте</strong><small>Возвращайтесь к наборам с любого устройства</small></span></li></ul>
+          <ul><li><Icon name="spark"/><span><strong>Умный импорт</strong><small>Пробел, тире, двоеточие, точка с запятой или запятая</small></span></li><li><Icon name="chart"/><span><strong>Настоящий прогресс</strong><small>Только ваши наборы, ответы и дни занятий</small></span></li><li><Icon name="cards"/><span><strong>Всё в одном месте</strong><small>Возвращайтесь к наборам с любого устройства</small></span></li></ul>
         </section>
 
         <section className="landing-final"><div className="eyebrow"><Icon name="spark" size={16}/> Начните с одного списка</div><h2>Пусть новые слова<br/>наконец останутся с вами</h2><button onClick={() => setAuthMode("register")}>Попробовать Lina бесплатно <span>→</span></button></section>
