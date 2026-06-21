@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { CreateMethodPicker } from "@/components/create-method-picker";
 import type { AuthUser } from "@/lib/auth";
@@ -312,7 +313,7 @@ function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
             <div className="eyebrow"><Icon name="spark" size={16}/> Запоминание, основанное на исследованиях</div>
             <h1>Запоминайте надолго.<br/><em>Lina знает, когда повторить.</em></h1>
             <p>Загрузите конспект, документ или фотографию. Lina создаст карточки, составит расписание повторений и напомнит о занятии в Telegram.</p>
-            <div className="landing-cta"><button onClick={openRegister}>Запомнить первый материал <span>→</span></button><small>Бесплатно · без карты · для любых знаний</small></div>
+            <div className="landing-cta"><button onClick={openRegister}>Запомнить первый материал <span>→</span></button></div>
             <div className="landing-use-cases" aria-label="Примеры материалов"><span>Термины</span><span>Формулы</span><span>Даты</span><span>Определения</span></div>
           </div>
           <div className="landing-system-demo" aria-label="Как Lina превращает материал в запланированное повторение">
@@ -329,7 +330,7 @@ function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
               <div className="memory-actions"><span>Сложно</span><span>Помню</span></div>
             </article>
             <article className="telegram-card">
-              <span className="telegram-icon"><Icon name="telegram" size={18}/></span>
+              <span className="telegram-icon"><Image src="/telegram-logo.png" alt="Telegram" width={42} height={42}/></span>
               <div><small>Lina · сейчас</small><strong>7 карточек пора повторить</strong><p>Я уже всё собрала. Вам осталось только вспомнить.</p></div>
             </article>
           </div>
