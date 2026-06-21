@@ -407,9 +407,9 @@ function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
           </div>
         </section>
 
-        <section className="landing-final" data-reveal><div className="eyebrow"><Icon name="spark" size={16}/> Начните с одного материала</div><h2>Загрузите то, что хотите запомнить.<br/><em>Lina вернёт это в нужный момент.</em></h2><p>Без ручного создания карточек, расписаний и чувства, что вы опять что-то забыли.</p><button onClick={openRegister}>Начать запоминать <span>→</span></button></section>
+        <section className="landing-final" data-reveal><h2>Загрузите то, что хотите запомнить.<br/><em>Lina вернёт это в нужный момент.</em></h2><p>Без ручного создания карточек, расписаний и чувства, что вы опять что-то забыли.</p><button onClick={openRegister}>Начать запоминать <span>→</span></button></section>
       </main>
-      <footer className="landing-footer"><a className="landing-brand" href="#top"><span className="brand-mark">L</span><span>Lina</span></a><p>Память любит систему. Lina тоже.</p><span>© {new Date().getFullYear()} Lina</span></footer>
+      <footer className="landing-footer"><a className="landing-brand" href="#top"><span className="brand-mark">L</span><span>Lina</span></a><p>Память любит систему. Lina тоже.</p><a className="landing-footer-telegram" href="https://t.me/linalernbot?start=start" target="_blank" rel="noreferrer" aria-label="Открыть бота Lina в Telegram"><Image src="/telegram-logo.png" alt="" width={34} height={34}/></a><span>© {new Date().getFullYear()} Lina</span></footer>
       {authMode && <AuthModal mode={authMode} onClose={() => setAuthMode(null)} onModeChange={setAuthMode} onSuccess={() => window.location.reload()} />}
       {telegramError && <div className="telegram-return-error" role="alert">{telegramError}</div>}
     </div>
