@@ -351,11 +351,15 @@ function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
           <div className="forgetting-chart" data-reveal>
             <div className="chart-heading"><span>Прочность памяти</span><b>Повторения</b></div>
             <svg viewBox="0 0 620 300" role="img" aria-label="Схема интервального повторения">
-              <defs><linearGradient id="memory-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f36f3d" stopOpacity=".2"/><stop offset="1" stopColor="#f36f3d" stopOpacity="0"/></linearGradient></defs>
+              <defs>
+                <linearGradient id="memory-line" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#48a879"/><stop offset=".52" stopColor="#d9a05c"/><stop offset="1" stopColor="#df5e63"/></linearGradient>
+                <linearGradient id="memory-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#48a879" stopOpacity=".18"/><stop offset=".58" stopColor="#e9a26a" stopOpacity=".1"/><stop offset="1" stopColor="#df5e63" stopOpacity=".04"/></linearGradient>
+              </defs>
               <path className="chart-grid" d="M40 52H590M40 120H590M40 188H590M40 256H590"/>
-              <path className="chart-area" d="M40 64C78 88 90 169 112 212C130 151 141 105 164 83C203 111 217 172 245 203C264 149 281 108 306 91C347 119 368 166 397 192C417 149 438 115 464 101C507 125 534 158 577 181V266H40Z"/>
-              <path className="chart-line" pathLength="1" d="M40 64C78 88 90 169 112 212C130 151 141 105 164 83C203 111 217 172 245 203C264 149 281 108 306 91C347 119 368 166 397 192C417 149 438 115 464 101C507 125 534 158 577 181"/>
-              <g className="chart-points"><circle cx="112" cy="212" r="7"/><circle cx="245" cy="203" r="7"/><circle cx="397" cy="192" r="7"/><circle cx="577" cy="181" r="7"/></g>
+              <path className="chart-area" d="M40 66C68 72 91 183 112 216C124 235 132 137 160 88C181 52 220 171 245 207C258 226 269 148 300 96C321 60 370 166 398 196C414 214 429 158 460 108C484 70 538 153 578 181V266H40Z"/>
+              <path className="chart-line" pathLength="1" d="M40 66C68 72 91 183 112 216C124 235 132 137 160 88C181 52 220 171 245 207C258 226 269 148 300 96C321 60 370 166 398 196C414 214 429 158 460 108C484 70 538 153 578 181"/>
+              <g className="chart-points chart-valleys"><circle cx="112" cy="216" r="7"/><circle cx="245" cy="207" r="7"/><circle cx="398" cy="196" r="7"/><circle cx="578" cy="181" r="7"/></g>
+              <g className="chart-points chart-peaks"><circle cx="40" cy="66" r="6"/><circle cx="160" cy="88" r="6"/><circle cx="300" cy="96" r="6"/><circle cx="460" cy="108" r="6"/></g>
             </svg>
             <div className="chart-labels"><span>Сегодня</span><span>Завтра</span><span>Через 3 дня</span><span>Через неделю</span></div>
           </div>
