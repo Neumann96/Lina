@@ -377,9 +377,9 @@ function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
         <section className="landing-how" id="how">
           <div className="landing-section-title" data-reveal><span>Как это работает</span><h2>От материала до долговременной памяти</h2><p>Без ручного расписания и вечера, потраченного на создание карточек.</p></div>
           <div className="landing-steps">
-            <article data-reveal><b>01</b><div className="step-visual upload-visual"><Icon name="camera" size={28}/><Icon name="file" size={28}/><span>+ вставить текст</span></div><h3>Загрузите материал</h3><p>Сфотографируйте страницу, импортируйте файл или вставьте готовый текст.</p></article>
-            <article data-reveal style={{ "--reveal-delay": "90ms" } as React.CSSProperties}><b>02</b><div className="step-visual cards-stack"><i/><i/><i/></div><h3>Lina создаст карточки</h3><p>Термины, даты, формулы и определения — не только иностранные слова.</p></article>
-            <article data-reveal style={{ "--reveal-delay": "180ms" } as React.CSSProperties}><b>03</b><div className="step-visual schedule-visual"><span>1</span><span>3</span><span>7</span><span>14</span></div><h3>Повторяйте по плану</h3><p>Lina выберет нужные карточки, а бот напомнит, когда пора вернуться.</p></article>
+            <article data-reveal><div className="step-visual upload-visual"><Icon name="camera" size={28}/><Icon name="file" size={28}/><span>+ вставить текст</span></div><h3>Загрузите материал</h3><p>Сфотографируйте страницу, импортируйте файл или вставьте готовый текст.</p></article>
+            <article data-reveal style={{ "--reveal-delay": "90ms" } as React.CSSProperties}><div className="step-visual cards-stack"><i/><i/><i/></div><h3>Lina создаст карточки</h3><p>Термины, даты, формулы и определения — не только иностранные слова.</p></article>
+            <article data-reveal style={{ "--reveal-delay": "180ms" } as React.CSSProperties}><div className="step-visual schedule-visual"><span><small>ПН</small><strong>16</strong></span><span><small>ВТ</small><strong>17</strong></span><span><small>СР</small><strong>18</strong></span><span><small>ЧТ</small><strong>19</strong></span><span><small>ПТ</small><strong>20</strong></span></div><h3>Повторяйте по плану</h3><p>Lina выберет нужные карточки, а бот напомнит, когда пора вернуться.</p></article>
           </div>
         </section>
 
