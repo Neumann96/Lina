@@ -5,8 +5,8 @@ import { TelegramMiniApp } from "@/components/telegram-mini-app";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Lina — учить легко",
-  description: "Быстрые карточки для изучения слов без лишней рутины.",
+  title: "Lina — запоминайте надолго",
+  description: "Карточки из фото и документов, интервальное повторение и напоминания в Telegram — для любых знаний.",
 };
 
 export const viewport: Viewport = {

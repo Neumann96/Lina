@@ -20,6 +20,11 @@ function Icon({ name, size = 20 }: { name: string; size?: number }) {
     expand: <><path d="m9 18 6-6-6-6"/><path d="M4 5v14"/></>,
     logout: <><path d="M10 5V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5v-2"/><path d="m15 8 4 4-4 4M19 12H9"/></>,
     spark: <><path d="m12 3 1.2 3.8L17 8l-3.8 1.2L12 13l-1.2-3.8L7 8l3.8-1.2L12 3Z"/><path d="m19 14 .7 2.3L22 17l-2.3.7L19 20l-.7-2.3L16 17l2.3-.7L19 14Z"/></>,
+    camera: <><path d="M8 6 9.5 4h5L16 6h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3Z"/><circle cx="12" cy="13" r="4"/></>,
+    file: <><path d="M6 3h8l4 4v14H6V3Z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></>,
+    brain: <><path d="M9.5 4.5A3 3 0 0 0 4 6v1.2A3.5 3.5 0 0 0 3 13a3.5 3.5 0 0 0 3.5 5.5H10V4.8"/><path d="M14.5 4.5A3 3 0 0 1 20 6v1.2a3.5 3.5 0 0 1 1 5.8 3.5 3.5 0 0 1-3.5 5.5H14V4.8M7 9h3M14 9h3M7 15h3M14 15h3"/></>,
+    telegram: <><path d="m21 4-3 16-6-5-3 3 1-5 8-6-10 5-5-2 18-6Z"/><path d="m10 13 8-6"/></>,
+    check: <path d="m5 12 4 4L19 6"/>,
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{paths[name]}</svg>;
 }
@@ -269,52 +274,137 @@ function LogoutModal({ onClose, onConfirm }: LogoutModalProps) {
 
 function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
   const [authMode, setAuthMode] = useState<AuthMode | null>(telegramError ? "login" : null);
+
+  useEffect(() => {
+    const landing = document.querySelector<HTMLElement>(".landing");
+    const elements = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
+    if (!landing || !elements.length || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      elements.forEach((element) => element.classList.add("is-visible"));
+      return;
+    }
+
+    landing.classList.add("motion-ready");
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("is-visible");
+        observer.unobserve(entry.target);
+      });
+    }, { threshold: 0.14, rootMargin: "0px 0px -7%" });
+
+    elements.forEach((element) => observer.observe(element));
+    return () => observer.disconnect();
+  }, []);
+
+  const openRegister = () => setAuthMode("register");
+
   return (
     <div className="landing">
       <header className="landing-header">
         <a className="landing-brand" href="#top"><span className="brand-mark">L</span><span>Lina</span></a>
-        <nav aria-label="Навигация по странице"><a href="#how">Как это работает</a><a href="#features">Возможности</a></nav>
-        <div className="landing-auth"><button className="login-button" onClick={() => setAuthMode("login")}>Войти</button><button className="create-button" onClick={() => setAuthMode("register")}>Зарегистрироваться</button></div>
+        <nav aria-label="Навигация по странице"><a href="#science">Методика</a><a href="#how">Как работает</a><a href="#research">Исследования</a></nav>
+        <div className="landing-auth"><button className="login-button" onClick={() => setAuthMode("login")}>Войти</button><button className="create-button" onClick={openRegister}>Начать запоминать</button></div>
       </header>
 
       <main id="top">
         <section className="landing-hero">
           <div className="landing-hero-copy">
-            <div className="eyebrow"><Icon name="spark" size={16}/> Слова остаются с вами</div>
-            <h1>Запоминайте слова,<br/><em>а не списки</em></h1>
-            <p>Lina превращает любой список в удобные карточки и помогает повторять именно то, что вот-вот забудется.</p>
-            <div className="landing-cta"><button onClick={() => setAuthMode("register")}>Начать бесплатно <span>→</span></button><small>Без карты · займёт меньше минуты</small></div>
+            <div className="eyebrow"><Icon name="spark" size={16}/> Запоминание, основанное на исследованиях</div>
+            <h1>Запоминайте надолго.<br/><em>Lina знает, когда повторить.</em></h1>
+            <p>Загрузите конспект, документ или фотографию. Lina создаст карточки, составит расписание повторений и напомнит о занятии в Telegram.</p>
+            <div className="landing-cta"><button onClick={openRegister}>Запомнить первый материал <span>→</span></button><small>Бесплатно · без карты · для любых знаний</small></div>
+            <div className="landing-use-cases" aria-label="Примеры материалов"><span>Термины</span><span>Формулы</span><span>Даты</span><span>Определения</span></div>
           </div>
-          <div className="landing-demo" aria-label="Пример карточки Lina">
-            <div className="demo-toolbar"><span><i/> Lina · English</span><b>12 / 24</b></div>
-            <div className="demo-card-back" />
-            <article className="demo-card"><span>СЛОВО</span><strong>serendipity</strong><p>счастливая случайность</p><button type="button">Знаю это слово</button></article>
-            <div className="demo-progress"><span style={{ width: "62%" }}/></div>
+          <div className="landing-system-demo" aria-label="Как Lina превращает материал в запланированное повторение">
+            <div className="system-orbit orbit-one"/><div className="system-orbit orbit-two"/>
+            <article className="capture-card">
+              <span className="demo-icon"><Icon name="camera" size={19}/></span>
+              <div><small>Источник</small><strong>Конспект по биологии</strong></div>
+              <span className="scan-line"/>
+            </article>
+            <article className="memory-card">
+              <div className="memory-card-top"><span>КАРТОЧКА 12 ИЗ 24</span><i>86%</i></div>
+              <strong>Что делает митохондрия?</strong>
+              <p>Попробуйте вспомнить ответ</p>
+              <div className="memory-actions"><span>Сложно</span><span>Помню</span></div>
+            </article>
+            <article className="telegram-card">
+              <span className="telegram-icon"><Icon name="telegram" size={18}/></span>
+              <div><small>Lina · сейчас</small><strong>7 карточек пора повторить</strong><p>Я уже всё собрала. Вам осталось только вспомнить.</p></div>
+            </article>
           </div>
         </section>
 
         <section className="landing-proof">
-          <p>Один спокойный ритуал вместо хаоса в заметках</p>
-          <div><span>Вставьте список</span><i>→</i><span>Получите карточки</span><i>→</i><span>Повторяйте с умом</span></div>
+          <p>Вам не нужно планировать собственную память</p>
+          <div><span>Загрузите материал</span><i>→</i><span>Lina составит план</span><i>→</i><span>Бот позовёт вовремя</span></div>
         </section>
 
-        <section className="landing-how" id="how">
-          <div className="landing-section-title"><span>Как это работает</span><h2>От списка до знания — три шага</h2><p>Никакой ручной возни с каждой карточкой.</p></div>
-          <div className="landing-steps">
-            <article><b>01</b><div className="step-visual paste-lines"><i/><i/><i/></div><h3>Вставьте слова</h3><p>Скопируйте пары из таблицы, заметок или учебника. Lina разберёт разные разделители.</p></article>
-            <article><b>02</b><div className="step-visual cards-stack"><i/><i/><i/></div><h3>Проверьте карточки</h3><p>Исправьте перевод, добавьте контекст — всё видно сразу, ещё до сохранения.</p></article>
-            <article><b>03</b><div className="step-visual progress-ring">86<small>%</small></div><h3>Следите за ростом</h3><p>Точность, серии занятий и прогресс считаются отдельно для вашего аккаунта.</p></article>
+        <section className="landing-science" id="science">
+          <div className="landing-science-copy" data-reveal>
+            <span className="section-kicker">Методика</span>
+            <h2>Мозг забывает. Это нормально — и довольно предсказуемо.</h2>
+            <p>Если возвращаться к материалу через правильно подобранные интервалы, он сохраняется дольше. Lina отслеживает ответы и возвращает карточку тогда, когда памяти уже нужно подкрепление.</p>
+            <blockquote>Вы запоминаете. Lina занимается всей математикой вокруг этого.</blockquote>
+          </div>
+          <div className="forgetting-chart" data-reveal>
+            <div className="chart-heading"><span>Прочность памяти</span><b>Повторения</b></div>
+            <svg viewBox="0 0 620 300" role="img" aria-label="Схема интервального повторения">
+              <defs><linearGradient id="memory-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f36f3d" stopOpacity=".2"/><stop offset="1" stopColor="#f36f3d" stopOpacity="0"/></linearGradient></defs>
+              <path className="chart-grid" d="M40 52H590M40 120H590M40 188H590M40 256H590"/>
+              <path className="chart-area" d="M40 64C78 88 90 169 112 212C130 151 141 105 164 83C203 111 217 172 245 203C264 149 281 108 306 91C347 119 368 166 397 192C417 149 438 115 464 101C507 125 534 158 577 181V266H40Z"/>
+              <path className="chart-line" pathLength="1" d="M40 64C78 88 90 169 112 212C130 151 141 105 164 83C203 111 217 172 245 203C264 149 281 108 306 91C347 119 368 166 397 192C417 149 438 115 464 101C507 125 534 158 577 181"/>
+              <g className="chart-points"><circle cx="112" cy="212" r="7"/><circle cx="245" cy="203" r="7"/><circle cx="397" cy="192" r="7"/><circle cx="577" cy="181" r="7"/></g>
+            </svg>
+            <div className="chart-labels"><span>Сегодня</span><span>Завтра</span><span>Через 3 дня</span><span>Через неделю</span></div>
           </div>
         </section>
 
-        <section className="landing-features" id="features">
-          <div><span>Меньше подготовки</span><h2>Учёба начинается сразу</h2><p>Массовое добавление карточек, аккуратная библиотека и честная статистика без лишнего шума.</p><button onClick={() => setAuthMode("register")}>Создать первый набор</button></div>
-          <ul><li><Icon name="spark"/><span><strong>Умный импорт</strong><small>Пробел, тире, двоеточие, точка с запятой или запятая</small></span></li><li><Icon name="chart"/><span><strong>Настоящий прогресс</strong><small>Только ваши наборы, ответы и дни занятий</small></span></li><li><Icon name="cards"/><span><strong>Всё в одном месте</strong><small>Возвращайтесь к наборам с любого устройства</small></span></li></ul>
+        <section className="landing-methods">
+          <div className="landing-section-title" data-reveal><span>Три принципа</span><h2>Не магия. Хорошо изученная механика памяти.</h2><p>Lina соединяет техники, которые помогают знаниям задержаться надолго.</p></div>
+          <div className="method-grid">
+            <article data-reveal style={{ "--reveal-delay": "0ms" } as React.CSSProperties}><span><Icon name="chart"/></span><b>01</b><h3>Интервальное повторение</h3><p>Интервалы постепенно увеличиваются: знакомое возвращается реже, сложное — раньше.</p></article>
+            <article data-reveal style={{ "--reveal-delay": "90ms" } as React.CSSProperties}><span><Icon name="brain"/></span><b>02</b><h3>Активное воспроизведение</h3><p>Сначала вы пытаетесь вспомнить ответ и только потом смотрите его. Так память работает, а не наблюдает.</p></article>
+            <article data-reveal style={{ "--reveal-delay": "180ms" } as React.CSSProperties}><span><Icon name="spark"/></span><b>03</b><h3>Адаптация под вас</h3><p>Lina учитывает ответы и обновляет расписание. Одинаковых интервалов для всего подряд не будет.</p></article>
+          </div>
         </section>
 
-        <section className="landing-final"><div className="eyebrow"><Icon name="spark" size={16}/> Начните с одного списка</div><h2>Пусть новые слова<br/>наконец останутся с вами</h2><button onClick={() => setAuthMode("register")}>Попробовать Lina бесплатно <span>→</span></button></section>
+        <section className="landing-how" id="how">
+          <div className="landing-section-title" data-reveal><span>Как это работает</span><h2>От материала до долговременной памяти</h2><p>Без ручного расписания и вечера, потраченного на создание карточек.</p></div>
+          <div className="landing-steps">
+            <article data-reveal><b>01</b><div className="step-visual upload-visual"><Icon name="camera" size={28}/><Icon name="file" size={28}/><span>+ вставить текст</span></div><h3>Загрузите материал</h3><p>Сфотографируйте страницу, импортируйте файл или вставьте готовый текст.</p></article>
+            <article data-reveal style={{ "--reveal-delay": "90ms" } as React.CSSProperties}><b>02</b><div className="step-visual cards-stack"><i/><i/><i/></div><h3>Lina создаст карточки</h3><p>Термины, даты, формулы и определения — не только иностранные слова.</p></article>
+            <article data-reveal style={{ "--reveal-delay": "180ms" } as React.CSSProperties}><b>03</b><div className="step-visual schedule-visual"><span>1</span><span>3</span><span>7</span><span>14</span></div><h3>Повторяйте по плану</h3><p>Lina выберет нужные карточки, а бот напомнит, когда пора вернуться.</p></article>
+          </div>
+        </section>
+
+        <section className="landing-telegram">
+          <div className="telegram-showcase" data-reveal>
+            <div className="telegram-phone-top"><span>9:41</span><b>•••</b></div>
+            <div className="telegram-chat-head"><span><Icon name="telegram" size={21}/></span><div><strong>Lina</strong><small>бот для запоминания</small></div></div>
+            <div className="telegram-bubble"><p>На сегодня готово 7 карточек.</p><p>Я рассчитала момент, вы рассчитались пятью минутами времени 🤝</p><span>Начать повторение →</span></div>
+          </div>
+          <div className="landing-telegram-copy" data-reveal>
+            <span className="section-kicker">Telegram-напоминания</span>
+            <h2>Даже вспоминать о повторении не придётся</h2>
+            <p>Когда наступит подходящий момент, Lina напишет в Telegram. Открываете сообщение — и сразу начинаете занятие.</p>
+            <ul><li><Icon name="check" size={17}/> Расписание строится по вашим ответам</li><li><Icon name="check" size={17}/> В занятии только то, что пора повторить</li><li><Icon name="check" size={17}/> Никаких календарей и ручных настроек</li></ul>
+            <small>Держать расписание в голове не нужно. Там и без него дел хватает.</small>
+          </div>
+        </section>
+
+        <section className="landing-research" id="research">
+          <div className="research-intro" data-reveal><span className="section-kicker">Исследования</span><h2>Не очередной «секрет эффективной учёбы»</h2><p>Распределённая практика и активное воспроизведение изучаются психологами памяти десятилетиями. Исследования показывают: они помогают сохранять знания дольше, чем зубрёжка за один подход и простое перечитывание.</p></div>
+          <div className="research-links">
+            <a data-reveal href="https://doi.org/10.1037/0033-2909.132.3.354" target="_blank" rel="noreferrer"><span>Метаанализ · 2006</span><strong>Распределённая практика и долговременная память</strong><small>Cepeda et al. ↗</small></a>
+            <a data-reveal style={{ "--reveal-delay": "90ms" } as React.CSSProperties} href="https://doi.org/10.1111/j.1467-9280.2008.02209.x" target="_blank" rel="noreferrer"><span>Эксперимент · 2008</span><strong>Как интервал зависит от срока хранения знаний</strong><small>Cepeda et al. ↗</small></a>
+            <a data-reveal style={{ "--reveal-delay": "180ms" } as React.CSSProperties} href="https://doi.org/10.1111/j.1467-9280.2006.01693.x" target="_blank" rel="noreferrer"><span>Эксперимент · 2006</span><strong>Почему попытка вспомнить эффективнее перечитывания</strong><small>Roediger & Karpicke ↗</small></a>
+          </div>
+        </section>
+
+        <section className="landing-final" data-reveal><div className="eyebrow"><Icon name="spark" size={16}/> Начните с одного материала</div><h2>Загрузите то, что хотите запомнить.<br/><em>Lina вернёт это в нужный момент.</em></h2><p>Без ручного создания карточек, расписаний и чувства, что вы опять что-то забыли.</p><button onClick={openRegister}>Начать запоминать <span>→</span></button></section>
       </main>
-      <footer className="landing-footer"><a className="landing-brand" href="#top"><span className="brand-mark">L</span><span>Lina</span></a><p>Учитесь быстрее, а не дольше.</p><span>© {new Date().getFullYear()} Lina</span></footer>
+      <footer className="landing-footer"><a className="landing-brand" href="#top"><span className="brand-mark">L</span><span>Lina</span></a><p>Память любит систему. Lina тоже.</p><span>© {new Date().getFullYear()} Lina</span></footer>
       {authMode && <AuthModal mode={authMode} onClose={() => setAuthMode(null)} onModeChange={setAuthMode} onSuccess={() => window.location.reload()} />}
       {telegramError && <div className="telegram-return-error" role="alert">{telegramError}</div>}
     </div>
