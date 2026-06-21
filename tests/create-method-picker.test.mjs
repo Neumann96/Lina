@@ -9,7 +9,8 @@ test("offers all three creation methods in the mobile create tab", () => {
   assert.match(home, /<CreateMethodPicker \/>/);
   assert.match(picker, /Создать вручную/);
   assert.match(picker, /Распознать камерой/);
-  assert.match(picker, /Импортировать файл/);
+  assert.match(picker, /Импортировать/);
+  assert.match(picker, /Ссылка Quizlet или готовый текст/);
 });
 
 test("camera recognition stays client-side and supports Russian and English", () => {

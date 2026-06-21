@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { parseBulkTerms, type TermPair } from "@/lib/parse-bulk-terms";
+import { CardImporter } from "@/components/card-importer";
 
 type CreateMethod = "manual" | "camera" | "file";
 const CAMERA_GUIDE_INSET = 0.08;
@@ -64,14 +65,13 @@ function MethodIcon({ name }: { name: CreateMethod | "back" }) {
   return <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{paths[name]}</svg>;
 }
 
-function Placeholder({ method, onBack }: { method: Exclude<CreateMethod, "camera">; onBack: () => void }) {
-  const isManual = method === "manual";
+function Placeholder({ onBack }: { onBack: () => void }) {
   return (
     <div className="create-placeholder">
       <button className="create-back" type="button" onClick={onBack}><MethodIcon name="back" /> Все способы</button>
-      <span className="create-placeholder-icon"><MethodIcon name={method} /></span>
-      <h2>{isManual ? "Создание вручную" : "Импорт файла"}</h2>
-      <p>{isManual ? "Редактор карточек появится здесь в следующей версии." : "Скоро здесь можно будет загрузить таблицу или документ."}</p>
+      <span className="create-placeholder-icon"><MethodIcon name="manual" /></span>
+      <h2>Создание вручную</h2>
+      <p>Редактор карточек появится здесь в следующей версии.</p>
       <span className="coming-soon">Скоро</span>
     </div>
   );
@@ -205,12 +205,13 @@ export function CreateMethodPicker() {
   const [method, setMethod] = useState<CreateMethod | null>(null);
 
   if (method === "camera") return <CameraRecognizer onBack={() => setMethod(null)} />;
-  if (method) return <Placeholder method={method} onBack={() => setMethod(null)} />;
+  if (method === "file") return <CardImporter onBack={() => setMethod(null)} />;
+  if (method === "manual") return <Placeholder onBack={() => setMethod(null)} />;
 
   const methods: Array<{ id: CreateMethod; title: string; description: string; badge?: string }> = [
     { id: "manual", title: "Создать вручную", description: "Добавить слова и переводы по одному", badge: "Скоро" },
     { id: "camera", title: "Распознать камерой", description: "Сфотографировать готовый список" },
-    { id: "file", title: "Импортировать файл", description: "Загрузить таблицу или документ", badge: "Скоро" },
+    { id: "file", title: "Импортировать", description: "Ссылка Quizlet или готовый текст" },
   ];
 
   return (
