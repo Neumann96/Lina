@@ -62,7 +62,7 @@ test("keeps mobile study controls clear of Telegram chrome and the card", () => 
   assert.match(css, /\.study-counters \{ top:16px; \}/);
   assert.match(css, /\.study-counter \{ width:62px; height:42px; \}/);
   assert.match(css, /\.study-counter\.learning \{ left:-22px; \}\.study-counter\.known \{ right:-22px; \}/);
-  assert.match(css, /\.study-counter\.learning strong \{ transform:translateX\(15px\); \}\.study-counter\.known strong \{ transform:translateX\(-15px\); \}/);
+  assert.match(css, /\.study-counter\.learning strong \{ transform:translateX\(11px\); \}\.study-counter\.known strong \{ transform:translateX\(-11px\); \}/);
   assert.match(css, /\.study-counter\.learning \{ color:#d6323f;/);
 });
 
