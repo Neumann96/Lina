@@ -18,6 +18,13 @@ test("keeps vertical scrolling inside the Telegram Mini App", () => {
   assert.match(miniApp, /webApp\.enableVerticalSwipes\?\.\(\)/);
 });
 
+test("uses one white background across the mobile app shell", () => {
+  assert.match(css, /--canvas:#fff;/);
+  assert.match(css, /html \{ background:var\(--canvas\);/);
+  assert.match(css, /\.topbar,\.mobile-dashboard,\.mobile-tab-screen \{ background:var\(--canvas\); \}/);
+  assert.match(miniApp, /webApp\.setBackgroundColor\?\.\("#ffffff"\)/);
+});
+
 test("renders the authenticated mobile dashboard and floating navigation", async () => {
   const home = await readFile(new URL("../src/components/home-client.tsx", import.meta.url), "utf8");
 

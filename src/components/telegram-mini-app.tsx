@@ -60,7 +60,7 @@ export function TelegramMiniApp() {
     root.classList.add("telegram-mini-app");
     updateInsets();
     webApp.setHeaderColor?.("#ffffff");
-    webApp.setBackgroundColor?.("#f7f6f3");
+    webApp.setBackgroundColor?.("#ffffff");
     webApp.ready();
     webApp.expand();
 
