@@ -1,6 +1,6 @@
 "use client";
 
-import { PointerEvent, useEffect, useRef, useState } from "react";
+import { MouseEvent, PointerEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { StudySet } from "@/lib/learning";
 
@@ -27,6 +27,7 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
   const [exitDirection, setExitDirection] = useState<-1 | 0 | 1>(0);
   const startX = useRef(0);
   const moved = useRef(false);
+  const pendingReviews = useRef(new Set<Promise<void>>());
   const card = studySet.cards[index];
   const nextCard = studySet.cards[index + 1];
   const finished = index >= studySet.cards.length;
@@ -46,11 +47,25 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
   });
 
   function saveReview(cardId: string, correct: boolean) {
-    void fetch("/api/reviews", {
+    const request = fetch("/api/reviews", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ cardId, isCorrect: correct }),
+      keepalive: true,
+    }).then((response) => {
+      if (!response.ok) throw new Error("Не удалось сохранить прогресс");
     });
+    pendingReviews.current.add(request);
+    void request.then(
+      () => pendingReviews.current.delete(request),
+      () => pendingReviews.current.delete(request),
+    );
+  }
+
+  async function closeSession(event: MouseEvent<HTMLAnchorElement>) {
+    event.preventDefault();
+    await Promise.allSettled([...pendingReviews.current]);
+    window.location.assign("/");
   }
 
   function answer(correct: boolean) {
@@ -58,10 +73,10 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
     const direction = correct ? 1 : -1;
     setExitDirection(direction);
     setDragX(direction * Math.max(window.innerWidth, 540));
+    saveReview(card.id, correct);
     window.setTimeout(() => {
       if (correct) setKnown((value) => value + 1);
       else setLearning((value) => value + 1);
-      saveReview(card.id, correct);
       setIndex((value) => value + 1);
       setFlipped(false);
       setFavorite(false);
@@ -104,7 +119,7 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
   return (
     <main className="study-page">
       <header className="study-header">
-        <Link className="study-round-button" href="/" transitionTypes={["nav-back"]} aria-label="Закрыть режим обучения"><StudyIcon name="close" size={27}/></Link>
+        <Link className="study-round-button" href="/" transitionTypes={["nav-back"]} onClick={closeSession} aria-label="Закрыть режим обучения"><StudyIcon name="close" size={27}/></Link>
         <div className="study-heading"><strong>{studySet.title}</strong><span>{Math.min(reviewed + 1, studySet.cards.length)} / {studySet.cards.length}</span></div>
         <button className="study-round-button" type="button" aria-label="Настройки"><StudyIcon name="settings" size={26}/></button>
       </header>
@@ -120,7 +135,7 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
           <div className="study-complete">
             <span>✨</span><h1>Готово!</h1><p>Вы повторили весь набор.</p>
             <div><b>{learning}<small>ещё учу</small></b><b>{known}<small>знаю</small></b></div>
-            <Link href="/" transitionTypes={["nav-back"]}>Вернуться на главную</Link>
+            <Link href="/" transitionTypes={["nav-back"]} onClick={closeSession}>Вернуться на главную</Link>
           </div>
         ) : (
           <div className="study-card-wrap">

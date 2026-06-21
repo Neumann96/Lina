@@ -14,6 +14,7 @@ export type RecentSet = {
   id: string;
   title: string;
   count: number;
+  studiedCount: number;
   progress: number;
   color: "coral" | "cream" | "violet";
 };
@@ -55,18 +56,23 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
        ORDER BY day DESC`,
       [userId],
     ),
-    query<{ id: string; title: string; cardCount: string; masteredCount: string }>(
+    query<{ id: string; title: string; cardCount: string; studiedCount: string }>(
       `SELECT s.id, s.title,
          COUNT(c.id) AS "cardCount",
          COUNT(c.id) FILTER (WHERE EXISTS (
            SELECT 1 FROM card_reviews r
-           WHERE r.card_id = c.id AND r.user_id = $1 AND r.is_correct
-         )) AS "masteredCount"
+           WHERE r.card_id = c.id AND r.user_id = $1
+         )) AS "studiedCount"
        FROM study_sets s
        LEFT JOIN cards c ON c.set_id = s.id
        WHERE s.user_id = $1
        GROUP BY s.id
-       ORDER BY s.created_at DESC
+       ORDER BY COALESCE((
+         SELECT MAX(r.reviewed_at)
+         FROM card_reviews r
+         JOIN cards reviewed_card ON reviewed_card.id = r.card_id
+         WHERE reviewed_card.set_id = s.id AND r.user_id = $1
+       ), s.created_at) DESC
        LIMIT 3`,
       [userId],
     ),
@@ -100,13 +106,18 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       accuracy: reviewCount ? Math.round(Number(counts.correctCount) / reviewCount * 100) : 0,
       streak,
     },
-    recentSets: setsResult.rows.map((set, index) => ({
-      id: set.id,
-      title: set.title,
-      count: Number(set.cardCount),
-      progress: Number(set.cardCount) ? Math.round(Number(set.masteredCount) / Number(set.cardCount) * 100) : 0,
-      color: colors[index % colors.length],
-    })),
+    recentSets: setsResult.rows.map((set, index) => {
+      const count = Number(set.cardCount);
+      const studiedCount = Number(set.studiedCount);
+      return {
+        id: set.id,
+        title: set.title,
+        count,
+        studiedCount,
+        progress: count ? Math.round(studiedCount / count * 100) : 0,
+        color: colors[index % colors.length],
+      };
+    }),
   };
 }
 

@@ -425,7 +425,7 @@ export function HomeClient({
             <article className="mobile-resume-card">
               <div className="mobile-resume-heading"><h2>{latestSet.title}</h2><button type="button" aria-label="Меню набора">•••</button></div>
               <div className="mobile-resume-progress"><span style={{ width: `${latestSet.progress}%` }} /></div>
-              <p>{Math.round(latestSet.count * latestSet.progress / 100)}/{latestSet.count} карточек изучено</p>
+              <p>{latestSet.studiedCount}/{latestSet.count} карточек изучено</p>
               <Link href={`/study/${latestSet.id}`} transitionTypes={["nav-forward"]}>Продолжить</Link>
             </article>
           ) : (
