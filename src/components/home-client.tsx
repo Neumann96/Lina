@@ -329,9 +329,9 @@ function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
               <p>Попробуйте вспомнить ответ</p>
               <div className="memory-actions"><span>Сложно</span><span>Помню</span></div>
             </article>
-            <article className="telegram-card">
-              <span className="telegram-icon"><Image src="/telegram-logo.png" alt="Telegram" width={42} height={42}/></span>
-              <div><small>Lina · сейчас</small><strong>7 карточек пора повторить</strong><p>Я уже всё собрала. Вам осталось только вспомнить.</p></div>
+            <article className="telegram-card telegram-notification">
+              <div className="telegram-notification-app"><Image src="/telegram-logo.png" alt="" width={20} height={20}/><span>TELEGRAM</span><time>сейчас</time></div>
+              <div className="telegram-notification-body"><strong>Lina</strong><p>Пора повторить 7 карточек. Это займёт около пяти минут.</p></div>
             </article>
           </div>
         </section>
