@@ -25,6 +25,8 @@ test("renders the authenticated mobile dashboard and floating navigation", async
   assert.match(home, />Вернуться к учёбе</);
   assert.match(home, />Недавние</);
   assert.match(home, /className="mobile-bottom-nav"/);
+  assert.match(home, /data-active-tab=\{mobileTab\}/);
+  assert.match(home, /className="mobile-nav-indicator"/);
   assert.match(home, /latestSet\.count \* latestSet\.progress/);
   assert.match(home, /href=\{`\/study\/\$\{set\.id\}`\} transitionTypes=\{\["nav-forward"\]\} className="mobile-recent-set"/);
   assert.match(home, /mobileTab === "create"/);
@@ -32,6 +34,8 @@ test("renders the authenticated mobile dashboard and floating navigation", async
   assert.match(home, /setMobileTab\("home"\)/);
   assert.match(css, /\.mobile-bottom-nav \{ position:fixed;/);
   assert.match(css, /border-radius:28px/);
+  assert.match(css, /\.mobile-nav-indicator \{[^}]*transition:transform/);
+  assert.match(css, /\[data-active-tab="library"\] \.mobile-nav-indicator \{ transform:translate3d\(200%,0,0\); \}/);
   assert.match(css, /\.mobile-dashboard \{ min-height:0; \}/);
 });
 

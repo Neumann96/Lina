@@ -504,7 +504,8 @@ export function HomeClient({
           <BulkCardEditor onCreated={() => window.location.reload()} />
         </section>
       </main>
-      <nav className="mobile-bottom-nav" aria-label="Мобильная навигация">
+      <nav className="mobile-bottom-nav" data-active-tab={mobileTab} aria-label="Мобильная навигация">
+        <span className="mobile-nav-indicator" aria-hidden="true" />
         <button className={`mobile-nav-item${mobileTab === "home" ? " active" : ""}`} type="button" onClick={() => setMobileTab("home")} aria-current={mobileTab === "home" ? "page" : undefined}><Icon name="home" size={24}/><span>Главная</span></button>
         <button className={`mobile-nav-item${mobileTab === "create" ? " active" : ""}`} type="button" onClick={() => setMobileTab("create")} aria-current={mobileTab === "create" ? "page" : undefined}><Icon name="plus" size={25}/><span>Создать</span></button>
         <button className={`mobile-nav-item${mobileTab === "library" ? " active" : ""}`} type="button" onClick={() => setMobileTab("library")} aria-current={mobileTab === "library" ? "page" : undefined}><Icon name="cards" size={24}/><span>Библиотека</span></button>
