@@ -65,14 +65,106 @@ function MethodIcon({ name }: { name: CreateMethod | "back" }) {
   return <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{paths[name]}</svg>;
 }
 
-function Placeholder({ onBack }: { onBack: () => void }) {
+type ManualCard = { id: number; term: string; definition: string };
+
+function ManualCardEditor({ onBack }: { onBack: () => void }) {
+  const nextId = useRef(3);
+  const [title, setTitle] = useState("");
+  const [cards, setCards] = useState<ManualCard[]>([
+    { id: 1, term: "", definition: "" },
+    { id: 2, term: "", definition: "" },
+  ]);
+  const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
+
+  function updateCard(id: number, key: "term" | "definition", value: string) {
+    setCards((current) => current.map((card) => card.id === id ? { ...card, [key]: value } : card));
+    if (error) setError("");
+  }
+
+  function addCard() {
+    setCards((current) => [...current, { id: nextId.current++, term: "", definition: "" }]);
+  }
+
+  function removeCard(id: number) {
+    setCards((current) => current.length === 1
+      ? current.map((card) => card.id === id ? { ...card, term: "", definition: "" } : card)
+      : current.filter((card) => card.id !== id));
+  }
+
+  async function createSet() {
+    if (!title.trim()) {
+      setError("Добавьте название набора");
+      return;
+    }
+
+    const hasHalfFilledCard = cards.some((card) => Boolean(card.term.trim()) !== Boolean(card.definition.trim()));
+    const completeCards = cards
+      .map(({ term, definition }) => ({ term: term.trim(), definition: definition.trim() }))
+      .filter((card) => card.term && card.definition);
+
+    if (hasHalfFilledCard) {
+      setError("Заполните обе стороны каждой начатой карточки");
+      return;
+    }
+    if (completeCards.length === 0) {
+      setError("Добавьте хотя бы одну заполненную карточку");
+      return;
+    }
+
+    setError("");
+    setPending(true);
+    try {
+      const response = await fetch("/api/sets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title.trim(), cards: completeCards }),
+      });
+      const result = await response.json() as { id?: string; error?: string };
+      if (!response.ok || !result.id) {
+        setError(result.error ?? "Не удалось создать набор");
+        return;
+      }
+      window.location.assign(`/study/${result.id}`);
+    } catch {
+      setError("Не удалось связаться с сервером. Попробуйте ещё раз");
+    } finally {
+      setPending(false);
+    }
+  }
+
   return (
-    <div className="create-placeholder">
-      <button className="create-back" type="button" onClick={onBack}><MethodIcon name="back" /> Все способы</button>
-      <span className="create-placeholder-icon"><MethodIcon name="manual" /></span>
-      <h2>Создание вручную</h2>
-      <p>Редактор карточек появится здесь в следующей версии.</p>
-      <span className="coming-soon">Скоро</span>
+    <div className="manual-editor">
+      <div className="manual-editor-topbar">
+        <button className="create-back" type="button" onClick={onBack} disabled={pending}><MethodIcon name="back" /> Все способы</button>
+        <button className="manual-create-top" type="button" onClick={createSet} disabled={pending}>{pending ? "Создаём…" : "Создать"}</button>
+      </div>
+
+      <div className="manual-heading">
+        <span>Новый набор</span>
+        <h2>Создать карточки</h2>
+      </div>
+
+      <label className="manual-title-field">
+        <input value={title} onChange={(event) => { setTitle(event.target.value); if (error) setError(""); }} placeholder="Введите название, например «Английский — урок 1»" maxLength={120} autoFocus />
+        <span>НАЗВАНИЕ</span>
+      </label>
+
+      <div className="manual-card-list">
+        {cards.map((card, index) => (
+          <article className="manual-card" key={card.id}>
+            <header><strong>{index + 1}</strong><button type="button" onClick={() => removeCard(card.id)} aria-label={`Удалить карточку ${index + 1}`} disabled={pending}><span aria-hidden>×</span></button></header>
+            <div>
+              <label><textarea value={card.term} onChange={(event) => updateCard(card.id, "term", event.target.value)} maxLength={500} rows={2} aria-label={`Термин ${index + 1}`} /><span>ТЕРМИН</span></label>
+              <label><textarea value={card.definition} onChange={(event) => updateCard(card.id, "definition", event.target.value)} maxLength={1000} rows={2} aria-label={`Определение ${index + 1}`} /><span>ОПРЕДЕЛЕНИЕ</span></label>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <button className="manual-add-card" type="button" onClick={addCard} disabled={pending || cards.length >= 500}><span>+</span> Добавить карточку</button>
+      {error && <p className="manual-error" role="alert">{error}</p>}
+      <button className="manual-create-bottom" type="button" onClick={createSet} disabled={pending}>{pending ? "Создаём набор…" : "Создать набор"}</button>
     </div>
   );
 }
@@ -206,10 +298,10 @@ export function CreateMethodPicker() {
 
   if (method === "camera") return <CameraRecognizer onBack={() => setMethod(null)} />;
   if (method === "file") return <CardImporter onBack={() => setMethod(null)} />;
-  if (method === "manual") return <Placeholder onBack={() => setMethod(null)} />;
+  if (method === "manual") return <ManualCardEditor onBack={() => setMethod(null)} />;
 
   const methods: Array<{ id: CreateMethod; title: string; description: string; badge?: string; disabled?: boolean }> = [
-    { id: "manual", title: "Создать вручную", description: "Добавить слова и переводы по одному", badge: "Скоро" },
+    { id: "manual", title: "Создать вручную", description: "Добавить слова и переводы по одному" },
     { id: "camera", title: "Распознать камерой", description: "Сфотографировать готовый список", badge: "Скоро", disabled: true },
     { id: "file", title: "Импортировать", description: "Ссылка Quizlet или готовый текст" },
   ];

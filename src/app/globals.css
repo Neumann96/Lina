@@ -173,6 +173,32 @@ html:not(.telegram-mini-app) .telegram-mini-app-login { display:none; }
 .create-placeholder-icon { width:76px; height:76px; display:grid; place-items:center; margin:0 auto 20px; border-radius:24px; color:#7163b5; background:#efebff; }
 .create-placeholder h2 { margin:0; font-size:25px; letter-spacing:-.7px; }.create-placeholder p { max-width:280px; margin:10px auto 17px; color:#797381; font-size:14px; line-height:1.55; }
 .coming-soon { display:inline-block; padding:7px 11px; border-radius:9px; color:#817b88; background:#eeecef; font-size:10px; font-weight:850; letter-spacing:.06em; text-transform:uppercase; }
+.manual-editor { width:100%; padding-bottom:28px; }
+.manual-editor-topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:25px; }
+.manual-editor-topbar .create-back { margin:0 0 0 -8px; }
+.manual-create-top,.manual-create-bottom { min-height:44px; padding:0 22px; border:0; border-radius:12px; color:#fff; background:var(--accent); font-size:13px; font-weight:800; box-shadow:0 8px 18px #f36f3d2b; }
+.manual-create-top:disabled,.manual-create-bottom:disabled,.manual-add-card:disabled { opacity:.55; box-shadow:none; }
+.manual-heading>span { color:var(--accent-dark); font-size:10px; font-weight:850; letter-spacing:.08em; text-transform:uppercase; }
+.manual-heading h2 { margin:6px 0 22px; font-size:29px; letter-spacing:-1px; }
+.manual-title-field { display:block; margin-bottom:22px; padding:18px 20px 10px; border:1px solid #e4e0e6; border-radius:17px; background:#fff; box-shadow:0 10px 26px #302b460a; }
+.manual-title-field input { width:100%; padding:0 0 9px; border:0; border-bottom:2px solid #d9d4dc; outline:0; color:var(--ink); background:transparent; font:700 18px/1.35 inherit; }
+.manual-title-field input:focus { border-color:var(--accent); }
+.manual-title-field>span,.manual-card label>span { display:block; margin-top:7px; color:#8b8591; font-size:9px; font-weight:800; letter-spacing:.08em; }
+.manual-card-list { display:grid; gap:13px; }
+.manual-card { overflow:hidden; border:1px solid #e7e3e9; border-radius:18px; background:#fff; box-shadow:0 10px 28px #302b460b; }
+.manual-card header { height:42px; display:flex; align-items:center; justify-content:space-between; padding:0 14px 0 19px; border-bottom:1px solid #efecf0; background:#fbfafc; }
+.manual-card header strong { color:#78717f; font-size:12px; }
+.manual-card header button { width:32px; height:32px; display:grid; place-items:center; padding:0; border:0; border-radius:50%; color:#8c8591; background:transparent; font-size:24px; line-height:1; }
+.manual-card header button:hover { color:#a6333e; background:#fff0f1; }
+.manual-card>div { display:grid; grid-template-columns:1fr 1fr; gap:20px; padding:20px; }
+.manual-card label { min-width:0; }
+.manual-card textarea { width:100%; min-height:58px; display:block; padding:7px 0; border:0; border-bottom:2px solid #d9d4dc; border-radius:0; outline:0; color:var(--ink); background:transparent; resize:vertical; font:15px/1.42 inherit; }
+.manual-card textarea:focus { border-color:var(--accent); }
+.manual-add-card { width:100%; min-height:58px; margin-top:13px; border:1px solid #e2dde5; border-radius:17px; color:#625a69; background:#fff; font-size:14px; font-weight:800; box-shadow:0 8px 22px #302b4609; }
+.manual-add-card span { margin-right:6px; color:var(--accent-dark); font-size:20px; vertical-align:-1px; }
+.manual-error { margin:13px 0 0; padding:12px 14px; border-radius:12px; color:#9c3540; background:#fff0f1; font-size:12px; font-weight:700; }
+.manual-create-bottom { width:100%; min-height:52px; margin-top:18px; }
+@media (max-width:600px) { .manual-create-top { display:none; }.manual-heading h2 { font-size:26px; }.manual-title-field { padding:15px 16px 9px; }.manual-title-field input { font-size:16px; }.manual-card>div { grid-template-columns:1fr; gap:14px; padding:16px; }.manual-card textarea { min-height:46px; }.manual-card label:first-child { margin-bottom:2px; } }
 .camera-heading>span,.ocr-result-heading span { color:var(--accent-dark); font-size:10px; font-weight:850; letter-spacing:.08em; text-transform:uppercase; }.camera-heading h2 { margin:7px 0 7px; font-size:26px; letter-spacing:-.8px; }.camera-heading p { margin:0 0 19px; color:#787280; font-size:13px; line-height:1.45; }.camera-heading b { color:#4b4554; }
 .camera-frame { position:relative; aspect-ratio:3/4; max-height:54dvh; overflow:hidden; border-radius:25px; background:#29262d; box-shadow:0 14px 34px #302b4627; }
 .camera-frame video { width:100%; height:100%; display:block; object-fit:cover; }
