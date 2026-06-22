@@ -279,6 +279,7 @@ function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
   useEffect(() => {
     const landing = document.querySelector<HTMLElement>(".landing");
     const elements = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
+    const methodCards = Array.from(document.querySelectorAll<HTMLElement>(".method-grid article"));
     if (!landing || !elements.length || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       elements.forEach((element) => element.classList.add("is-visible"));
       return;
@@ -294,7 +295,27 @@ function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
     }, { threshold: 0.14, rootMargin: "0px 0px -7%" });
 
     elements.forEach((element) => observer.observe(element));
-    return () => observer.disconnect();
+
+    const glowTimers: number[] = [];
+    const mobileGlowObserver = window.matchMedia("(max-width: 600px)").matches
+      ? new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            const card = entry.target as HTMLElement;
+            card.classList.add("is-scroll-lit");
+            mobileGlowObserver?.unobserve(card);
+            glowTimers.push(window.setTimeout(() => card.classList.remove("is-scroll-lit"), 1800));
+          });
+        }, { threshold: 0.5, rootMargin: "0px 0px -8%" })
+      : null;
+
+    methodCards.forEach((card) => mobileGlowObserver?.observe(card));
+
+    return () => {
+      observer.disconnect();
+      mobileGlowObserver?.disconnect();
+      glowTimers.forEach(window.clearTimeout);
+    };
   }, []);
 
   const openRegister = () => setAuthMode("register");
