@@ -349,19 +349,23 @@ function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
             <blockquote>Вы запоминаете. Lina занимается всей математикой вокруг этого.</blockquote>
           </div>
           <div className="forgetting-chart" data-reveal>
-            <div className="chart-heading"><span>Прочность памяти</span><b>Повторения</b></div>
-            <svg viewBox="0 0 620 300" role="img" aria-label="Схема интервального повторения">
+            <div className="chart-heading"><div><strong>Кривая забывания</strong><span>Чем выше линия, тем лучше материал сохраняется в памяти</span></div><b><i/> повторение</b></div>
+            <svg viewBox="0 0 620 310" role="img" aria-label="Сохранение материала в памяти с течением времени и после повторений">
               <defs>
-                <linearGradient id="memory-line" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#48a879"/><stop offset=".52" stopColor="#d9a05c"/><stop offset="1" stopColor="#df5e63"/></linearGradient>
-                <linearGradient id="memory-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#48a879" stopOpacity=".18"/><stop offset=".58" stopColor="#e9a26a" stopOpacity=".1"/><stop offset="1" stopColor="#df5e63" stopOpacity=".04"/></linearGradient>
+                <linearGradient id="memory-line" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#42a977"/><stop offset=".55" stopColor="#64b78b"/><stop offset="1" stopColor="#e17a62"/></linearGradient>
+                <linearGradient id="memory-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#62c08f" stopOpacity=".13"/><stop offset="1" stopColor="#62c08f" stopOpacity="0"/></linearGradient>
+                <filter id="memory-glow" x="-20%" y="-30%" width="140%" height="160%"><feGaussianBlur stdDeviation="5"/></filter>
               </defs>
-              <path className="chart-grid" d="M40 52H590M40 120H590M40 188H590M40 256H590"/>
-              <path className="chart-area" d="M40 66C68 72 91 183 112 216C124 235 132 137 160 88C181 52 220 171 245 207C258 226 269 148 300 96C321 60 370 166 398 196C414 214 429 158 460 108C484 70 538 153 578 181V266H40Z"/>
-              <path className="chart-line" pathLength="1" d="M40 66C68 72 91 183 112 216C124 235 132 137 160 88C181 52 220 171 245 207C258 226 269 148 300 96C321 60 370 166 398 196C414 214 429 158 460 108C484 70 538 153 578 181"/>
-              <g className="chart-points chart-valleys"><circle cx="112" cy="216" r="7"/><circle cx="245" cy="207" r="7"/><circle cx="398" cy="196" r="7"/><circle cx="578" cy="181" r="7"/></g>
-              <g className="chart-points chart-peaks"><circle cx="40" cy="66" r="6"/><circle cx="160" cy="88" r="6"/><circle cx="300" cy="96" r="6"/><circle cx="460" cy="108" r="6"/></g>
+              <g className="chart-axis-copy"><text x="46" y="24">Сохранение в памяти</text><text x="592" y="300" textAnchor="end">Время после изучения →</text></g>
+              <g className="chart-y-ticks"><text x="7" y="59">100%</text><text x="14" y="143">50%</text><text x="21" y="227">0</text></g>
+              <path className="chart-grid" d="M46 54H592M46 138H592M46 222H592"/>
+              <path className="chart-area" d="M46 54C79 54 96 218 126 218C157 218 169 84 198 84C237 84 260 204 294 204C329 204 347 104 382 104C428 104 452 188 494 188C532 188 557 126 584 126V244H46Z"/>
+              <path className="chart-line-glow" pathLength="1" filter="url(#memory-glow)" d="M46 54C79 54 96 218 126 218C157 218 169 84 198 84C237 84 260 204 294 204C329 204 347 104 382 104C428 104 452 188 494 188C532 188 557 126 584 126"/>
+              <path className="chart-line" pathLength="1" d="M46 54C79 54 96 218 126 218C157 218 169 84 198 84C237 84 260 204 294 204C329 204 347 104 382 104C428 104 452 188 494 188C532 188 557 126 584 126"/>
+              <g className="chart-points chart-valleys"><circle cx="126" cy="218" r="4"/><circle cx="294" cy="204" r="4"/><circle cx="494" cy="188" r="4"/></g>
+              <g className="chart-points chart-peaks"><circle cx="46" cy="54" r="4"/><circle cx="198" cy="84" r="4"/><circle cx="382" cy="104" r="4"/><circle cx="584" cy="126" r="4"/></g>
+              <g className="chart-x-ticks"><text x="46" y="264">сейчас</text><text x="198" y="264" textAnchor="middle">1 день</text><text x="382" y="264" textAnchor="middle">3 дня</text><text x="584" y="264" textAnchor="end">7 дней</text></g>
             </svg>
-            <div className="chart-labels"><span>Сегодня</span><span>Завтра</span><span>Через 3 дня</span><span>Через неделю</span></div>
           </div>
         </section>
 
