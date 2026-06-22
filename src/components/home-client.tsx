@@ -352,7 +352,7 @@ function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
             <div className="chart-heading"><div><strong>Кривая забывания</strong><span>Чем выше линия, тем лучше материал сохраняется в памяти</span></div><div className="chart-legend"><span className="memory-low"><i/> забывание</span><span className="memory-restored"><i/> повторение</span></div></div>
             <svg viewBox="0 0 620 310" role="img" aria-label="Сохранение материала в памяти с течением времени и после повторений">
               <defs>
-                <linearGradient id="memory-line" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#42a977"/><stop offset=".55" stopColor="#64b78b"/><stop offset="1" stopColor="#e17a62"/></linearGradient>
+                <linearGradient id="memory-line" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#42a977"/><stop offset=".48" stopColor="#58b584"/><stop offset=".68" stopColor="#d8a064"/><stop offset=".82" stopColor="#df6a63"/><stop offset="1" stopColor="#dc565e"/></linearGradient>
                 <linearGradient id="memory-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#62c08f" stopOpacity=".13"/><stop offset="1" stopColor="#62c08f" stopOpacity="0"/></linearGradient>
                 <filter id="memory-glow" x="-20%" y="-30%" width="140%" height="160%"><feGaussianBlur stdDeviation="5"/></filter>
               </defs>
