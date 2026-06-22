@@ -349,7 +349,7 @@ function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
             <blockquote>Вы запоминаете. Lina занимается всей математикой вокруг этого.</blockquote>
           </div>
           <div className="forgetting-chart" data-reveal>
-            <div className="chart-heading"><div><strong>Кривая забывания</strong><span>Чем выше линия, тем лучше материал сохраняется в памяти</span></div><b><i/> повторение</b></div>
+            <div className="chart-heading"><div><strong>Кривая забывания</strong><span>Чем выше линия, тем лучше материал сохраняется в памяти</span></div><div className="chart-legend"><span className="memory-low"><i/> забывание</span><span className="memory-restored"><i/> повторение</span></div></div>
             <svg viewBox="0 0 620 310" role="img" aria-label="Сохранение материала в памяти с течением времени и после повторений">
               <defs>
                 <linearGradient id="memory-line" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#42a977"/><stop offset=".55" stopColor="#64b78b"/><stop offset="1" stopColor="#e17a62"/></linearGradient>
