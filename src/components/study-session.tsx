@@ -34,6 +34,7 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
   const moved = useRef(false);
   const pendingReviews = useRef(new Set<Promise<void>>());
   const exiting = useRef(false);
+  const isReviewSession = studySet.mode === "reviews";
   const card = studySet.cards[index];
   const nextCard = studySet.cards[index + 1];
   const finished = index >= studySet.cards.length;
@@ -76,6 +77,7 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
   }
 
   async function restartSession() {
+    if (isReviewSession) return;
     if (restarting || !window.confirm("Начать этот набор заново? Текущий прогресс будет сброшен.")) return;
     setRestarting(true);
     await Promise.allSettled([...pendingReviews.current]);
@@ -141,8 +143,12 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
     <main className="study-page">
       <header className="study-header">
         <Link className="study-round-button" href="/" transitionTypes={["nav-back"]} onClick={closeSession} aria-label="Закрыть режим обучения"><StudyIcon name="close" size={27}/></Link>
-        <div className="study-heading"><strong>{studySet.title}</strong><span>{Math.min(index + 1, studySet.cards.length)} / {studySet.cards.length}</span></div>
-        <button className="study-round-button" type="button" onClick={restartSession} disabled={restarting} aria-label="Начать набор заново"><StudyIcon name="restart" size={25}/></button>
+        <div className="study-heading"><strong>{studySet.title}</strong><span>{studySet.cards.length ? Math.min(index + 1, studySet.cards.length) : 0} / {studySet.cards.length}</span></div>
+        {isReviewSession ? (
+          <Link className="study-round-button" href="/" transitionTypes={["nav-back"]} onClick={closeSession} aria-label="На главную"><StudyIcon name="close" size={25}/></Link>
+        ) : (
+          <button className="study-round-button" type="button" onClick={restartSession} disabled={restarting} aria-label="Начать набор заново"><StudyIcon name="restart" size={25}/></button>
+        )}
       </header>
       <div className="study-progress" aria-label={`Пройдено ${index} из ${studySet.cards.length}`}><span style={{ width: `${studySet.cards.length ? index / studySet.cards.length * 100 : 0}%` }}/></div>
 
@@ -154,7 +160,7 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
 
         {finished ? (
           <div className="study-complete">
-            <span>✨</span><h1>Готово!</h1><p>Вы повторили весь набор.</p>
+            <span>✨</span><h1>Готово!</h1><p>{isReviewSession ? "На сейчас нет слов, которые нужно повторить." : "Вы повторили весь набор."}</p>
             <div><b>{learning}<small>ещё учу</small></b><b>{known}<small>знаю</small></b></div>
             <Link href="/" transitionTypes={["nav-back"]} onClick={closeSession}>Вернуться на главную</Link>
           </div>

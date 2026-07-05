@@ -525,6 +525,7 @@ export function HomeClient({
   const { stats, recentSets } = initialDashboard;
   const latestSet = recentSets[0];
   const latestSetComplete = Boolean(latestSet && latestSet.count > 0 && latestSet.studiedCount >= latestSet.count);
+  const dueReviewLabel = stats.dueReviewCount > 99 ? "99+" : String(stats.dueReviewCount);
 
   return (
     <div className="app-shell">
@@ -560,7 +561,10 @@ export function HomeClient({
           <button className="mobile-profile-button" type="button" onClick={() => setIsLogoutOpen(true)} aria-label={`Открыть профиль ${user.name}`}>
             <span className="avatar">{user.name.charAt(0)}</span>
           </button>
-          <button className="icon-button" aria-label="Уведомления"><Icon name="bell" /></button>
+          <Link className={`icon-button review-bell${stats.dueReviewCount ? " has-due" : ""}`} href="/study/reviews" transitionTypes={["nav-forward"]} aria-label={stats.dueReviewCount ? `Повторить ${stats.dueReviewCount} карточек` : "Нет карточек для повторения"}>
+            <Icon name="bell" />
+            {stats.dueReviewCount > 0 && <span>{dueReviewLabel}</span>}
+          </Link>
           <button className="create-button" type="button" onClick={() => setActiveTab("create")}><Icon name="plus" size={19}/>Создать набор</button>
         </header>
 
@@ -570,8 +574,17 @@ export function HomeClient({
             <div><strong>{stats.cardCount}</strong><span>карточек</span></div>
             <div><strong>{stats.setCount}</strong><span>наборов</span></div>
             <div><strong>{stats.accuracy}%</strong><span>точность</span></div>
+            <div><strong>{stats.dueReviewCount}</strong><span>к повторению</span></div>
           </div>
           <div className="dashboard-grid">
+          {stats.dueReviewCount > 0 && (
+            <article className="mobile-resume-card review-due-card">
+              <div className="mobile-resume-heading"><h2>Повторить по расписанию</h2></div>
+              <div className="review-due-count"><strong>{stats.dueReviewCount}</strong><span>карточек ждут отдельного повторения</span></div>
+              <p>Это те слова, которые Lina уже записала в интервальное повторение.</p>
+              <Link className="mobile-resume-primary" href="/study/reviews" transitionTypes={["nav-forward"]}>Повторить отдельно</Link>
+            </article>
+          )}
           {latestSet ? (
             <article className="mobile-resume-card">
               <div className="mobile-resume-heading"><h2>{latestSet.title}</h2></div>

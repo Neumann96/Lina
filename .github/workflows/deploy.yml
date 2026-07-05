@@ -66,12 +66,14 @@ jobs:
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          REVIEW_REMINDER_SECRET: ${{ secrets.REVIEW_REMINDER_SECRET }}
         run: |
           AUTH_SECRET_B64="$(printf '%s' "$AUTH_SECRET" | base64 -w 0)"
           DATABASE_URL_B64="$(printf '%s' "$DATABASE_URL" | base64 -w 0)"
           TELEGRAM_BOT_TOKEN_B64="$(printf '%s' "$TELEGRAM_BOT_TOKEN" | base64 -w 0)"
+          REVIEW_REMINDER_SECRET_B64="$(printf '%s' "$REVIEW_REMINDER_SECRET" | base64 -w 0)"
           ssh -i ~/.ssh/lina root@${DEPLOY_HOST} \
-            "SHA='${GITHUB_SHA}' AUTH_SECRET_B64='$AUTH_SECRET_B64' DATABASE_URL_B64='$DATABASE_URL_B64' TELEGRAM_BOT_TOKEN_B64='$TELEGRAM_BOT_TOKEN_B64' bash -s" <<'REMOTE'
+            "SHA='${GITHUB_SHA}' AUTH_SECRET_B64='$AUTH_SECRET_B64' DATABASE_URL_B64='$DATABASE_URL_B64' TELEGRAM_BOT_TOKEN_B64='$TELEGRAM_BOT_TOKEN_B64' REVIEW_REMINDER_SECRET_B64='$REVIEW_REMINDER_SECRET_B64' bash -s" <<'REMOTE'
           set -euo pipefail
           if [ -z "${AUTH_SECRET_B64:-}" ] || [ -z "${DATABASE_URL_B64:-}" ] || [ -z "${TELEGRAM_BOT_TOKEN_B64:-}" ]; then
             echo "AUTH_SECRET, DATABASE_URL and TELEGRAM_BOT_TOKEN must be configured"
@@ -90,6 +92,9 @@ jobs:
             printf 'APP_ORIGIN=https://lina-lern.ru\n'
             printf 'TELEGRAM_BOT_TOKEN=%s\n' "$(printf '%s' "$TELEGRAM_BOT_TOKEN_B64" | base64 -d)"
             printf 'TELEGRAM_BOT_USERNAME=linalernbot\n'
+            if [ -n "${REVIEW_REMINDER_SECRET_B64:-}" ]; then
+              printf 'REVIEW_REMINDER_SECRET=%s\n' "$(printf '%s' "$REVIEW_REMINDER_SECRET_B64" | base64 -d)"
+            fi
           } > /etc/lina.env
           AUTH_SECRET_LENGTH="$(printf '%s' "$AUTH_SECRET_B64" | base64 -d | wc -c)"
           if [ "$AUTH_SECRET_LENGTH" -lt 32 ]; then

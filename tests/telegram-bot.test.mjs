@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   getStartCommandChatId,
+  sendTelegramReviewReminder,
   sendTelegramStartMessage,
   TELEGRAM_MINI_APP_URL,
   TELEGRAM_START_MESSAGE,
@@ -41,6 +42,33 @@ test("sends an inline button that opens the Mini App", async () => {
       inline_keyboard: [[{
         text: "Ладно, давайте учить →",
         web_app: { url: TELEGRAM_MINI_APP_URL },
+      }]],
+    },
+  });
+});
+
+test("sends due review reminders to the Mini App review session", async () => {
+  const originalFetch = globalThis.fetch;
+  let request;
+  globalThis.fetch = async (url, options) => {
+    request = { url, options };
+    return new Response("OK");
+  };
+
+  try {
+    await sendTelegramReviewReminder("123:token", 42, 7);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  assert.equal(request.url, "https://api.telegram.org/bot123:token/sendMessage");
+  assert.deepEqual(JSON.parse(request.options.body), {
+    chat_id: 42,
+    text: "Пора повторить 7 карточек. Lina уже собрала их отдельно по расписанию.",
+    reply_markup: {
+      inline_keyboard: [[{
+        text: "Повторить сейчас →",
+        web_app: { url: `${TELEGRAM_MINI_APP_URL}/study/reviews` },
       }]],
     },
   });

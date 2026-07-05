@@ -35,6 +35,7 @@ npm run build
 - `DEPLOY_SSH_KEY` — приватный ключ деплоя.
 - `AUTH_SECRET` — случайная строка длиной не менее 32 символов;
 - `DATABASE_URL` — строка подключения к production PostgreSQL.
+- `REVIEW_REMINDER_SECRET` — секрет для hourly workflow, который отправляет Telegram-напоминания о карточках к повторению.
 
 Nginx перенаправляет HTTP на `https://lina-lern.ru`, завершает TLS и проксирует приложение по `127.0.0.1:3000`. Сертификат Let’s Encrypt находится в `/etc/letsencrypt/live/lina-lern.ru/` и обновляется через webroot `/var/www/letsencrypt`.
 

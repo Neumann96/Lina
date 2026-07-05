@@ -63,3 +63,25 @@ export async function sendTelegramStartMessage(botToken: string, chatId: number)
     throw new Error(`Telegram sendMessage failed with status ${response.status}`);
   }
 }
+
+export async function sendTelegramReviewReminder(botToken: string, chatId: number, dueCount: number) {
+  const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: `Пора повторить ${dueCount} карточек. Lina уже собрала их отдельно по расписанию.`,
+      reply_markup: {
+        inline_keyboard: [[{
+          text: "Повторить сейчас →",
+          web_app: { url: `${TELEGRAM_MINI_APP_URL}/study/reviews` },
+        }]],
+      },
+    }),
+    signal: AbortSignal.timeout(8_000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Telegram sendMessage failed with status ${response.status}`);
+  }
+}

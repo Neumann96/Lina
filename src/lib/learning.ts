@@ -8,6 +8,8 @@ export type DashboardStats = {
   setCount: number;
   accuracy: number;
   streak: number;
+  dueReviewCount: number;
+  nextReviewAt: string | null;
 };
 
 export type RecentSet = {
@@ -35,16 +37,25 @@ export type StudySet = {
   title: string;
   startIndex: number;
   cards: StudyCard[];
+  mode?: "set" | "reviews";
+};
+
+export type DueReviewUser = {
+  userId: string;
+  telegramId: string;
+  dueCount: number;
 };
 
 export async function getDashboardData(userId: string): Promise<DashboardData> {
   const [countsResult, daysResult, setsResult] = await Promise.all([
-    query<{ setCount: string; cardCount: string; reviewCount: string; correctCount: string }>(
+    query<{ setCount: string; cardCount: string; reviewCount: string; correctCount: string; dueReviewCount: string; nextReviewAt: string | null }>(
       `SELECT
          (SELECT COUNT(*) FROM study_sets WHERE user_id = $1) AS "setCount",
          (SELECT COUNT(*) FROM cards c JOIN study_sets s ON s.id = c.set_id WHERE s.user_id = $1) AS "cardCount",
          (SELECT COUNT(*) FROM card_reviews WHERE user_id = $1) AS "reviewCount",
-         (SELECT COUNT(*) FROM card_reviews WHERE user_id = $1 AND is_correct) AS "correctCount"`,
+         (SELECT COUNT(*) FROM card_reviews WHERE user_id = $1 AND is_correct) AS "correctCount",
+         (SELECT COUNT(*) FROM card_spaced_repetitions WHERE user_id = $1 AND due_at <= NOW()) AS "dueReviewCount",
+         (SELECT MIN(due_at)::text FROM card_spaced_repetitions WHERE user_id = $1 AND due_at > NOW()) AS "nextReviewAt"`,
       [userId],
     ),
     query<{ day: string; today: string }>(
@@ -99,6 +110,8 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       setCount: Number(counts.setCount),
       accuracy: reviewCount ? Math.round(Number(counts.correctCount) / reviewCount * 100) : 0,
       streak,
+      dueReviewCount: Number(counts.dueReviewCount),
+      nextReviewAt: counts.nextReviewAt,
     },
     recentSets: setsResult.rows.map((set, index) => {
       const count = Number(set.cardCount);
@@ -112,6 +125,31 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
         color: colors[index % colors.length],
       };
     }),
+  };
+}
+
+export async function getDueReviewStudySet(userId: string): Promise<StudySet> {
+  const result = await query<{ cardId: string; term: string; definition: string }>(
+    `SELECT c.id AS "cardId", c.term, c.definition
+     FROM card_spaced_repetitions sr
+     JOIN cards c ON c.id = sr.card_id
+     JOIN study_sets s ON s.id = c.set_id
+     WHERE sr.user_id = $1 AND s.user_id = $1 AND sr.due_at <= NOW()
+     ORDER BY sr.due_at ASC, sr.updated_at ASC
+     LIMIT 50`,
+    [userId],
+  );
+
+  return {
+    id: "reviews",
+    title: "Повторение",
+    startIndex: 0,
+    mode: "reviews",
+    cards: result.rows.map((row) => ({
+      id: row.cardId,
+      term: row.term,
+      definition: row.definition,
+    })),
   };
 }
 
@@ -172,10 +210,72 @@ export async function recordCardReview(userId: string, cardId: string, isCorrect
      ), saved_review AS (
        INSERT INTO card_reviews (user_id, card_id, is_correct)
        SELECT $1, id, $3 FROM target_card
+     ), current_schedule AS (
+       SELECT
+         target_card.id AS card_id,
+         target_card.set_id,
+         target_card.position,
+         COALESCE(sr.ease, 2.50) AS ease,
+         COALESCE(sr.interval_days, 0) AS interval_days,
+         COALESCE(sr.repetitions, 0) AS repetitions
+       FROM target_card
+       LEFT JOIN card_spaced_repetitions sr ON sr.user_id = $1 AND sr.card_id = target_card.id
+     ), next_schedule AS (
+       SELECT
+         card_id,
+         set_id,
+         position,
+         CASE
+           WHEN $3 THEN LEAST(3.00, ease + 0.10)
+           ELSE GREATEST(1.30, ease - 0.25)
+         END AS next_ease,
+         CASE
+           WHEN NOT $3 THEN 0
+           WHEN repetitions = 0 THEN 1
+           WHEN repetitions = 1 THEN 3
+           WHEN repetitions = 2 THEN 7
+           ELSE GREATEST(14, CEIL(interval_days * ease)::integer)
+         END AS next_interval_days,
+         CASE WHEN $3 THEN repetitions + 1 ELSE 0 END AS next_repetitions
+       FROM current_schedule
+     ), saved_schedule AS (
+       INSERT INTO card_spaced_repetitions (
+         user_id,
+         card_id,
+         ease,
+         interval_days,
+         repetitions,
+         due_at,
+         last_reviewed_at,
+         last_is_correct,
+         reminder_sent_at,
+         updated_at
+       )
+       SELECT
+         $1,
+         card_id,
+         next_ease,
+         next_interval_days,
+         next_repetitions,
+         NOW() + next_interval_days * INTERVAL '1 day',
+         NOW(),
+         $3,
+         NULL,
+         NOW()
+       FROM next_schedule
+       ON CONFLICT (user_id, card_id) DO UPDATE
+       SET ease = EXCLUDED.ease,
+           interval_days = EXCLUDED.interval_days,
+           repetitions = EXCLUDED.repetitions,
+           due_at = EXCLUDED.due_at,
+           last_reviewed_at = EXCLUDED.last_reviewed_at,
+           last_is_correct = EXCLUDED.last_is_correct,
+           reminder_sent_at = NULL,
+           updated_at = NOW()
      )
      INSERT INTO study_set_progress (user_id, set_id, next_position, updated_at)
      SELECT $1, set_id, position + 1, NOW()
-     FROM target_card
+     FROM next_schedule
      ON CONFLICT (user_id, set_id) DO UPDATE
      SET next_position = GREATEST(study_set_progress.next_position, EXCLUDED.next_position),
          updated_at = NOW()
@@ -183,6 +283,38 @@ export async function recordCardReview(userId: string, cardId: string, isCorrect
     [userId, cardId, isCorrect],
   );
   return (result.rowCount ?? 0) > 0;
+}
+
+export async function getDueReviewUsers(limit = 100): Promise<DueReviewUser[]> {
+  const result = await query<{ userId: string; telegramId: string; dueCount: string }>(
+    `SELECT u.id AS "userId", u.telegram_id AS "telegramId", COUNT(sr.card_id) AS "dueCount"
+     FROM users u
+     JOIN card_spaced_repetitions sr ON sr.user_id = u.id
+     WHERE u.telegram_id IS NOT NULL
+       AND sr.due_at <= NOW()
+       AND (sr.reminder_sent_at IS NULL OR sr.reminder_sent_at < sr.due_at)
+     GROUP BY u.id, u.telegram_id
+     ORDER BY MIN(sr.due_at) ASC
+     LIMIT $1`,
+    [limit],
+  );
+
+  return result.rows.map((row) => ({
+    userId: row.userId,
+    telegramId: row.telegramId,
+    dueCount: Number(row.dueCount),
+  }));
+}
+
+export async function markDueReviewReminderSent(userId: string) {
+  await query(
+    `UPDATE card_spaced_repetitions
+     SET reminder_sent_at = NOW(), updated_at = NOW()
+     WHERE user_id = $1
+       AND due_at <= NOW()
+       AND (reminder_sent_at IS NULL OR reminder_sent_at < due_at)`,
+    [userId],
+  );
 }
 
 export async function restartStudySet(userId: string, setId: string) {

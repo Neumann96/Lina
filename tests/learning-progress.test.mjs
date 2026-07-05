@@ -4,8 +4,11 @@ import test from "node:test";
 
 const learning = await readFile(new URL("../src/lib/learning.ts", import.meta.url), "utf8");
 const migration = await readFile(new URL("../db/migrations/003_study_set_progress.sql", import.meta.url), "utf8");
+const spacedMigration = await readFile(new URL("../db/migrations/004_spaced_repetition.sql", import.meta.url), "utf8");
 const studySession = await readFile(new URL("../src/components/study-session.tsx", import.meta.url), "utf8");
 const restartRoute = await readFile(new URL("../src/app/api/sets/[setId]/restart/route.ts", import.meta.url), "utf8");
+const reviewsPage = await readFile(new URL("../src/app/study/reviews/page.tsx", import.meta.url), "utf8");
+const notifyRoute = await readFile(new URL("../src/app/api/reviews/notify/route.ts", import.meta.url), "utf8");
 
 test("stores and displays the next card position independently from answer history", () => {
   assert.match(migration, /CREATE TABLE IF NOT EXISTS study_set_progress/);
@@ -28,4 +31,27 @@ test("can restart a set without deleting review history", () => {
   assert.match(learning, /SET next_position = 0, updated_at = NOW\(\)/);
   assert.doesNotMatch(learning, /DELETE FROM card_reviews/);
   assert.match(restartRoute, /restartStudySet\(user\.id, setId\)/);
+});
+
+test("stores each reviewed card in spaced repetition schedule", () => {
+  assert.match(spacedMigration, /CREATE TABLE IF NOT EXISTS card_spaced_repetitions/);
+  assert.match(spacedMigration, /PRIMARY KEY \(user_id, card_id\)/);
+  assert.match(learning, /INSERT INTO card_spaced_repetitions/);
+  assert.match(learning, /due_at = EXCLUDED\.due_at/);
+  assert.match(learning, /NOW\(\) \+ next_interval_days \* INTERVAL '1 day'/);
+});
+
+test("can study due spaced repetition cards separately", () => {
+  assert.match(learning, /getDueReviewStudySet/);
+  assert.match(learning, /sr\.due_at <= NOW\(\)/);
+  assert.match(reviewsPage, /getDueReviewStudySet\(user\.id\)/);
+  assert.match(studySession, /studySet\.mode === "reviews"/);
+});
+
+test("supports scheduled telegram reminders for due cards", () => {
+  assert.match(learning, /getDueReviewUsers/);
+  assert.match(learning, /reminder_sent_at < sr\.due_at/);
+  assert.match(learning, /markDueReviewReminderSent/);
+  assert.match(notifyRoute, /x-lina-reminder-secret/);
+  assert.match(notifyRoute, /sendTelegramReviewReminder/);
 });
