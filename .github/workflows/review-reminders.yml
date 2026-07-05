@@ -18,8 +18,8 @@ jobs:
           REVIEW_REMINDER_SECRET: ${{ secrets.REVIEW_REMINDER_SECRET }}
         run: |
           if [ -z "${REVIEW_REMINDER_SECRET:-}" ]; then
-            echo "REVIEW_REMINDER_SECRET must be configured"
-            exit 1
+            echo "::notice::REVIEW_REMINDER_SECRET is not configured; skipping review reminders"
+            exit 0
           fi
 
           curl --fail --silent --show-error \
