@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: review-reminders
+  cancel-in-progress: false
+
 jobs:
   notify:
     runs-on: ubuntu-latest

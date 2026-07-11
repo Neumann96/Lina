@@ -26,20 +26,24 @@ export async function POST(request: Request) {
   let sent = 0;
   let failed = 0;
 
-  for (const user of dueUsers) {
-    const chatId = Number(user.telegramId);
-    if (!Number.isSafeInteger(chatId)) {
-      failed += 1;
-      continue;
-    }
+  const batchSize = 5;
+  for (let index = 0; index < dueUsers.length; index += batchSize) {
+    const batch = dueUsers.slice(index, index + batchSize);
+    await Promise.all(batch.map(async (user) => {
+      const chatId = Number(user.telegramId);
+      if (!Number.isSafeInteger(chatId)) {
+        failed += 1;
+        return;
+      }
 
-    try {
-      await sendTelegramReviewReminder(botToken, chatId, user.dueCount);
-      await markDueReviewReminderSent(user.userId);
-      sent += 1;
-    } catch {
-      failed += 1;
-    }
+      try {
+        await sendTelegramReviewReminder(botToken, chatId, user.dueCount);
+        await markDueReviewReminderSent(user.userId);
+        sent += 1;
+      } catch {
+        failed += 1;
+      }
+    }));
   }
 
   return Response.json({ checked: dueUsers.length, sent, failed });

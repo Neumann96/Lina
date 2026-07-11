@@ -18,10 +18,10 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
       - name: Setup Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: 22
           cache: npm
@@ -53,14 +53,13 @@ jobs:
           install -m 700 -d ~/.ssh
           printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/lina
           chmod 600 ~/.ssh/lina
-          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+          install -m 600 deploy/known_hosts ~/.ssh/known_hosts
+          ssh-keygen -F "$DEPLOY_HOST" -f ~/.ssh/known_hosts >/dev/null || {
+            echo "DEPLOY_HOST is not present in the pinned deploy/known_hosts file"
+            exit 1
+          }
 
       - name: Upload release
-        env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-        run: scp -i ~/.ssh/lina lina-${GITHUB_SHA}.tar.gz root@${DEPLOY_HOST}:/tmp/
-
-      - name: Activate release
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
@@ -68,22 +67,71 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           REVIEW_REMINDER_SECRET: ${{ secrets.REVIEW_REMINDER_SECRET }}
         run: |
-          AUTH_SECRET_B64="$(printf '%s' "$AUTH_SECRET" | base64 -w 0)"
-          DATABASE_URL_B64="$(printf '%s' "$DATABASE_URL" | base64 -w 0)"
-          TELEGRAM_BOT_TOKEN_B64="$(printf '%s' "$TELEGRAM_BOT_TOKEN" | base64 -w 0)"
-          REVIEW_REMINDER_SECRET_B64="$(printf '%s' "$REVIEW_REMINDER_SECRET" | base64 -w 0)"
-          ssh -i ~/.ssh/lina root@${DEPLOY_HOST} \
-            "SHA='${GITHUB_SHA}' AUTH_SECRET_B64='$AUTH_SECRET_B64' DATABASE_URL_B64='$DATABASE_URL_B64' TELEGRAM_BOT_TOKEN_B64='$TELEGRAM_BOT_TOKEN_B64' REVIEW_REMINDER_SECRET_B64='$REVIEW_REMINDER_SECRET_B64' bash -s" <<'REMOTE'
+          umask 077
+          secret_file="lina-deploy-secrets-${GITHUB_SHA}"
+          {
+            printf 'AUTH_SECRET_B64=%s\n' "$(printf '%s' "$AUTH_SECRET" | base64 -w 0)"
+            printf 'DATABASE_URL_B64=%s\n' "$(printf '%s' "$DATABASE_URL" | base64 -w 0)"
+            printf 'TELEGRAM_BOT_TOKEN_B64=%s\n' "$(printf '%s' "$TELEGRAM_BOT_TOKEN" | base64 -w 0)"
+            printf 'REVIEW_REMINDER_SECRET_B64=%s\n' "$(printf '%s' "$REVIEW_REMINDER_SECRET" | base64 -w 0)"
+          } > "$secret_file"
+          scp -o StrictHostKeyChecking=yes -i ~/.ssh/lina \
+            "lina-${GITHUB_SHA}.tar.gz" "$secret_file" \
+            "root@${DEPLOY_HOST}:/tmp/"
+          rm -f "$secret_file"
+
+      - name: Activate release
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          ssh -o StrictHostKeyChecking=yes -i ~/.ssh/lina root@${DEPLOY_HOST} "SHA='${GITHUB_SHA}' bash -s" <<'REMOTE'
           set -euo pipefail
+          secret_file="/tmp/lina-deploy-secrets-$SHA"
+          switched_release=0
+          nginx_changed=0
+          previous_release=""
+          nginx_backup="/tmp/lina-nginx-$SHA"
+          cleanup() {
+            status=$?
+            rm -f "$secret_file" "/tmp/lina-$SHA.tar.gz"
+            if [ "$status" -ne 0 ] && [ "$switched_release" -eq 1 ] \
+              && [ -n "$previous_release" ] && [ -d "$previous_release" ]; then
+              echo "Deployment failed; rolling back to $previous_release"
+              ln -sfn "$previous_release" /opt/lina/current
+              systemctl restart lina || true
+            fi
+            if [ "$status" -ne 0 ] && [ "$nginx_changed" -eq 1 ] && [ -f "$nginx_backup" ]; then
+              echo "Restoring previous nginx configuration"
+              install -m 644 "$nginx_backup" /etc/nginx/sites-available/lina
+              nginx -t && systemctl reload nginx || true
+            fi
+            rm -f "$nginx_backup"
+            exit "$status"
+          }
+          trap cleanup EXIT
+          if [ ! -f "$secret_file" ]; then
+            echo "Deployment secret file is missing"
+            exit 1
+          fi
+          # Values are base64-encoded before upload, so this file contains only
+          # shell-safe assignments and never exposes secrets in process argv.
+          . "$secret_file"
+          rm -f "$secret_file"
           if [ -z "${AUTH_SECRET_B64:-}" ] || [ -z "${DATABASE_URL_B64:-}" ] || [ -z "${TELEGRAM_BOT_TOKEN_B64:-}" ]; then
             echo "AUTH_SECRET, DATABASE_URL and TELEGRAM_BOT_TOKEN must be configured"
             exit 1
           fi
           release="/opt/lina/releases/$SHA"
+          previous_release="$(readlink -f /opt/lina/current 2>/dev/null || true)"
           mkdir -p "$release"
           tar -xzf "/tmp/lina-$SHA.tar.gz" -C "$release"
           rm "/tmp/lina-$SHA.tar.gz"
-          chown -R lina:lina "$release"
+          chown -R root:root "$release"
+          chmod -R go-w "$release"
+          install -d -m 750 -o lina -g lina "$release/.next/cache"
+          if [ -n "$previous_release" ] && [ -d "$previous_release" ]; then
+            install -d -m 750 -o lina -g lina "$previous_release/.next/cache"
+          fi
           install -m 600 -o root -g root /dev/null /etc/lina.env
           {
             printf 'AUTH_SECRET=%s\n' "$(printf '%s' "$AUTH_SECRET_B64" | base64 -d)"
@@ -120,13 +168,18 @@ jobs:
           install -d -m 755 /etc/letsencrypt/renewal-hooks/deploy
           install -m 755 "$release/certbot-reload-nginx.sh" \
             /etc/letsencrypt/renewal-hooks/deploy/reload-nginx
-          # Expose the webroot over HTTP before asking Let's Encrypt to verify
-          # the custom domain. The previous setup only selected a certificate
-          # if one already existed, so the first certificate was never issued.
-          install -m 644 "$release/nginx.conf" /etc/nginx/sites-available/lina
-          ln -sfn /etc/nginx/sites-available/lina /etc/nginx/sites-enabled/lina
-          nginx -t
-          systemctl reload nginx
+          if [ -f /etc/nginx/sites-available/lina ]; then
+            cp -a /etc/nginx/sites-available/lina "$nginx_backup"
+          fi
+          # The HTTP-only config is needed only for first certificate issuance.
+          # Existing deployments keep serving HTTPS throughout the rollout.
+          if [ ! -f /etc/letsencrypt/live/lina-lern.ru/fullchain.pem ]; then
+            install -m 644 "$release/nginx.conf" /etc/nginx/sites-available/lina
+            ln -sfn /etc/nginx/sites-available/lina /etc/nginx/sites-enabled/lina
+            nginx_changed=1
+            nginx -t
+            systemctl reload nginx
+          fi
           command -v certbot >/dev/null || {
             echo "certbot must be installed on the server"
             exit 1
@@ -138,8 +191,10 @@ jobs:
             --non-interactive --agree-tos --register-unsafely-without-email \
             --keep-until-expiring
           install -m 644 "$release/nginx.ssl.conf" /etc/nginx/sites-available/lina
+          nginx_changed=1
           nginx -t
           ln -sfn "$release" /opt/lina/current
+          switched_release=1
           systemctl daemon-reload
           systemctl restart lina
           systemctl reload nginx
@@ -152,6 +207,10 @@ jobs:
               fi
               find /opt/lina/releases -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' \
                 | sort -nr | tail -n +4 | cut -d' ' -f2- | xargs -r rm -rf
+              switched_release=0
+              nginx_changed=0
+              trap - EXIT
+              rm -f "$nginx_backup"
               exit 0
             fi
             sleep 1
