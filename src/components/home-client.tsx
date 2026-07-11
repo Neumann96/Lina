@@ -64,8 +64,8 @@ function TelegramLoginWidget({
           cache: "no-store",
           signal: controller.signal,
         });
-        const setup = await response.json() as { botUsername?: string; error?: string };
-        if (!response.ok || !setup.botUsername) {
+        const setup = await response.json() as { botUsername?: string; state?: string; error?: string };
+        if (!response.ok || !setup.botUsername || !setup.state) {
           throw new Error(setup.error ?? "Вход через Telegram пока недоступен");
         }
         if (!container || controller.signal.aborted) return;
@@ -78,7 +78,10 @@ function TelegramLoginWidget({
         script.setAttribute("data-radius", "11");
         script.setAttribute("data-userpic", "false");
         script.setAttribute("data-lang", "ru");
-        script.setAttribute("data-auth-url", `${window.location.origin}/api/auth/telegram/callback`);
+        const callbackUrl = new URL("/api/auth/telegram/callback", window.location.origin);
+        callbackUrl.searchParams.set("state", setup.state);
+        window.sessionStorage.setItem("lina-telegram-state", setup.state);
+        script.setAttribute("data-auth-url", callbackUrl.toString());
         script.onerror = () => onError("Не удалось загрузить Telegram. Обновите страницу и попробуйте ещё раз");
         container.replaceChildren(script);
       } catch (error) {
@@ -485,6 +488,16 @@ export function HomeClient({
     // Continue with a full navigation so session creation does not depend on
     // the JavaScript context that originally opened Telegram.
     const callbackUrl = new URL("/api/auth/telegram/callback", window.location.origin);
+    const telegramState = window.sessionStorage.getItem("lina-telegram-state");
+    if (!telegramState) {
+      const failedUrl = new URL(window.location.href);
+      failedUrl.hash = "";
+      failedUrl.searchParams.set("telegramAuth", "failed");
+      window.location.replace(failedUrl);
+      return;
+    }
+    callbackUrl.searchParams.set("state", telegramState);
+    window.sessionStorage.removeItem("lina-telegram-state");
     for (const [key, value] of Object.entries(telegramUser)) {
       callbackUrl.searchParams.set(key, String(value));
     }

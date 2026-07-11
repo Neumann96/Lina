@@ -1,7 +1,12 @@
+import { randomBytes } from "node:crypto";
 import { authenticateTelegramUser, setSession } from "@/lib/auth";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { getClientAddress, rateLimitResponse, validateAuthRequest } from "@/lib/request-security";
 import { getTelegramBotId, getTelegramBotUsername, verifyTelegramAuthPayload } from "@/lib/telegram-auth";
+import { cookies } from "next/headers";
+
+const TELEGRAM_STATE_COOKIE = "lina_telegram_state";
+const TELEGRAM_STATE_MAX_AGE_SECONDS = 10 * 60;
 
 export async function GET(request: Request) {
   const securityError = validateAuthRequest(request);
@@ -16,7 +21,16 @@ export async function GET(request: Request) {
     return Response.json({ error: "Вход через Telegram пока не настроен" }, { status: 503 });
   }
 
-  return Response.json({ botId, botUsername }, { headers: { "Cache-Control": "no-store" } });
+  const state = randomBytes(32).toString("base64url");
+  (await cookies()).set(TELEGRAM_STATE_COOKIE, state, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production" || process.env.AUTH_COOKIE_SECURE === "true",
+    maxAge: TELEGRAM_STATE_MAX_AGE_SECONDS,
+    path: "/api/auth/telegram/callback",
+  });
+
+  return Response.json({ botId, botUsername, state }, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST(request: Request) {

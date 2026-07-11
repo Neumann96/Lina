@@ -7,7 +7,10 @@ import { cookies } from "next/headers";
 
 const scrypt = promisify(scryptCallback);
 const SESSION_COOKIE = "lina_session";
-const SESSION_LIFETIME_SECONDS = 60 * 60 * 24 * 30;
+const SESSION_LIFETIME_SECONDS = 60 * 60 * 24 * 7;
+const SESSION_IDLE_TIMEOUT_SECONDS = 60 * 60 * 24;
+const SESSION_TOUCH_INTERVAL_MS = 15 * 60 * 1000;
+const MAX_SESSIONS_PER_USER = 10;
 
 export type AuthUser = { id: string; email: string | null; name: string };
 
@@ -103,33 +106,37 @@ function sessionSecret() {
   return secret ?? "lina-development-secret-change-in-production";
 }
 
-function sign(value: string) {
+function sessionTokenDigest(value: string) {
   return createHmac("sha256", sessionSecret()).update(value).digest("base64url");
 }
 
-function createSessionToken(user: AuthUser) {
-  const payload = Buffer.from(JSON.stringify({ ...user, expiresAt: Date.now() + SESSION_LIFETIME_SECONDS * 1000 })).toString("base64url");
-  return `${payload}.${sign(payload)}`;
-}
-
-function readSessionToken(token?: string): AuthUser | null {
-  if (!token) return null;
-  const [payload, signature] = token.split(".");
-  if (!payload || !signature) return null;
-  const actual = Buffer.from(signature);
-  const expected = Buffer.from(sign(payload));
-  if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) return null;
-  try {
-    const session = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as AuthUser & { expiresAt: number };
-    if (!session.id || !session.name || session.expiresAt < Date.now()) return null;
-    return { id: session.id, email: session.email, name: session.name };
-  } catch {
-    return null;
-  }
+function validSessionToken(token?: string): token is string {
+  return Boolean(token && /^[A-Za-z0-9_-]{43}$/.test(token));
 }
 
 export async function setSession(user: AuthUser) {
-  (await cookies()).set(SESSION_COOKIE, createSessionToken(user), {
+  const token = randomBytes(32).toString("base64url");
+  const tokenHash = sessionTokenDigest(token);
+  await query(
+    `INSERT INTO auth_sessions (token_hash, user_id, expires_at)
+     VALUES ($1, $2, NOW() + make_interval(secs => $3::int))`,
+    [tokenHash, user.id, SESSION_LIFETIME_SECONDS],
+  );
+  await query(
+    `DELETE FROM auth_sessions
+     WHERE expires_at <= NOW()
+        OR last_seen_at <= NOW() - make_interval(secs => $2::int)
+        OR token_hash IN (
+          SELECT token_hash
+          FROM auth_sessions
+          WHERE user_id = $1
+          ORDER BY created_at DESC
+          OFFSET $3
+        )`,
+    [user.id, SESSION_IDLE_TIMEOUT_SECONDS, MAX_SESSIONS_PER_USER],
+  );
+
+  (await cookies()).set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production" || process.env.AUTH_COOKIE_SECURE === "true",
@@ -139,9 +146,43 @@ export async function setSession(user: AuthUser) {
 }
 
 export async function clearSession() {
-  (await cookies()).delete(SESSION_COOKIE);
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
+  try {
+    if (validSessionToken(token)) {
+      await query("DELETE FROM auth_sessions WHERE token_hash = $1", [sessionTokenDigest(token)]);
+    }
+  } finally {
+    cookieStore.delete(SESSION_COOKIE);
+  }
 }
 
 export async function getCurrentUser() {
-  return readSessionToken((await cookies()).get(SESSION_COOKIE)?.value);
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  if (!validSessionToken(token)) return null;
+
+  const result = await query<{ id: string; email: string | null; name: string | null; lastSeenAt: Date }>(
+    `SELECT u.id, u.email, u.display_name AS name, s.last_seen_at AS "lastSeenAt"
+     FROM auth_sessions s
+     JOIN users u ON u.id = s.user_id
+     WHERE s.token_hash = $1
+       AND s.expires_at > NOW()
+       AND s.last_seen_at > NOW() - make_interval(secs => $2::int)
+     LIMIT 1`,
+    [sessionTokenDigest(token), SESSION_IDLE_TIMEOUT_SECONDS],
+  );
+  const session = result.rows[0];
+  if (!session) return null;
+
+  if (Date.now() - session.lastSeenAt.getTime() >= SESSION_TOUCH_INTERVAL_MS) {
+    await query(
+      `UPDATE auth_sessions
+       SET last_seen_at = NOW()
+       WHERE token_hash = $1 AND last_seen_at = $2`,
+      [sessionTokenDigest(token), session.lastSeenAt],
+    );
+  }
+
+  const name = session.name?.trim() || (session.email ? displayName(session.email) : "Пользователь");
+  return { id: session.id, email: session.email, name };
 }
