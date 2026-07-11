@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/auth";
 import { createStudySet } from "@/lib/learning";
-import { validateAuthRequest } from "@/lib/request-security";
+import { consumeRateLimit } from "@/lib/rate-limit";
+import { rateLimitResponse, validateAuthRequest } from "@/lib/request-security";
 
 const MAX_CARDS = 500;
 
@@ -10,6 +11,13 @@ export async function POST(request: Request) {
 
   const user = await getCurrentUser();
   if (!user) return Response.json({ error: "Войдите, чтобы создать набор" }, { status: 401 });
+
+  const userLimit = await consumeRateLimit(user.id, {
+    scope: "sets-user",
+    limit: 20,
+    windowSeconds: 60 * 60,
+  });
+  if (!userLimit.allowed) return rateLimitResponse(userLimit.retryAfter);
 
   let body: unknown;
   try {
@@ -44,5 +52,11 @@ export async function POST(request: Request) {
   }
 
   const setId = await createStudySet(user.id, title, cards as Array<{ term: string; definition: string }>);
+  if (!setId) {
+    return Response.json(
+      { error: "Достигнут лимит хранилища: удалите ненужные наборы перед созданием нового" },
+      { status: 409 },
+    );
+  }
   return Response.json({ id: setId }, { status: 201 });
 }

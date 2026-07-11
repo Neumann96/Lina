@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/auth";
 import { recordCardReview } from "@/lib/learning";
-import { validateAuthRequest } from "@/lib/request-security";
+import { consumeRateLimit } from "@/lib/rate-limit";
+import { rateLimitResponse, validateAuthRequest } from "@/lib/request-security";
 
 export async function POST(request: Request) {
   const securityError = validateAuthRequest(request);
@@ -8,6 +9,13 @@ export async function POST(request: Request) {
 
   const user = await getCurrentUser();
   if (!user) return Response.json({ error: "Войдите, чтобы продолжить" }, { status: 401 });
+
+  const userLimit = await consumeRateLimit(user.id, {
+    scope: "reviews-user",
+    limit: 600,
+    windowSeconds: 15 * 60,
+  });
+  if (!userLimit.allowed) return rateLimitResponse(userLimit.retryAfter);
 
   let body: unknown;
   try {

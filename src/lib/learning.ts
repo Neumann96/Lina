@@ -46,6 +46,9 @@ export type DueReviewUser = {
   dueCount: number;
 };
 
+const MAX_STUDY_SETS_PER_USER = 200;
+const MAX_CARDS_PER_USER = 50_000;
+
 export async function getDashboardData(userId: string): Promise<DashboardData> {
   const [countsResult, daysResult, setsResult] = await Promise.all([
     query<{ setCount: string; cardCount: string; reviewCount: string; correctCount: string; dueReviewCount: string; nextReviewAt: string | null }>(
@@ -160,21 +163,33 @@ export async function createStudySet(userId: string, title: string, cards: Array
   const definitions = cards.map((card) => card.definition);
   const positions = cards.map((_, index) => index);
 
-  await query(
-    `WITH new_set AS (
+  const result = await query<{ id: string }>(
+    `WITH user_lock AS MATERIALIZED (
+       SELECT pg_advisory_xact_lock(hashtextextended($2::text, 0))
+     ), current_usage AS MATERIALIZED (
+       SELECT
+         (SELECT COUNT(*) FROM study_sets WHERE user_id = $2) AS set_count,
+         (SELECT COUNT(*) FROM cards c JOIN study_sets s ON s.id = c.set_id WHERE s.user_id = $2) AS card_count
+       FROM user_lock
+     ), new_set AS (
        INSERT INTO study_sets (id, user_id, title)
-       VALUES ($1, $2, $3)
+       SELECT $1, $2, $3
+       FROM current_usage
+       WHERE set_count < $8 AND card_count + $9 <= $10
        RETURNING id
-     )
-     INSERT INTO cards (id, set_id, term, definition, position)
+     ), inserted_cards AS (
+       INSERT INTO cards (id, set_id, term, definition, position)
      SELECT input.id, new_set.id, input.term, input.definition, input.position
      FROM new_set
      CROSS JOIN UNNEST($4::uuid[], $5::text[], $6::text[], $7::integer[])
-       AS input(id, term, definition, position)`,
-    [setId, userId, title, cardIds, terms, definitions, positions],
+         AS input(id, term, definition, position)
+       RETURNING set_id
+     )
+     SELECT id FROM new_set`,
+    [setId, userId, title, cardIds, terms, definitions, positions, MAX_STUDY_SETS_PER_USER, cards.length, MAX_CARDS_PER_USER],
   );
 
-  return setId;
+  return result.rows[0]?.id ?? null;
 }
 
 export async function getStudySet(userId: string, setId: string): Promise<StudySet | null> {

@@ -4,7 +4,17 @@ import { createHash } from "node:crypto";
 import { query } from "@/lib/db";
 
 type RateLimitOptions = {
-  scope: "register-ip" | "register-email" | "login-ip" | "login-email" | "telegram-ip" | "telegram-user";
+  scope:
+    | "register-ip"
+    | "register-email"
+    | "login-ip"
+    | "login-email"
+    | "telegram-ip"
+    | "telegram-user"
+    | "sets-user"
+    | "reviews-user"
+    | "restart-user"
+    | "quizlet-user";
   limit: number;
   windowSeconds: number;
 };
@@ -18,7 +28,22 @@ function digest(value: string) {
   return createHash("sha256").update(value).digest("hex");
 }
 
+let nextCleanupAt = 0;
+
+async function cleanupExpiredLimits() {
+  const now = Date.now();
+  if (now < nextCleanupAt) return;
+  nextCleanupAt = now + 60 * 60 * 1000;
+  try {
+    await query("DELETE FROM auth_rate_limits WHERE window_started_at < NOW() - INTERVAL '2 days'");
+  } catch {
+    // A cleanup failure must not turn rate limiting into an application outage.
+    nextCleanupAt = now + 5 * 60 * 1000;
+  }
+}
+
 export async function consumeRateLimit(value: string, options: RateLimitOptions) {
+  await cleanupExpiredLimits();
   const result = await query<RateLimitRow>(
     `INSERT INTO auth_rate_limits (scope, key_hash, window_started_at, attempts)
      VALUES ($1, $2, NOW(), 1)

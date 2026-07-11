@@ -1,8 +1,11 @@
 import { getCurrentUser } from "@/lib/auth";
 import { normalizeQuizletUrl, parseQuizletHtml } from "@/lib/quizlet-import";
-import { validateAuthRequest } from "@/lib/request-security";
+import { consumeRateLimit } from "@/lib/rate-limit";
+import { rateLimitResponse, validateAuthRequest } from "@/lib/request-security";
 
 const MAX_HTML_BYTES = 5 * 1024 * 1024;
+const MAX_ACTIVE_IMPORTS = 4;
+let activeImports = 0;
 
 async function readLimited(response: Response) {
   const length = Number(response.headers.get("content-length") ?? 0);
@@ -58,7 +61,15 @@ async function fetchQuizletPage(initialUrl: URL) {
 export async function POST(request: Request) {
   const securityError = validateAuthRequest(request);
   if (securityError) return securityError;
-  if (!await getCurrentUser()) return Response.json({ error: "Войдите, чтобы импортировать набор" }, { status: 401 });
+  const user = await getCurrentUser();
+  if (!user) return Response.json({ error: "Войдите, чтобы импортировать набор" }, { status: 401 });
+
+  const userLimit = await consumeRateLimit(user.id, {
+    scope: "quizlet-user",
+    limit: 10,
+    windowSeconds: 15 * 60,
+  });
+  if (!userLimit.allowed) return rateLimitResponse(userLimit.retryAfter);
 
   let value = "";
   try {
@@ -70,6 +81,14 @@ export async function POST(request: Request) {
   const url = normalizeQuizletUrl(value);
   if (!url) return Response.json({ error: "Вставьте ссылку на набор Quizlet" }, { status: 400 });
 
+  if (activeImports >= MAX_ACTIVE_IMPORTS) {
+    return Response.json(
+      { error: "Импорт временно занят. Попробуйте ещё раз через несколько секунд" },
+      { status: 503, headers: { "Retry-After": "10" } },
+    );
+  }
+
+  activeImports += 1;
   try {
     const response = await fetchQuizletPage(url);
     if (!response.ok) {
@@ -82,5 +101,7 @@ export async function POST(request: Request) {
     return Response.json(result);
   } catch {
     return Response.json({ error: "Quizlet сейчас не отдаёт этот набор автоматически. Скопируйте его через «Экспорт» и вставьте текст ниже." }, { status: 422 });
+  } finally {
+    activeImports -= 1;
   }
 }
