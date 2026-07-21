@@ -196,7 +196,7 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
 
       <section className="study-stage">
         <div className="study-counters" aria-hidden>
-          <span className="study-counter learning"><strong>{ratings.C}</strong></span>
+          <span className="study-counter learning"><strong>{ratings.B + ratings.C}</strong></span>
           <span className="study-counter known"><strong>{ratings.A}</strong></span>
         </div>
 

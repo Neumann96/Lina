@@ -28,6 +28,11 @@ test("resumes at the next unfinished card", () => {
   assert.match(studySession, /scheduledAnswered \/ initialTotal \* 100/);
 });
 
+test("groups confident recalls in green and difficult or forgotten recalls in red", () => {
+  assert.match(studySession, /study-counter learning[^\n]+\{ratings\.B \+ ratings\.C\}/);
+  assert.match(studySession, /study-counter known[^\n]+\{ratings\.A\}/);
+});
+
 test("can restart a set without deleting review history", () => {
   assert.match(learning, /SET next_position = 0, updated_at = NOW\(\)/);
   assert.doesNotMatch(learning, /DELETE FROM card_reviews/);
