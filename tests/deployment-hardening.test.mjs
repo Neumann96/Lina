@@ -48,3 +48,17 @@ test("pins the production SSH host key and workflow actions", async () => {
   assert.match(workflow, /actions\/checkout@[0-9a-f]{40}/);
   assert.match(workflow, /actions\/setup-node@[0-9a-f]{40}/);
 });
+
+test("deploys and verifies the polling bot that dispatches reminders", async () => {
+  const workflow = await read(".github/workflows/deploy.yml");
+  const botService = await read("deploy/lina-telegram-bot.service");
+  const bot = await read("deploy/lina_telegram_bot.py");
+
+  assert.match(workflow, /cp deploy\/lina_telegram_bot\.py/);
+  assert.match(workflow, /systemctl restart lina-telegram-bot/);
+  assert.match(workflow, /systemctl is-active --quiet lina-telegram-bot/);
+  assert.match(workflow, /api\/reviews\/notify/);
+  assert.match(botService, /ExecStart=\/usr\/bin\/python3 \/opt\/lina\/current\/lina_telegram_bot\.py/);
+  assert.match(bot, /trigger_review_reminders/);
+  assert.match(bot, /REVIEW_REMINDER_INTERVAL_SECONDS/);
+});

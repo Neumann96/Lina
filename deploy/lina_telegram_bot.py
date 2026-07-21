@@ -13,6 +13,8 @@ START_MESSAGE = """Привет! Я Lina ✨
 
 Учить всё ещё придётся вам. Мы проверяли..."""
 MINI_APP_URL = "https://lina-lern.ru"
+DEFAULT_REMINDER_URL = "http://127.0.0.1:3000/api/reviews/notify"
+DEFAULT_REMINDER_INTERVAL_SECONDS = 300
 
 stopping = False
 
@@ -54,6 +56,23 @@ def start_payload(chat_id: int):
     }
 
 
+def trigger_review_reminders(url: str, secret: str, timeout: int = 20):
+    request = urllib.request.Request(
+        url,
+        data=b"{}",
+        headers={
+            "Content-Type": "application/json",
+            "x-lina-reminder-secret": secret,
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        result = json.load(response)
+    if not isinstance(result, dict):
+        raise RuntimeError("Review reminder endpoint returned an invalid response")
+    return result
+
+
 def stop(_signum, _frame):
     global stopping
     stopping = True
@@ -63,14 +82,37 @@ def main():
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
     if not token or ":" not in token:
         raise RuntimeError("TELEGRAM_BOT_TOKEN is missing or invalid")
+    reminder_secret = os.environ.get("REVIEW_REMINDER_SECRET", "").strip()
+    reminder_url = os.environ.get("REVIEW_REMINDER_URL", DEFAULT_REMINDER_URL).strip()
+    try:
+        reminder_interval = max(60, int(os.environ.get(
+            "REVIEW_REMINDER_INTERVAL_SECONDS",
+            str(DEFAULT_REMINDER_INTERVAL_SECONDS),
+        )))
+    except ValueError as error:
+        raise RuntimeError("REVIEW_REMINDER_INTERVAL_SECONDS must be an integer") from error
 
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
     offset = 0
+    next_reminder_at = 0.0
     logging.info("Lina bot started in long-polling mode")
+    if not reminder_secret:
+        logging.warning("Review reminders are disabled because REVIEW_REMINDER_SECRET is missing")
 
     while not stopping:
         try:
+            now = time.monotonic()
+            if reminder_secret and now >= next_reminder_at:
+                next_reminder_at = now + reminder_interval
+                reminder_result = trigger_review_reminders(reminder_url, reminder_secret)
+                logging.info(
+                    "Review reminder dispatch checked=%s sent=%s failed=%s skipped=%s",
+                    reminder_result.get("checked", 0),
+                    reminder_result.get("sent", 0),
+                    reminder_result.get("failed", 0),
+                    reminder_result.get("skipped", "no"),
+                )
             updates = telegram_request(token, "getUpdates", {
                 "offset": offset,
                 "timeout": 25,
@@ -83,7 +125,7 @@ def main():
                     continue
                 telegram_request(token, "sendMessage", start_payload(chat_id), timeout=10)
                 logging.info("Answered /start")
-        except (OSError, RuntimeError, urllib.error.URLError) as error:
+        except (OSError, RuntimeError, ValueError, urllib.error.URLError) as error:
             if not stopping:
                 logging.error("Telegram polling error: %s", error)
                 time.sleep(2)

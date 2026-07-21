@@ -54,7 +54,10 @@ test("can study due spaced repetition cards separately", () => {
 test("supports scheduled telegram reminders for due cards", () => {
   assert.match(learning, /getDueReviewUsers/);
   assert.match(learning, /reminder_sent_at < sr\.due_at/);
+  assert.match(learning, /MAX\(sr\.reminder_attempted_at\) < NOW\(\) - INTERVAL '1 hour'/);
+  assert.match(learning, /markDueReviewReminderAttempted/);
   assert.match(learning, /markDueReviewReminderSent/);
   assert.match(notifyRoute, /x-lina-reminder-secret/);
   assert.match(notifyRoute, /sendTelegramReviewReminder/);
+  assert.match(notifyRoute, /withAdvisoryLock\("lina-review-reminder-dispatch"/);
 });

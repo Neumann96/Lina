@@ -49,3 +49,25 @@ export async function withTransaction<T>(callback: (client: PoolClient) => Promi
     client.release();
   }
 }
+
+export async function withAdvisoryLock<T>(
+  name: string,
+  callback: () => Promise<T>,
+): Promise<{ acquired: true; value: T } | { acquired: false }> {
+  const client = await getPool().connect();
+  let acquired = false;
+  try {
+    const lockResult = await client.query<{ acquired: boolean }>(
+      "SELECT pg_try_advisory_lock(hashtextextended($1, 0)) AS acquired",
+      [name],
+    );
+    acquired = lockResult.rows[0]?.acquired === true;
+    if (!acquired) return { acquired: false };
+    return { acquired: true, value: await callback() };
+  } finally {
+    if (acquired) {
+      await client.query("SELECT pg_advisory_unlock(hashtextextended($1, 0))", [name]);
+    }
+    client.release();
+  }
+}

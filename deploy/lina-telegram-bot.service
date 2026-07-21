@@ -1,14 +1,14 @@
 [Unit]
 Description=Lina Telegram bot
-After=network-online.target
-Wants=network-online.target
+After=network-online.target lina.service
+Wants=network-online.target lina.service
 
 [Service]
 Type=simple
 User=lina-bot
 Group=lina-bot
 EnvironmentFile=/etc/lina-telegram-bot.env
-ExecStart=/usr/bin/python3 /opt/lina-telegram-bot/lina_telegram_bot.py
+ExecStart=/usr/bin/python3 /opt/lina/current/lina_telegram_bot.py
 Restart=always
 RestartSec=3
 TimeoutStopSec=40

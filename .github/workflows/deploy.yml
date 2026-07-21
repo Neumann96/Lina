@@ -30,7 +30,11 @@ jobs:
         run: npm ci
 
       - name: Validate
-        run: npm run lint && npm run build
+        run: |
+          npm run lint
+          npm test
+          python3 -m unittest discover -s tests -p '*_test.py'
+          npm run build
 
       - name: Package standalone release
         run: |
@@ -41,6 +45,8 @@ jobs:
           cp deploy/nginx.conf .next/standalone/
           cp deploy/nginx.ssl.conf .next/standalone/
           cp deploy/certbot-reload-nginx.sh .next/standalone/
+          cp deploy/lina_telegram_bot.py .next/standalone/
+          cp deploy/lina-telegram-bot.service .next/standalone/
           mkdir -p .next/standalone/.next
           cp -r .next/static .next/standalone/.next/
           tar -czf lina-${GITHUB_SHA}.tar.gz -C .next/standalone .
@@ -99,6 +105,7 @@ jobs:
               echo "Deployment failed; rolling back to $previous_release"
               ln -sfn "$previous_release" /opt/lina/current
               systemctl restart lina || true
+              systemctl restart lina-telegram-bot || true
             fi
             if [ "$status" -ne 0 ] && [ "$nginx_changed" -eq 1 ] && [ -f "$nginx_backup" ]; then
               echo "Restoring previous nginx configuration"
@@ -117,8 +124,9 @@ jobs:
           # shell-safe assignments and never exposes secrets in process argv.
           . "$secret_file"
           rm -f "$secret_file"
-          if [ -z "${AUTH_SECRET_B64:-}" ] || [ -z "${DATABASE_URL_B64:-}" ] || [ -z "${TELEGRAM_BOT_TOKEN_B64:-}" ]; then
-            echo "AUTH_SECRET, DATABASE_URL and TELEGRAM_BOT_TOKEN must be configured"
+          if [ -z "${AUTH_SECRET_B64:-}" ] || [ -z "${DATABASE_URL_B64:-}" ] \
+            || [ -z "${TELEGRAM_BOT_TOKEN_B64:-}" ] || [ -z "${REVIEW_REMINDER_SECRET_B64:-}" ]; then
+            echo "AUTH_SECRET, DATABASE_URL, TELEGRAM_BOT_TOKEN and REVIEW_REMINDER_SECRET must be configured"
             exit 1
           fi
           release="/opt/lina/releases/$SHA"
@@ -140,9 +148,7 @@ jobs:
             printf 'APP_ORIGIN=https://lina-lern.ru\n'
             printf 'TELEGRAM_BOT_TOKEN=%s\n' "$(printf '%s' "$TELEGRAM_BOT_TOKEN_B64" | base64 -d)"
             printf 'TELEGRAM_BOT_USERNAME=linalernbot\n'
-            if [ -n "${REVIEW_REMINDER_SECRET_B64:-}" ]; then
-              printf 'REVIEW_REMINDER_SECRET=%s\n' "$(printf '%s' "$REVIEW_REMINDER_SECRET_B64" | base64 -d)"
-            fi
+            printf 'REVIEW_REMINDER_SECRET=%s\n' "$(printf '%s' "$REVIEW_REMINDER_SECRET_B64" | base64 -d)"
           } > /etc/lina.env
           AUTH_SECRET_LENGTH="$(printf '%s' "$AUTH_SECRET_B64" | base64 -d | wc -c)"
           if [ "$AUTH_SECRET_LENGTH" -lt 32 ]; then
@@ -154,6 +160,20 @@ jobs:
             echo "TELEGRAM_BOT_TOKEN has an invalid format"
             exit 1
           fi
+          REVIEW_REMINDER_SECRET="$(printf '%s' "$REVIEW_REMINDER_SECRET_B64" | base64 -d)"
+          if [ "$(printf '%s' "$REVIEW_REMINDER_SECRET" | wc -c)" -lt 32 ]; then
+            echo "REVIEW_REMINDER_SECRET must contain at least 32 characters"
+            exit 1
+          fi
+          getent passwd lina-bot >/dev/null || \
+            useradd --system --home-dir /nonexistent --shell /usr/sbin/nologin lina-bot
+          install -m 600 -o root -g root /dev/null /etc/lina-telegram-bot.env
+          {
+            printf 'TELEGRAM_BOT_TOKEN=%s\n' "$TELEGRAM_BOT_TOKEN"
+            printf 'REVIEW_REMINDER_SECRET=%s\n' "$REVIEW_REMINDER_SECRET"
+            printf 'REVIEW_REMINDER_URL=http://127.0.0.1:3000/api/reviews/notify\n'
+            printf 'REVIEW_REMINDER_INTERVAL_SECONDS=300\n'
+          } > /etc/lina-telegram-bot.env
           DATABASE_URL="$(printf '%s' "$DATABASE_URL_B64" | base64 -d)"
           for migration in "$release"/db/migrations/*.sql; do
             psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$migration"
@@ -164,6 +184,7 @@ jobs:
               /opt/node/bin/node scripts/import-legacy-users.mjs /opt/lina/data/users.json
           fi
           install -m 644 "$release/lina.service" /etc/systemd/system/lina.service
+          install -m 644 "$release/lina-telegram-bot.service" /etc/systemd/system/lina-telegram-bot.service
           install -d -m 755 /var/www/letsencrypt/.well-known/acme-challenge
           install -d -m 755 /etc/letsencrypt/renewal-hooks/deploy
           install -m 755 "$release/certbot-reload-nginx.sh" \
@@ -205,6 +226,19 @@ jobs:
                 | grep -q '"ok":true'; then
                 echo "Telegram webhook cleanup did not complete; continuing deployment"
               fi
+              systemctl enable lina-telegram-bot
+              systemctl restart lina-telegram-bot
+              for bot_attempt in {1..10}; do
+                systemctl is-active --quiet lina-telegram-bot && break
+                sleep 1
+              done
+              systemctl is-active --quiet lina-telegram-bot || {
+                journalctl -u lina-telegram-bot -n 50 --no-pager
+                exit 1
+              }
+              printf 'header = "x-lina-reminder-secret: %s"\n' "$REVIEW_REMINDER_SECRET" \
+                | curl --config - --fail --silent --show-error --connect-timeout 5 --max-time 30 \
+                  --request POST http://127.0.0.1:3000/api/reviews/notify >/dev/null
               find /opt/lina/releases -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' \
                 | sort -nr | tail -n +4 | cut -d' ' -f2- | xargs -r rm -rf
               switched_release=0

@@ -332,6 +332,8 @@ export async function getDueReviewUsers(limit = 100): Promise<DueReviewUser[]> {
        AND sr.due_at <= NOW()
        AND (sr.reminder_sent_at IS NULL OR sr.reminder_sent_at < sr.due_at)
      GROUP BY u.id, u.telegram_id
+     HAVING MAX(sr.reminder_attempted_at) IS NULL
+         OR MAX(sr.reminder_attempted_at) < NOW() - INTERVAL '1 hour'
      ORDER BY MIN(sr.due_at) ASC
      LIMIT $1`,
     [limit],
@@ -342,6 +344,17 @@ export async function getDueReviewUsers(limit = 100): Promise<DueReviewUser[]> {
     telegramId: row.telegramId,
     dueCount: Number(row.dueCount),
   }));
+}
+
+export async function markDueReviewReminderAttempted(userId: string) {
+  await query(
+    `UPDATE card_spaced_repetitions
+     SET reminder_attempted_at = NOW(), updated_at = NOW()
+     WHERE user_id = $1
+       AND due_at <= NOW()
+       AND (reminder_sent_at IS NULL OR reminder_sent_at < due_at)`,
+    [userId],
+  );
 }
 
 export async function markDueReviewReminderSent(userId: string) {
