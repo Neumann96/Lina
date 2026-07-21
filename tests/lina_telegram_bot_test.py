@@ -34,6 +34,12 @@ class LinaTelegramBotTest(unittest.TestCase):
         self.assertEqual(request.get_method(), "POST")
         self.assertEqual(dict(request.header_items())["X-lina-reminder-secret"], "secret")
 
+    def test_supports_webhook_reminder_worker_mode(self):
+        source = MODULE_PATH.read_text(encoding="utf-8")
+        self.assertIn('TELEGRAM_POLLING_ENABLED", "true"', source)
+        self.assertIn('"webhook + reminder-worker"', source)
+        self.assertIn("if polling_enabled:", source)
+
 
 if __name__ == "__main__":
     unittest.main()

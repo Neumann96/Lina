@@ -173,6 +173,7 @@ jobs:
             printf 'REVIEW_REMINDER_SECRET=%s\n' "$REVIEW_REMINDER_SECRET"
             printf 'REVIEW_REMINDER_URL=http://127.0.0.1:3000/api/reviews/notify\n'
             printf 'REVIEW_REMINDER_INTERVAL_SECONDS=300\n'
+            printf 'TELEGRAM_POLLING_ENABLED=false\n'
           } > /etc/lina-telegram-bot.env
           DATABASE_URL="$(printf '%s' "$DATABASE_URL_B64" | base64 -d)"
           for migration in "$release"/db/migrations/*.sql; do
@@ -221,10 +222,15 @@ jobs:
           systemctl reload nginx
           for attempt in {1..15}; do
             if curl --fail --silent http://127.0.0.1:3000/api/health >/dev/null; then
-              if ! curl --fail --silent --show-error --connect-timeout 5 --max-time 10 \
-                --request POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/deleteWebhook" \
+              TELEGRAM_WEBHOOK_SECRET="$(printf '%s' "$TELEGRAM_BOT_TOKEN" | sha256sum | cut -d' ' -f1)"
+              if ! printf '{"url":"https://lina-lern.ru/api/telegram/webhook","secret_token":"%s","allowed_updates":["message"]}' \
+                "$TELEGRAM_WEBHOOK_SECRET" \
+                | curl --fail --silent --show-error --connect-timeout 5 --max-time 10 \
+                  --header 'Content-Type: application/json' --data-binary @- \
+                  "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook" \
                 | grep -q '"ok":true'; then
-                echo "Telegram webhook cleanup did not complete; continuing deployment"
+                echo "Telegram webhook configuration failed"
+                exit 1
               fi
               systemctl enable lina-telegram-bot
               systemctl restart lina-telegram-bot

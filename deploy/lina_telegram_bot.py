@@ -84,6 +84,8 @@ def main():
         raise RuntimeError("TELEGRAM_BOT_TOKEN is missing or invalid")
     reminder_secret = os.environ.get("REVIEW_REMINDER_SECRET", "").strip()
     reminder_url = os.environ.get("REVIEW_REMINDER_URL", DEFAULT_REMINDER_URL).strip()
+    polling_enabled = os.environ.get("TELEGRAM_POLLING_ENABLED", "true").strip().lower() \
+        in {"1", "true", "yes", "on"}
     try:
         reminder_interval = max(60, int(os.environ.get(
             "REVIEW_REMINDER_INTERVAL_SECONDS",
@@ -96,7 +98,10 @@ def main():
     signal.signal(signal.SIGINT, stop)
     offset = 0
     next_reminder_at = 0.0
-    logging.info("Lina bot started in long-polling mode")
+    logging.info(
+        "Lina bot started in %s mode",
+        "long-polling" if polling_enabled else "webhook + reminder-worker",
+    )
     if not reminder_secret:
         logging.warning("Review reminders are disabled because REVIEW_REMINDER_SECRET is missing")
 
@@ -113,18 +118,21 @@ def main():
                     reminder_result.get("failed", 0),
                     reminder_result.get("skipped", "no"),
                 )
-            updates = telegram_request(token, "getUpdates", {
-                "offset": offset,
-                "timeout": 25,
-                "allowed_updates": ["message"],
-            })
-            for update in updates:
-                offset = max(offset, update["update_id"] + 1)
-                chat_id = start_chat_id(update)
-                if chat_id is None:
-                    continue
-                telegram_request(token, "sendMessage", start_payload(chat_id), timeout=10)
-                logging.info("Answered /start")
+            if polling_enabled:
+                updates = telegram_request(token, "getUpdates", {
+                    "offset": offset,
+                    "timeout": 25,
+                    "allowed_updates": ["message"],
+                })
+                for update in updates:
+                    offset = max(offset, update["update_id"] + 1)
+                    chat_id = start_chat_id(update)
+                    if chat_id is None:
+                        continue
+                    telegram_request(token, "sendMessage", start_payload(chat_id), timeout=10)
+                    logging.info("Answered /start")
+            else:
+                time.sleep(5)
         except (OSError, RuntimeError, ValueError, urllib.error.URLError) as error:
             if not stopping:
                 logging.error("Telegram polling error: %s", error)
