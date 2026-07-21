@@ -5,6 +5,7 @@ import test from "node:test";
 const learning = await readFile(new URL("../src/lib/learning.ts", import.meta.url), "utf8");
 const migration = await readFile(new URL("../db/migrations/003_study_set_progress.sql", import.meta.url), "utf8");
 const spacedMigration = await readFile(new URL("../db/migrations/004_spaced_repetition.sql", import.meta.url), "utf8");
+const scienceMigration = await readFile(new URL("../db/migrations/006_science_based_repetition.sql", import.meta.url), "utf8");
 const studySession = await readFile(new URL("../src/components/study-session.tsx", import.meta.url), "utf8");
 const restartRoute = await readFile(new URL("../src/app/api/sets/[setId]/restart/route.ts", import.meta.url), "utf8");
 const reviewsPage = await readFile(new URL("../src/app/study/reviews/page.tsx", import.meta.url), "utf8");
@@ -13,7 +14,7 @@ const notifyRoute = await readFile(new URL("../src/app/api/reviews/notify/route.
 test("stores and displays the next card position independently from answer history", () => {
   assert.match(migration, /CREATE TABLE IF NOT EXISTS study_set_progress/);
   assert.match(learning, /p\.next_position/);
-  assert.match(learning, /position \+ 1/);
+  assert.match(learning, /VALUES \(\$1, \$2, \$3 \+ 1, NOW\(\)\)/);
   assert.match(learning, /progress: count \? Math\.round\(studiedCount \/ count \* 100\) : 0/);
 });
 
@@ -38,7 +39,9 @@ test("stores each reviewed card in spaced repetition schedule", () => {
   assert.match(spacedMigration, /PRIMARY KEY \(user_id, card_id\)/);
   assert.match(learning, /INSERT INTO card_spaced_repetitions/);
   assert.match(learning, /due_at = EXCLUDED\.due_at/);
-  assert.match(learning, /NOW\(\) \+ next_interval_days \* INTERVAL '1 day'/);
+  assert.match(learning, /NOW\(\) \+ \$4 \* INTERVAL '1 day'/);
+  assert.match(scienceMigration, /successful_reviews/);
+  assert.match(scienceMigration, /rating IN \('A', 'B', 'C'\)/);
 });
 
 test("can study due spaced repetition cards separately", () => {

@@ -1,7 +1,14 @@
 import "server-only";
 
 import { randomUUID } from "node:crypto";
-import { query } from "@/lib/db";
+import { query, withTransaction } from "@/lib/db";
+import {
+  DEFAULT_SCHEDULE,
+  scheduleReview,
+  type LearningStage,
+  type ReviewKind,
+  type ReviewRating,
+} from "@/lib/spaced-repetition";
 
 export type DashboardStats = {
   cardCount: number;
@@ -215,89 +222,105 @@ export async function getStudySet(userId: string, setId: string): Promise<StudyS
   };
 }
 
-export async function recordCardReview(userId: string, cardId: string, isCorrect: boolean) {
-  const result = await query(
-    `WITH target_card AS (
-       SELECT c.id, c.set_id, c.position
+export type CardReviewInput = {
+  rating: ReviewRating;
+  responseMs: number | null;
+  kind: ReviewKind;
+};
+
+export async function recordCardReview(userId: string, cardId: string, review: CardReviewInput) {
+  return withTransaction(async (client) => {
+    const targetResult = await client.query<{
+      setId: string;
+      position: number;
+      ease: string | null;
+      intervalDays: number | null;
+      repetitions: number | null;
+      successfulReviews: number | null;
+      lapses: number | null;
+      stage: LearningStage | null;
+    }>(
+      `SELECT
+         c.set_id AS "setId",
+         c.position,
+         sr.ease::text AS ease,
+         sr.interval_days AS "intervalDays",
+         sr.repetitions,
+         sr.successful_reviews AS "successfulReviews",
+         sr.lapses,
+         sr.stage
        FROM cards c
        JOIN study_sets s ON s.id = c.set_id
+       LEFT JOIN card_spaced_repetitions sr ON sr.user_id = $1 AND sr.card_id = c.id
        WHERE c.id = $2 AND s.user_id = $1
-     ), saved_review AS (
-       INSERT INTO card_reviews (user_id, card_id, is_correct)
-       SELECT $1, id, $3 FROM target_card
-     ), current_schedule AS (
-       SELECT
-         target_card.id AS card_id,
-         target_card.set_id,
-         target_card.position,
-         COALESCE(sr.ease, 2.50) AS ease,
-         COALESCE(sr.interval_days, 0) AS interval_days,
-         COALESCE(sr.repetitions, 0) AS repetitions
-       FROM target_card
-       LEFT JOIN card_spaced_repetitions sr ON sr.user_id = $1 AND sr.card_id = target_card.id
-     ), next_schedule AS (
-       SELECT
-         card_id,
-         set_id,
-         position,
-         CASE
-           WHEN $3 THEN LEAST(3.00, ease + 0.10)
-           ELSE GREATEST(1.30, ease - 0.25)
-         END AS next_ease,
-         CASE
-           WHEN NOT $3 THEN 0
-           WHEN repetitions = 0 THEN 1
-           WHEN repetitions = 1 THEN 3
-           WHEN repetitions = 2 THEN 7
-           ELSE GREATEST(14, CEIL(interval_days * ease)::integer)
-         END AS next_interval_days,
-         CASE WHEN $3 THEN repetitions + 1 ELSE 0 END AS next_repetitions
-       FROM current_schedule
-     ), saved_schedule AS (
-       INSERT INTO card_spaced_repetitions (
-         user_id,
-         card_id,
-         ease,
-         interval_days,
-         repetitions,
-         due_at,
-         last_reviewed_at,
-         last_is_correct,
-         reminder_sent_at,
-         updated_at
+       FOR UPDATE OF c`,
+      [userId, cardId],
+    );
+    const target = targetResult.rows[0];
+    if (!target) return false;
+
+    const next = scheduleReview({
+      ease: target.ease === null ? DEFAULT_SCHEDULE.ease : Number(target.ease),
+      intervalDays: target.intervalDays ?? DEFAULT_SCHEDULE.intervalDays,
+      repetitions: target.repetitions ?? DEFAULT_SCHEDULE.repetitions,
+      successfulReviews: target.successfulReviews ?? DEFAULT_SCHEDULE.successfulReviews,
+      lapses: target.lapses ?? DEFAULT_SCHEDULE.lapses,
+      stage: target.stage ?? DEFAULT_SCHEDULE.stage,
+    }, review.rating, review.kind);
+    const isCorrect = review.rating !== "C";
+
+    await client.query(
+      `INSERT INTO card_reviews (user_id, card_id, is_correct, rating, response_ms, review_kind)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [userId, cardId, isCorrect, review.rating, review.responseMs, review.kind],
+    );
+    await client.query(
+      `INSERT INTO card_spaced_repetitions (
+         user_id, card_id, ease, interval_days, repetitions, successful_reviews,
+         lapses, stage, due_at, last_reviewed_at, last_is_correct, last_rating,
+         reminder_sent_at, reminder_attempted_at, updated_at
        )
-       SELECT
-         $1,
-         card_id,
-         next_ease,
-         next_interval_days,
-         next_repetitions,
-         NOW() + next_interval_days * INTERVAL '1 day',
-         NOW(),
-         $3,
-         NULL,
-         NOW()
-       FROM next_schedule
+       VALUES (
+         $1, $2, $3, $4, $5, $6, $7, $8,
+         NOW() + $4 * INTERVAL '1 day', NOW(), $9, $10, NULL, NULL, NOW()
+       )
        ON CONFLICT (user_id, card_id) DO UPDATE
        SET ease = EXCLUDED.ease,
            interval_days = EXCLUDED.interval_days,
            repetitions = EXCLUDED.repetitions,
+           successful_reviews = EXCLUDED.successful_reviews,
+           lapses = EXCLUDED.lapses,
+           stage = EXCLUDED.stage,
            due_at = EXCLUDED.due_at,
            last_reviewed_at = EXCLUDED.last_reviewed_at,
            last_is_correct = EXCLUDED.last_is_correct,
+           last_rating = EXCLUDED.last_rating,
            reminder_sent_at = NULL,
-           updated_at = NOW()
-     )
-     INSERT INTO study_set_progress (user_id, set_id, next_position, updated_at)
-     SELECT $1, set_id, position + 1, NOW()
-     FROM next_schedule
-     ON CONFLICT (user_id, set_id) DO UPDATE
-     SET next_position = GREATEST(study_set_progress.next_position, EXCLUDED.next_position),
-         updated_at = NOW()
-     RETURNING set_id`,
-    [userId, cardId, isCorrect],
-  );
-  return (result.rowCount ?? 0) > 0;
+           reminder_attempted_at = NULL,
+           updated_at = NOW()`,
+      [
+        userId,
+        cardId,
+        next.ease,
+        next.intervalDays,
+        next.repetitions,
+        next.successfulReviews,
+        next.lapses,
+        next.stage,
+        isCorrect,
+        review.rating,
+      ],
+    );
+    await client.query(
+      `INSERT INTO study_set_progress (user_id, set_id, next_position, updated_at)
+       VALUES ($1, $2, $3 + 1, NOW())
+       ON CONFLICT (user_id, set_id) DO UPDATE
+       SET next_position = GREATEST(study_set_progress.next_position, EXCLUDED.next_position),
+           updated_at = NOW()`,
+      [userId, target.setId, target.position],
+    );
+    return true;
+  });
 }
 
 export async function getDueReviewUsers(limit = 100): Promise<DueReviewUser[]> {
