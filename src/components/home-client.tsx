@@ -369,7 +369,7 @@ function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
           <div className="landing-science-copy" data-reveal>
             <span className="section-kicker">Методика</span>
             <h2>Мозг забывает. Это нормально — и довольно предсказуемо.</h2>
-            <p>Если возвращаться к материалу через правильно подобранные интервалы, он сохраняется дольше. Lina отслеживает ответы и возвращает карточку тогда, когда памяти уже нужно подкрепление.</p>
+            <p>Если сначала попытаться вспомнить материал, получить обратную связь и вернуться к нему через интервал, он сохраняется дольше. Lina начинает с 3, 7 и 14 дней для уверенных ответов, возвращает сложное завтра, а затем адаптирует расписание по истории каждой карточки.</p>
             <blockquote>Вы запоминаете. Lina занимается всей математикой вокруг этого.</blockquote>
           </div>
           <div className="forgetting-chart" data-reveal>
@@ -396,9 +396,9 @@ function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
         <section className="landing-methods">
           <div className="landing-section-title" data-reveal><span>Три принципа</span><h2>Не магия. Хорошо изученная механика мозга.</h2><p>Lina соединяет техники, которые помогают знаниям задержаться надолго.</p></div>
           <div className="method-grid">
-            <article data-reveal style={{ "--reveal-delay": "0ms" } as React.CSSProperties}><span><Icon name="chart"/></span><h3>Интервальное повторение</h3><p>Интервалы постепенно увеличиваются: знакомое возвращается реже, сложное — раньше.</p></article>
-            <article data-reveal style={{ "--reveal-delay": "90ms" } as React.CSSProperties}><span><Icon name="brain"/></span><h3>Активное воспроизведение</h3><p>Сначала вы пытаетесь вспомнить ответ и только потом смотрите его. Так память работает, а не наблюдает.</p></article>
-            <article data-reveal style={{ "--reveal-delay": "180ms" } as React.CSSProperties}><span><Icon name="spark"/></span><h3>Адаптация под вас</h3><p>Lina учитывает ответы и обновляет расписание. Одинаковых интервалов для всего подряд не будет.</p></article>
+            <article data-reveal style={{ "--reveal-delay": "0ms" } as React.CSSProperties}><span><Icon name="chart"/></span><h3>Интервальное повторение</h3><p>Уверенный ответ запускает интервалы 3 → 7 → 14 дней. «С трудом» и «не вспомнил» возвращаются завтра.</p></article>
+            <article data-reveal style={{ "--reveal-delay": "90ms" } as React.CSSProperties}><span><Icon name="brain"/></span><h3>Активное воспроизведение</h3><p>Сначала вы формулируете ответ, затем видите эталон и оцениваете попытку. Ошибка возвращается ещё раз в конце занятия.</p></article>
+            <article data-reveal style={{ "--reveal-delay": "180ms" } as React.CSSProperties}><span><Icon name="spark"/></span><h3>Адаптация под вас</h3><p>Lina учитывает уверенность, скорость ответа и забывания. После стартовых интервалов расписание становится персональным.</p></article>
           </div>
         </section>
 
@@ -430,11 +430,12 @@ function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
         </section>
 
         <section className="landing-research" id="research">
-          <div className="research-intro" data-reveal><span className="section-kicker">Исследования</span><h2>Не очередной «секрет эффективной учёбы»</h2><p>Распределённая практика и активное воспроизведение изучаются психологами памяти десятилетиями. Исследования показывают: они помогают сохранять знания дольше, чем зубрёжка за один подход и простое перечитывание.</p></div>
+          <div className="research-intro" data-reveal><span className="section-kicker">Исследования</span><h2>Не очередной «секрет эффективной учёбы»</h2><p>Метаанализы подтверждают пользу распределённой практики и воспроизведения вместо перечитывания; исследования иностранной лексики и персональных расписаний показывают, что эти принципы работают и в прикладном обучении. Точные дни не универсальны: 3–7–14 — стартовая политика Lina, которую дальше корректируют ваши ответы.</p></div>
           <div className="research-links">
             <a data-reveal href="https://doi.org/10.1037/0033-2909.132.3.354" target="_blank" rel="noreferrer"><span>Метаанализ · 2006</span><strong>Распределённая практика и долговременная память</strong><small>Cepeda et al. ↗</small></a>
-            <a data-reveal style={{ "--reveal-delay": "90ms" } as React.CSSProperties} href="https://doi.org/10.1111/j.1467-9280.2008.02209.x" target="_blank" rel="noreferrer"><span>Эксперимент · 2008</span><strong>Как интервал зависит от срока хранения знаний</strong><small>Cepeda et al. ↗</small></a>
-            <a data-reveal style={{ "--reveal-delay": "180ms" } as React.CSSProperties} href="https://doi.org/10.1111/j.1467-9280.2006.01693.x" target="_blank" rel="noreferrer"><span>Эксперимент · 2006</span><strong>Почему попытка вспомнить эффективнее перечитывания</strong><small>Roediger & Karpicke ↗</small></a>
+            <a data-reveal style={{ "--reveal-delay": "70ms" } as React.CSSProperties} href="https://doi.org/10.1037/a0037559" target="_blank" rel="noreferrer"><span>Метаанализ · 2014</span><strong>Тестирование против повторного чтения</strong><small>Rowland ↗</small></a>
+            <a data-reveal style={{ "--reveal-delay": "140ms" } as React.CSSProperties} href="https://doi.org/10.1126/science.1152408" target="_blank" rel="noreferrer"><span>Иностранная лексика · Science</span><strong>Почему повторное извлечение закрепляет знания</strong><small>Karpicke & Roediger ↗</small></a>
+            <a data-reveal style={{ "--reveal-delay": "210ms" } as React.CSSProperties} href="https://doi.org/10.1177/0956797613504302" target="_blank" rel="noreferrer"><span>Учебный курс · 2014</span><strong>Персональное расписание против единого</strong><small>Lindsey et al. ↗</small></a>
           </div>
         </section>
 
