@@ -258,12 +258,47 @@ html:not(.telegram-mini-app) .telegram-mini-app-login { display:none; }
 .study-complete>div { display:flex; justify-content:center; gap:14px; margin:34px 0; }.study-complete b { min-width:112px; padding:16px; border-radius:18px; background:#fff4ee; color:#df7147; font-size:27px; }.study-complete b:last-child { color:#368d76; background:#effaf6; }.study-complete small { display:block; margin-top:4px; font-size:11px; text-transform:uppercase; }
 .study-complete a { display:inline-grid; height:48px; padding:0 24px; place-items:center; border-radius:999px; color:#fff; background:var(--study-coral); text-decoration:none; font-weight:750; }
 
+/* Retrieval-first review flow */
+.study-heading small { color:#d76842; font-size:9px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+.study-card.recall-card { display:block; padding:34px 42px; overflow:auto; color:inherit; background:#fff; cursor:default; touch-action:auto; user-select:text; }
+.study-card.recall-card.exits-left { transform:translateX(-110%) rotate(-5deg); opacity:0; }
+.study-card.recall-card.exits-middle { transform:translateY(-35px) scale(.97); opacity:0; }
+.study-card.recall-card.exits-right { transform:translateX(110%) rotate(5deg); opacity:0; }
+.recall-card-content { min-height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:38px 0 12px; text-align:center; }
+.recall-kicker { color:#b0694f; font-size:10px; font-weight:850; letter-spacing:.12em; text-transform:uppercase; }
+.recall-term { max-width:100%; margin:17px 0 25px; font-size:clamp(30px,5vw,45px); line-height:1.12; letter-spacing:-1.4px; overflow-wrap:anywhere; }
+.recall-form,.recall-feedback { width:min(100%,440px); }
+.recall-form label { display:block; margin-bottom:8px; color:#817784; font-size:11px; font-weight:750; text-align:left; }
+.recall-form textarea { width:100%; min-height:84px; padding:14px 16px; resize:vertical; border:1px solid #ddd2d7; border-radius:16px; outline:0; color:#3d334b; background:#fdfbfa; font:inherit; font-size:14px; line-height:1.45; transition:border-color .2s ease,box-shadow .2s ease,background-color .2s ease; }
+.recall-form textarea:focus { border-color:#ef9a78; background:#fff; box-shadow:0 0 0 4px #f36f3d16; }
+.recall-form>div { display:grid; grid-template-columns:.8fr 1.2fr; gap:9px; margin-top:10px; }
+.recall-form button { min-height:45px; border:0; border-radius:13px; font-size:11px; font-weight:800; cursor:pointer; }
+.recall-form button:disabled { opacity:.45; cursor:default; }
+.recall-forgot { color:#756b78; background:#f2eeec; }.recall-check { color:#fff; background:var(--study-coral); }
+.recall-form>small { display:block; margin:14px auto 0; color:#aaa1a7; font-size:9px; line-height:1.45; }
+.answer-comparison { display:grid; gap:8px; text-align:left; }
+.answer-comparison>div { padding:12px 14px; border:1px solid #ebe3df; border-radius:14px; background:#fcfaf9; }
+.answer-comparison>div:last-child { border-color:#f0c9b9; background:#fff6f1; }
+.answer-comparison span { color:#9b9297; font-size:8px; font-weight:850; letter-spacing:.09em; text-transform:uppercase; }
+.answer-comparison p { margin:5px 0 0; max-height:92px; overflow:auto; color:#514754; font-size:13px; line-height:1.45; overflow-wrap:anywhere; }
+.answer-comparison>div:last-child p { color:#6e402f; font-weight:650; }
+.rating-prompt { margin:15px 0 9px; color:#766c79; font-size:11px; font-weight:750; }
+.recall-ratings { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.recall-ratings button { min-width:0; min-height:76px; display:grid; justify-items:center; align-content:center; gap:3px; padding:8px 5px; border:1px solid; border-radius:14px; background:#fff; cursor:pointer; }
+.recall-ratings button:hover { transform:translateY(-2px); box-shadow:0 9px 22px #51333e12; }.recall-ratings button:disabled { opacity:.55; cursor:wait; }
+.recall-ratings kbd { font-family:inherit; font-size:8px; opacity:.55; }.recall-ratings strong { font-size:10px; }.recall-ratings small { font-size:8px; opacity:.7; }
+.recall-ratings .rating-c { color:#b64b54; border-color:#efc4c7; background:#fff7f7; }.recall-ratings .rating-b { color:#9a6a24; border-color:#ead5ac; background:#fffaf0; }.recall-ratings .rating-a { color:#307d69; border-color:#badfd5; background:#f4fbf8; }
+.recall-save-error { margin:10px 0 0; color:#b92e3a; font-size:10px; font-weight:700; }
+.study-complete .study-result-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; }
+.study-complete .study-result-grid b { min-width:0; padding:14px 8px; }.study-complete .study-result-grid .result-c { color:#b64b54; background:#fff1f2; }.study-complete .study-result-grid .result-b { color:#9a6a24; background:#fff8e9; }.study-complete .study-result-grid .result-a { color:#368d76; background:#effaf6; }
+
 @media (max-width:700px) {
   .study-header { height:78px; grid-template-columns:46px minmax(0,1fr) 46px; gap:10px; padding:0 18px; }.telegram-mini-app .study-header { height:calc(106px + var(--tg-content-safe-area-inset-top,0px)); padding-top:calc(28px + var(--tg-content-safe-area-inset-top,0px)); }
   .study-round-button { width:44px; height:44px; }.study-heading strong { display:none; }.study-heading span { font-size:21px; }.study-progress { height:4px; }
   .study-stage { height:calc(100dvh - 82px); padding:18px; }.telegram-mini-app .study-stage { height:calc(100dvh - 110px - var(--tg-content-safe-area-inset-top,0px)); padding-bottom:calc(18px + var(--tg-content-safe-area-inset-bottom,0px)); }
   .study-counters { top:16px; }.study-counter { width:62px; height:42px; }.study-counter.learning { left:-22px; }.study-counter.known { right:-22px; }.study-counter strong { font-size:21px; }.study-counter.learning strong { transform:translateX(11px); }.study-counter.known strong { transform:translateX(-11px); }
   .study-card-wrap { width:100%; height:min(66dvh,610px); min-height:360px; margin:18px 0; }.study-card { border-radius:28px; }.study-card-face { padding-inline:34px; }.study-card-face strong { font-size:clamp(31px,10vw,43px); }.study-card-face.back strong { font-size:clamp(25px,8vw,35px); }
+  .study-card.recall-card { padding:26px 20px 20px; }.recall-card-content { padding-top:40px; }.recall-term { margin:13px 0 20px; font-size:clamp(27px,9vw,39px); }.recall-form textarea { min-height:74px; }.recall-ratings { gap:5px; }.recall-ratings button { min-height:72px; padding-inline:3px; }.recall-ratings kbd { display:none; }
   .study-desktop-actions { display:none; }
   .study-complete { padding:45px 22px; }
 }

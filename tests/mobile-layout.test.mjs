@@ -63,14 +63,14 @@ test("exposes the mobile feature set in the desktop workspace", async () => {
   assert.match(css, /\.mobile-create-screen \.create-method-list \{ grid-template-columns:repeat\(3,minmax\(0,1fr\)\); \}/);
 });
 
-test("keeps card practice fixed and preserves swipe behavior", () => {
+test("keeps retrieval practice fixed and saves before advancing", () => {
   assert.match(css, /\.study-page \{[^}]*position:fixed;[^}]*overflow:hidden;/);
-  assert.match(css, /\.study-card \{[^}]*touch-action:none;/);
+  assert.match(css, /\.study-card\.recall-card \{[^}]*touch-action:auto;/);
   assert.doesNotMatch(studySession, /className="study-controls"/);
   assert.doesNotMatch(studySession, /<em>Слово<\/em>|<em>Значение<\/em>/);
-  assert.match(studySession, /dragX < -8 \? " visible"/);
-  assert.match(studySession, /dragX > 8 \? " visible"/);
-  assert.match(studySession, /key=\{card\.id\}/);
+  assert.match(studySession, /className="recall-form"/);
+  assert.match(studySession, /className="answer-comparison"/);
+  assert.match(studySession, /await saveReview\(current\.card\.id, rating, current\.kind\)/);
   assert.match(studySession, /keepalive: true/);
   assert.match(studySession, /await Promise\.allSettled\(\[\.\.\.pendingReviews\.current\]\)/);
   assert.match(studySession, /router\.push\(`\/\?studyExit=\$\{Date\.now\(\)\}`/);
@@ -78,14 +78,16 @@ test("keeps card practice fixed and preserves swipe behavior", () => {
   assert.match(studySession, /aria-label="Начать набор заново"/);
 });
 
-test("adds desktop arrow controls without removing swipe answers", () => {
-  assert.match(studySession, /className="study-desktop-actions"/);
-  assert.match(studySession, /onClick=\{\(\) => answer\(false\)\}/);
-  assert.match(studySession, /onClick=\{\(\) => answer\(true\)\}/);
-  assert.match(studySession, /Ещё учу — отправить карточку влево/);
-  assert.match(studySession, /Знаю — отправить карточку вправо/);
-  assert.match(css, /\.study-desktop-actions \{ position:absolute; top:calc\(100% \+ 20px\); left:50%;/);
-  assert.match(css, /@media \(max-width:700px\)[\s\S]*\.study-desktop-actions \{ display:none; \}/);
+test("uses three recall ratings and requeues forgotten cards", () => {
+  assert.match(studySession, /submitRating\("C"\)/);
+  assert.match(studySession, /submitRating\("B"\)/);
+  assert.match(studySession, /submitRating\("A"\)/);
+  assert.match(studySession, /kind: "same_session"/);
+  assert.match(studySession, /return \[\.\.\.remaining,/);
+  assert.match(studySession, /Не вспомнил/);
+  assert.match(studySession, /С трудом/);
+  assert.match(studySession, /Уверенно/);
+  assert.match(css, /\.recall-ratings \{ display:grid; grid-template-columns:repeat\(3,1fr\);/);
 });
 
 test("keeps mobile study controls clear of Telegram chrome and the card", () => {

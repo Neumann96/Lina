@@ -24,8 +24,8 @@ test("puts the most recently studied or created set first", () => {
 
 test("resumes at the next unfinished card", () => {
   assert.match(learning, /startIndex: Math\.min\(result\.rows\[0\]\.nextPosition \?\? 0, cards\.length\)/);
-  assert.match(studySession, /useState\(studySet\.startIndex\)/);
-  assert.match(studySession, /index \/ studySet\.cards\.length \* 100/);
+  assert.match(studySession, /studySet\.cards\.slice\(studySet\.startIndex\)/);
+  assert.match(studySession, /scheduledAnswered \/ initialTotal \* 100/);
 });
 
 test("can restart a set without deleting review history", () => {
