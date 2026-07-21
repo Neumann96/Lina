@@ -87,7 +87,24 @@ test("uses three recall ratings and requeues forgotten cards", () => {
   assert.match(studySession, /Не вспомнил/);
   assert.match(studySession, /С трудом/);
   assert.match(studySession, /Уверенно/);
+  assert.doesNotMatch(studySession, /ещё раз \+ завтра|через 3\+ дня/);
+  assert.match(studySession, /<kbd>C<\/kbd><strong>Не вспомнил<\/strong><\/button>/);
+  assert.match(css, /\.recall-ratings kbd \{[^}]*font-size:21px;[^}]*font-weight:900;[^}]*opacity:1;/);
+  assert.doesNotMatch(css, /\.recall-ratings kbd \{ display:none;/);
   assert.match(css, /\.recall-ratings \{ display:grid; grid-template-columns:repeat\(3,1fr\);/);
+});
+
+test("marks case-insensitive exact recall answers as correct", () => {
+  assert.match(studySession, /recallAnswersMatch\(answerText, card\.definition\)/);
+  assert.match(studySession, /answerMatches \? "Ваш ответ · верно" : "Ваш ответ"/);
+  assert.match(css, /\.answer-comparison>div\.matches \{[^}]*border-color:#badfd5;[^}]*background:#f4fbf8;/);
+});
+
+test("distinguishes server failures from connection failures when saving reviews", () => {
+  assert.match(studySession, /response\.status >= 500/);
+  assert.match(studySession, /Сервис не смог сохранить ответ\. Попробуйте ещё раз\./);
+  assert.match(studySession, /Не удалось связаться с сервером\. Попробуйте ещё раз\./);
+  assert.doesNotMatch(studySession, /Проверьте интернет/);
 });
 
 test("keeps mobile study controls clear of Telegram chrome and the card", () => {

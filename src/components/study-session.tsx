@@ -4,6 +4,7 @@ import { FormEvent, MouseEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { StudyCard, StudySet } from "@/lib/learning";
+import { recallAnswersMatch } from "@/lib/recall-answer";
 import type { ReviewKind, ReviewRating } from "@/lib/spaced-repetition";
 
 type SessionCard = {
@@ -50,6 +51,7 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
   const isReviewSession = studySet.mode === "reviews";
   const initialTotal = initialCards.length;
   const progress = initialTotal ? Math.min(100, scheduledAnswered / initialTotal * 100) : 100;
+  const answerMatches = card ? recallAnswersMatch(answerText, card.definition) : false;
 
   useEffect(() => {
     cardStartedAt.current = performance.now();
@@ -78,14 +80,29 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
   }
 
   function saveReview(cardId: string, rating: ReviewRating, kind: ReviewKind) {
-    const request = fetch("/api/reviews", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cardId, rating, responseMs: responseTime.current, kind }),
-      keepalive: true,
-    }).then((response) => {
-      if (!response.ok) throw new Error("Не удалось сохранить ответ");
-    });
+    const request = (async () => {
+      let response: Response;
+      try {
+        response = await fetch("/api/reviews", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cardId, rating, responseMs: responseTime.current, kind }),
+          keepalive: true,
+        });
+      } catch {
+        throw new Error("Не удалось связаться с сервером. Попробуйте ещё раз.");
+      }
+
+      if (!response.ok) {
+        const result = await response.json().catch(() => null) as { error?: unknown } | null;
+        const message = typeof result?.error === "string"
+          ? result.error
+          : response.status >= 500
+            ? "Сервис не смог сохранить ответ. Попробуйте ещё раз."
+            : "Ответ не сохранился. Попробуйте ещё раз.";
+        throw new Error(message);
+      }
+    })();
     pendingReviews.current.add(request);
     void request.then(
       () => pendingReviews.current.delete(request),
@@ -100,8 +117,8 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
     setSaveError("");
     try {
       await saveReview(current.card.id, rating, current.kind);
-    } catch {
-      setSaveError("Ответ не сохранился. Проверьте интернет и попробуйте ещё раз.");
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Ответ не сохранился. Попробуйте ещё раз.");
       setIsSaving(false);
       return;
     }
@@ -230,14 +247,14 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
                 ) : (
                   <div className="recall-feedback">
                     <div className="answer-comparison">
-                      <div><span>Ваш ответ</span><p>{answerText.trim() || "Не вспомнил"}</p></div>
+                      <div className={answerMatches ? "matches" : undefined}><span>{answerMatches ? "Ваш ответ · верно" : "Ваш ответ"}</span><p>{answerText.trim() || "Не вспомнил"}</p></div>
                       <div><span>Ответ карточки</span><p>{card.definition}</p></div>
                     </div>
                     <p className="rating-prompt">Как прошла попытка?</p>
                     <div className="recall-ratings" aria-label="Оцените воспроизведение">
-                      <button className="rating-c" type="button" onClick={() => void submitRating("C")} disabled={isSaving}><kbd>C</kbd><strong>Не вспомнил</strong><small>ещё раз + завтра</small></button>
-                      <button className="rating-b" type="button" onClick={() => void submitRating("B")} disabled={isSaving}><kbd>B</kbd><strong>С трудом</strong><small>завтра</small></button>
-                      <button className="rating-a" type="button" onClick={() => void submitRating("A")} disabled={isSaving}><kbd>A</kbd><strong>Уверенно</strong><small>через 3+ дня</small></button>
+                      <button className="rating-c" type="button" onClick={() => void submitRating("C")} disabled={isSaving}><kbd>C</kbd><strong>Не вспомнил</strong></button>
+                      <button className="rating-b" type="button" onClick={() => void submitRating("B")} disabled={isSaving}><kbd>B</kbd><strong>С трудом</strong></button>
+                      <button className="rating-a" type="button" onClick={() => void submitRating("A")} disabled={isSaving}><kbd>A</kbd><strong>Уверенно</strong></button>
                     </div>
                     {saveError && <p className="recall-save-error" role="alert">{saveError}</p>}
                   </div>

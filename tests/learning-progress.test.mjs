@@ -39,7 +39,8 @@ test("stores each reviewed card in spaced repetition schedule", () => {
   assert.match(spacedMigration, /PRIMARY KEY \(user_id, card_id\)/);
   assert.match(learning, /INSERT INTO card_spaced_repetitions/);
   assert.match(learning, /due_at = EXCLUDED\.due_at/);
-  assert.match(learning, /NOW\(\) \+ \$4 \* INTERVAL '1 day'/);
+  assert.match(learning, /NOW\(\) \+ \$4::integer \* INTERVAL '1 day'/);
+  assert.doesNotMatch(learning, /NOW\(\) \+ \$4 \* INTERVAL '1 day'/);
   assert.match(scienceMigration, /successful_reviews/);
   assert.match(scienceMigration, /rating IN \('A', 'B', 'C'\)/);
 });

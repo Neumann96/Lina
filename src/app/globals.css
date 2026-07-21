@@ -282,11 +282,12 @@ html:not(.telegram-mini-app) .telegram-mini-app-login { display:none; }
 .answer-comparison span { color:#9b9297; font-size:8px; font-weight:850; letter-spacing:.09em; text-transform:uppercase; }
 .answer-comparison p { margin:5px 0 0; max-height:92px; overflow:auto; color:#514754; font-size:13px; line-height:1.45; overflow-wrap:anywhere; }
 .answer-comparison>div:last-child p { color:#6e402f; font-weight:650; }
+.answer-comparison>div.matches { border-color:#badfd5; background:#f4fbf8; }.answer-comparison>div.matches span,.answer-comparison>div.matches p { color:#307d69; }
 .rating-prompt { margin:15px 0 9px; color:#766c79; font-size:11px; font-weight:750; }
 .recall-ratings { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
 .recall-ratings button { min-width:0; min-height:76px; display:grid; justify-items:center; align-content:center; gap:3px; padding:8px 5px; border:1px solid; border-radius:14px; background:#fff; cursor:pointer; }
 .recall-ratings button:hover { transform:translateY(-2px); box-shadow:0 9px 22px #51333e12; }.recall-ratings button:disabled { opacity:.55; cursor:wait; }
-.recall-ratings kbd { font-family:inherit; font-size:8px; opacity:.55; }.recall-ratings strong { font-size:10px; }.recall-ratings small { font-size:8px; opacity:.7; }
+.recall-ratings kbd { font-family:inherit; font-size:21px; font-weight:900; line-height:1; opacity:1; }.recall-ratings strong { font-size:11px; }
 .recall-ratings .rating-c { color:#b64b54; border-color:#efc4c7; background:#fff7f7; }.recall-ratings .rating-b { color:#9a6a24; border-color:#ead5ac; background:#fffaf0; }.recall-ratings .rating-a { color:#307d69; border-color:#badfd5; background:#f4fbf8; }
 .recall-save-error { margin:10px 0 0; color:#b92e3a; font-size:10px; font-weight:700; }
 .study-complete .study-result-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; }
@@ -298,7 +299,7 @@ html:not(.telegram-mini-app) .telegram-mini-app-login { display:none; }
   .study-stage { height:calc(100dvh - 82px); padding:18px; }.telegram-mini-app .study-stage { height:calc(100dvh - 110px - var(--tg-content-safe-area-inset-top,0px)); padding-bottom:calc(18px + var(--tg-content-safe-area-inset-bottom,0px)); }
   .study-counters { top:16px; }.study-counter { width:62px; height:42px; }.study-counter.learning { left:-22px; }.study-counter.known { right:-22px; }.study-counter strong { font-size:21px; }.study-counter.learning strong { transform:translateX(11px); }.study-counter.known strong { transform:translateX(-11px); }
   .study-card-wrap { width:100%; height:min(66dvh,610px); min-height:360px; margin:18px 0; }.study-card { border-radius:28px; }.study-card-face { padding-inline:34px; }.study-card-face strong { font-size:clamp(31px,10vw,43px); }.study-card-face.back strong { font-size:clamp(25px,8vw,35px); }
-  .study-card.recall-card { padding:26px 20px 20px; }.recall-card-content { padding-top:40px; }.recall-term { margin:13px 0 20px; font-size:clamp(27px,9vw,39px); }.recall-form textarea { min-height:74px; }.recall-ratings { gap:5px; }.recall-ratings button { min-height:72px; padding-inline:3px; }.recall-ratings kbd { display:none; }
+  .study-card.recall-card { padding:26px 20px 20px; }.recall-card-content { padding-top:40px; }.recall-term { margin:13px 0 20px; font-size:clamp(27px,9vw,39px); }.recall-form textarea { min-height:74px; }.recall-ratings { gap:5px; }.recall-ratings button { min-height:72px; padding-inline:3px; }.recall-ratings kbd { font-size:18px; }
   .study-desktop-actions { display:none; }
   .study-complete { padding:45px 22px; }
 }

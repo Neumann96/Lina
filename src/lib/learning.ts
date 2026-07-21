@@ -282,7 +282,7 @@ export async function recordCardReview(userId: string, cardId: string, review: C
        )
        VALUES (
          $1, $2, $3, $4, $5, $6, $7, $8,
-         NOW() + $4 * INTERVAL '1 day', NOW(), $9, $10, NULL, NULL, NOW()
+         NOW() + $4::integer * INTERVAL '1 day', NOW(), $9, $10, NULL, NULL, NOW()
        )
        ON CONFLICT (user_id, card_id) DO UPDATE
        SET ease = EXCLUDED.ease,
