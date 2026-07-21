@@ -27,6 +27,7 @@ test("bounds import concurrency and per-user storage", async () => {
   assert.match(importRoute, /finally\s*{\s*activeImports -= 1/);
   assert.match(learning, /MAX_STUDY_SETS_PER_USER = 200/);
   assert.match(learning, /MAX_CARDS_PER_USER = 50_000/);
-  assert.match(learning, /pg_advisory_xact_lock/);
+  assert.match(learning, /pg_advisory_xact_lock\(hashtextextended\(\$2::uuid::text, 0\)\)/);
+  assert.doesNotMatch(learning, /hashtextextended\(\$2::text/);
   assert.match(limiter, /DELETE FROM auth_rate_limits/);
 });

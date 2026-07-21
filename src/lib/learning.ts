@@ -172,7 +172,7 @@ export async function createStudySet(userId: string, title: string, cards: Array
 
   const result = await query<{ id: string }>(
     `WITH user_lock AS MATERIALIZED (
-       SELECT pg_advisory_xact_lock(hashtextextended($2::text, 0))
+       SELECT pg_advisory_xact_lock(hashtextextended($2::uuid::text, 0))
      ), current_usage AS MATERIALIZED (
        SELECT
          (SELECT COUNT(*) FROM study_sets WHERE user_id = $2) AS set_count,
