@@ -540,6 +540,8 @@ export function HomeClient({
   const latestSet = recentSets[0];
   const latestSetComplete = Boolean(latestSet && latestSet.count > 0 && latestSet.studiedCount >= latestSet.count);
   const dueReviewLabel = stats.dueReviewCount > 99 ? "99+" : String(stats.dueReviewCount);
+  const firstReviewGroup = initialDashboard.reviewGroups[0];
+  const firstReviewHref = firstReviewGroup?.href ?? "/study/reviews";
 
   return (
     <div className="app-shell">
@@ -556,7 +558,7 @@ export function HomeClient({
         <div className="brand"><span className="brand-mark">L</span><span>Lina</span></div>
         <nav className="main-nav" aria-label="Основная навигация">
           <button className={`nav-item${activeTab === "home" ? " active" : ""}`} type="button" onClick={() => setActiveTab("home")} aria-current={activeTab === "home" ? "page" : undefined} title={isSidebarCollapsed ? "Главная" : undefined}><Icon name="home" /><span>Главная</span></button>
-          <button className={`nav-item${activeTab === "library" ? " active" : ""}`} type="button" onClick={() => setActiveTab("library")} aria-current={activeTab === "library" ? "page" : undefined} title={isSidebarCollapsed ? "Мои наборы" : undefined}><Icon name="cards" /><span>Мои наборы</span></button>
+          <Link className="nav-item" href="/library" transitionTypes={["nav-forward"]} title={isSidebarCollapsed ? "Мои наборы" : undefined}><Icon name="cards" /><span>Мои наборы</span></Link>
           <span className="nav-item nav-item-disabled" aria-disabled="true" title="Пока недоступно"><Icon name="chart" /><span>Прогресс</span></span>
           <button className="nav-item mobile-logout-button" type="button" onClick={() => setIsLogoutOpen(true)}><Icon name="logout" /><span>Выйти</span></button>
         </nav>
@@ -575,7 +577,7 @@ export function HomeClient({
           <button className="mobile-profile-button" type="button" onClick={() => setIsLogoutOpen(true)} aria-label={`Открыть профиль ${user.name}`}>
             <span className="avatar">{user.name.charAt(0)}</span>
           </button>
-          <Link className={`icon-button review-bell${stats.dueReviewCount ? " has-due" : ""}`} href="/study/reviews" transitionTypes={["nav-forward"]} aria-label={stats.dueReviewCount ? `Повторить ${stats.dueReviewCount} карточек` : "Нет карточек для повторения"}>
+          <Link className={`icon-button review-bell${stats.dueReviewCount ? " has-due" : ""}`} href={firstReviewHref} transitionTypes={["nav-forward"]} aria-label={stats.dueReviewCount ? `Повторить ${stats.dueReviewCount} карточек` : "Нет карточек для повторения"}>
             <Icon name="bell" />
             {stats.dueReviewCount > 0 && <span>{dueReviewLabel}</span>}
           </Link>
@@ -593,10 +595,10 @@ export function HomeClient({
           <div className="dashboard-grid">
           {stats.dueReviewCount > 0 && (
             <article className="mobile-resume-card review-due-card">
-              <div className="mobile-resume-heading"><h2>Повторить по расписанию</h2></div>
-              <div className="review-due-count"><strong>{stats.dueReviewCount}</strong><span>карточек ждут отдельного повторения</span></div>
-              <p>Это те слова, которые Lina уже записала в интервальное повторение.</p>
-              <Link className="mobile-resume-primary" href="/study/reviews" transitionTypes={["nav-forward"]}>Повторить отдельно</Link>
+              <div className="mobile-resume-heading"><h2>{firstReviewGroup?.title ?? "Повторить по расписанию"}</h2></div>
+              <div className="review-due-count"><strong>{firstReviewGroup?.dueCount ?? stats.dueReviewCount}</strong><span>карточек в этой очереди</span></div>
+              <p>{initialDashboard.reviewGroups.length > 1 ? `Ещё ${initialDashboard.reviewGroups.length - 1} очередей находятся в библиотеке.` : firstReviewGroup?.scopeKind === "folder" ? "Все готовые карточки из наборов этой папки собраны вместе." : "Карточки других наборов сюда не попадут."}</p>
+              <Link className="mobile-resume-primary" href={firstReviewHref} transitionTypes={["nav-forward"]}>Начать повторение</Link>
             </article>
           )}
           {latestSet ? (
@@ -664,7 +666,7 @@ export function HomeClient({
         <span className="mobile-nav-indicator" aria-hidden="true" />
         <button className={`mobile-nav-item${activeTab === "home" ? " active" : ""}`} type="button" onClick={() => setActiveTab("home")} aria-current={activeTab === "home" ? "page" : undefined}><Icon name="home" size={24}/><span>Главная</span></button>
         <button className={`mobile-nav-item${activeTab === "create" ? " active" : ""}`} type="button" onClick={() => setActiveTab("create")} aria-current={activeTab === "create" ? "page" : undefined}><Icon name="plus" size={25}/><span>Создать</span></button>
-        <button className={`mobile-nav-item${activeTab === "library" ? " active" : ""}`} type="button" onClick={() => setActiveTab("library")} aria-current={activeTab === "library" ? "page" : undefined}><Icon name="cards" size={24}/><span>Библиотека</span></button>
+        <Link className="mobile-nav-item" href="/library" transitionTypes={["nav-forward"]}><Icon name="cards" size={24}/><span>Библиотека</span></Link>
         <span className="mobile-nav-item mobile-nav-disabled" aria-disabled="true"><Icon name="spark" size={24}/><span>Пробный</span></span>
       </nav>
       {isLogoutOpen && <LogoutModal onClose={() => setIsLogoutOpen(false)} onConfirm={logout} />}

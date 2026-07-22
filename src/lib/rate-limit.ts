@@ -12,6 +12,7 @@ type RateLimitOptions = {
     | "telegram-ip"
     | "telegram-user"
     | "sets-user"
+    | "folders-user"
     | "reviews-user"
     | "restart-user"
     | "quizlet-user";

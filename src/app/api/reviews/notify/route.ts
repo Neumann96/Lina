@@ -1,10 +1,10 @@
 import { timingSafeEqual } from "node:crypto";
 import { withAdvisoryLock } from "@/lib/db";
 import {
-  getDueReviewUsers,
+  getDueReviewNotifications,
   markDueReviewReminderAttempted,
   markDueReviewReminderSent,
-} from "@/lib/learning";
+} from "@/lib/review-groups";
 import { sendTelegramReviewReminder } from "@/lib/telegram-bot";
 
 function matchesSecret(received: string, expected: string) {
@@ -28,24 +28,32 @@ export async function POST(request: Request) {
   }
 
   const dispatch = await withAdvisoryLock("lina-review-reminder-dispatch", async () => {
-    const dueUsers = await getDueReviewUsers(100);
+    const notifications = await getDueReviewNotifications(100);
     let sent = 0;
     let failed = 0;
 
     const batchSize = 5;
-    for (let index = 0; index < dueUsers.length; index += batchSize) {
-      const batch = dueUsers.slice(index, index + batchSize);
-      await Promise.all(batch.map(async (user) => {
-        await markDueReviewReminderAttempted(user.userId);
-        const chatId = Number(user.telegramId);
+    for (let index = 0; index < notifications.length; index += batchSize) {
+      const batch = notifications.slice(index, index + batchSize);
+      await Promise.all(batch.map(async (notification) => {
+        await markDueReviewReminderAttempted(
+          notification.userId,
+          notification.scopeKind,
+          notification.scopeId,
+        );
+        const chatId = Number(notification.telegramId);
         if (!Number.isSafeInteger(chatId)) {
           failed += 1;
           return;
         }
 
         try {
-          await sendTelegramReviewReminder(botToken, chatId, user.dueCount);
-          await markDueReviewReminderSent(user.userId);
+          await sendTelegramReviewReminder(botToken, chatId, notification);
+          await markDueReviewReminderSent(
+            notification.userId,
+            notification.scopeKind,
+            notification.scopeId,
+          );
           sent += 1;
         } catch {
           failed += 1;
@@ -53,7 +61,7 @@ export async function POST(request: Request) {
       }));
     }
 
-    return { checked: dueUsers.length, sent, failed };
+    return { checked: notifications.length, sent, failed };
   });
 
   return dispatch.acquired

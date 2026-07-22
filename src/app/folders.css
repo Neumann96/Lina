@@ -1,0 +1,62 @@
+.folder-library-page { min-height:100dvh; color:#2f2b29; background:linear-gradient(180deg,#faf8f6 0,#fff 36%); }
+.folder-library-topbar { height:74px; display:grid; grid-template-columns:44px 1fr 44px; align-items:center; padding:0 max(22px,calc((100vw - 1180px)/2)); border-bottom:1px solid #eee9e5; background:#ffffffdc; backdrop-filter:blur(18px); }
+.folder-library-topbar>a { width:42px; height:42px; display:grid; place-items:center; border-radius:13px; color:#5d5753; background:#f4f1ef; }
+.folder-library-topbar>div { display:flex; align-items:center; justify-content:center; gap:9px; font-size:17px; }
+.folder-library-brand { width:31px; height:31px; display:grid; place-items:center; border-radius:10px; color:#fff; background:linear-gradient(145deg,#f47a4c,#ef6331); font-weight:850; }
+.folder-library-shell { width:min(1120px,calc(100% - 40px)); margin:0 auto; padding:58px 0 80px; }
+.folder-library-heading { display:grid; grid-template-columns:minmax(0,1fr) minmax(330px,430px); align-items:end; gap:50px; margin-bottom:35px; }
+.folder-library-heading>div>span { color:#ef7041; font-size:12px; font-weight:800; letter-spacing:.11em; text-transform:uppercase; }
+.folder-library-heading h1 { margin:8px 0 8px; font-size:43px; line-height:1; letter-spacing:-1.8px; }
+.folder-library-heading p { max-width:610px; margin:0; color:#77716d; font-size:14px; line-height:1.55; }
+.folder-library-heading form { display:grid; gap:7px; }
+.folder-library-heading form label { color:#817a75; font-size:11px; font-weight:800; text-transform:uppercase; }
+.folder-library-heading form>div { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; }
+.folder-library-heading input { min-width:0; height:45px; padding:0 14px; border:1px solid #e5dfda; border-radius:13px; outline:0; background:#fff; font:inherit; font-size:13px; }
+.folder-library-heading input:focus { border-color:#f2a184; box-shadow:0 0 0 3px #f47a4c14; }
+.folder-library-heading form button { height:45px; display:flex; align-items:center; gap:6px; padding:0 15px; border:0; border-radius:13px; color:#fff; background:#ef7041; font-size:12px; font-weight:800; }
+.folder-library-heading form button:disabled { opacity:.5; }
+.folder-library-error { margin:-16px 0 24px; padding:12px 15px; border:1px solid #f0c7bb; border-radius:12px; color:#a4422f; background:#fff2ee; font-size:13px; }
+.folder-groups { display:grid; gap:18px; }
+.folder-group { overflow:hidden; border:1px solid #ebe5e0; border-radius:22px; background:#fff; box-shadow:0 16px 42px #51362d0a; }
+.folder-group>header { min-height:82px; display:flex; align-items:center; justify-content:space-between; gap:20px; padding:16px 20px; border-bottom:1px solid #f0ebe7; background:linear-gradient(110deg,#fff9f5,#fff); }
+.folder-group-title { min-width:0; display:flex; align-items:center; gap:13px; }
+.folder-group-title>span { flex:0 0 auto; width:45px; height:45px; display:grid; place-items:center; border-radius:14px; color:#df683c; background:#fff0e8; }
+.folder-group-title h2 { margin:0; overflow:hidden; font-size:19px; text-overflow:ellipsis; white-space:nowrap; }
+.folder-group-title p { margin:4px 0 0; color:#8a837e; font-size:12px; }
+.folder-group-actions { display:flex; align-items:center; gap:7px; }
+.folder-group-actions>button { width:37px; height:37px; display:grid; place-items:center; padding:0; border:1px solid #eae4df; border-radius:11px; color:#756e69; background:#fff; }
+.folder-group-actions>button:disabled { opacity:.45; }
+.folder-review-link { display:inline-flex; align-items:center; justify-content:center; min-height:37px; padding:0 13px; border-radius:11px; color:#fff; background:#ef7041; text-decoration:none; font-size:12px; font-weight:800; white-space:nowrap; }
+.folder-set-list { display:grid; }
+.folder-set-row { display:grid; grid-template-columns:minmax(0,1fr) 210px; align-items:center; gap:18px; padding:11px 18px; border-bottom:1px solid #f3efec; }
+.folder-set-list>*:last-child .folder-set-row,.folder-set-list>.folder-set-row:last-child { border-bottom:0; }
+.folder-set-main { min-width:0; display:grid; grid-template-columns:44px minmax(0,1fr) 18px; align-items:center; gap:12px; color:#322e2b; text-decoration:none; }
+.folder-set-icon { width:44px; height:44px; display:grid; place-items:center; border-radius:13px; color:#6e5ab8; background:#f0ecff; }
+.folder-set-copy { min-width:0; }
+.folder-set-copy strong,.folder-set-copy small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.folder-set-copy strong { font-size:15px; }
+.folder-set-copy small { margin-top:4px; color:#8d8681; font-size:11px; }
+.folder-set-main>svg { color:#aaa29c; }
+.folder-set-move { display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; gap:9px; }
+.folder-set-move>span { color:#918a85; font-size:10px; font-weight:800; text-transform:uppercase; }
+.folder-set-move select { min-width:0; height:38px; padding:0 31px 0 10px; border:1px solid #e8e2dd; border-radius:11px; color:#554f4b; background:#faf8f6; font-size:12px; }
+.folder-empty { margin:0; padding:23px; color:#918a85; font-size:13px; text-align:center; }
+.folder-group.unfiled>header { background:#faf9f8; }
+.folder-group.unfiled .folder-group-title>span { color:#7163a9; background:#f0eef8; }
+.unfiled-set { position:relative; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; padding-right:18px; border-bottom:1px solid #f3efec; }
+.unfiled-set:last-child { border-bottom:0; }
+.unfiled-set .folder-set-row { width:100%; border-bottom:0; }
+
+@media (max-width:760px) {
+  .folder-library-topbar { padding:0 16px; }
+  .folder-library-shell { width:calc(100% - 28px); padding:34px 0 120px; }
+  .folder-library-heading { grid-template-columns:1fr; gap:23px; margin-bottom:25px; }
+  .folder-library-heading h1 { font-size:34px; }
+  .folder-group>header { align-items:flex-start; padding:15px; }
+  .folder-group-actions { flex-wrap:wrap; justify-content:flex-end; }
+  .folder-group-actions .folder-review-link { order:3; width:100%; }
+  .folder-set-row { grid-template-columns:1fr; gap:9px; padding:12px 14px; }
+  .folder-set-move { padding-left:56px; }
+  .unfiled-set { grid-template-columns:1fr; padding:0; }
+  .unfiled-set>.folder-review-link { margin:0 14px 13px 70px; }
+}

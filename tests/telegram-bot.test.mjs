@@ -56,7 +56,12 @@ test("sends due review reminders to the Mini App review session", async () => {
   };
 
   try {
-    await sendTelegramReviewReminder("123:token", 42, 7);
+    await sendTelegramReviewReminder("123:token", 42, {
+      dueCount: 7,
+      title: "Английский B1",
+      scopeKind: "folder",
+      href: "/study/reviews/folder/8bf3e3ef-d57c-4b86-9e05-1d39b3d84e77",
+    });
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -64,11 +69,11 @@ test("sends due review reminders to the Mini App review session", async () => {
   assert.equal(request.url, "https://api.telegram.org/bot123:token/sendMessage");
   assert.deepEqual(JSON.parse(request.options.body), {
     chat_id: 42,
-    text: "Пора повторить 7 карточек. Lina уже собрала их отдельно по расписанию.",
+    text: "Пора повторить 7 карточек из папки «Английский B1».",
     reply_markup: {
       inline_keyboard: [[{
         text: "Повторить сейчас →",
-        web_app: { url: `${TELEGRAM_MINI_APP_URL}/study/reviews` },
+        web_app: { url: `${TELEGRAM_MINI_APP_URL}/study/reviews/folder/8bf3e3ef-d57c-4b86-9e05-1d39b3d84e77` },
       }]],
     },
   });

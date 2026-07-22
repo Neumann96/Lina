@@ -9,6 +9,9 @@ test("rate limits authenticated write-heavy endpoints", async () => {
     read("src/app/api/sets/route.ts"),
     read("src/app/api/reviews/route.ts"),
     read("src/app/api/sets/[setId]/restart/route.ts"),
+    read("src/app/api/sets/[setId]/folder/route.ts"),
+    read("src/app/api/folders/route.ts"),
+    read("src/app/api/folders/[folderId]/route.ts"),
     read("src/app/api/imports/quizlet/route.ts"),
   ]);
 

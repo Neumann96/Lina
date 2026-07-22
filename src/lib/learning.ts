@@ -9,6 +9,7 @@ import {
   type ReviewKind,
   type ReviewRating,
 } from "@/lib/spaced-repetition";
+import { getDueReviewGroups, type ReviewGroupSummary } from "@/lib/review-groups";
 
 export type DashboardStats = {
   cardCount: number;
@@ -31,6 +32,7 @@ export type RecentSet = {
 export type DashboardData = {
   stats: DashboardStats;
   recentSets: RecentSet[];
+  reviewGroups: ReviewGroupSummary[];
 };
 
 export type StudyCard = {
@@ -47,17 +49,11 @@ export type StudySet = {
   mode?: "set" | "reviews";
 };
 
-export type DueReviewUser = {
-  userId: string;
-  telegramId: string;
-  dueCount: number;
-};
-
 const MAX_STUDY_SETS_PER_USER = 200;
 const MAX_CARDS_PER_USER = 50_000;
 
 export async function getDashboardData(userId: string): Promise<DashboardData> {
-  const [countsResult, daysResult, setsResult] = await Promise.all([
+  const [countsResult, daysResult, setsResult, reviewGroups] = await Promise.all([
     query<{ setCount: string; cardCount: string; reviewCount: string; correctCount: string; dueReviewCount: string; nextReviewAt: string | null }>(
       `SELECT
          (SELECT COUNT(*) FROM study_sets WHERE user_id = $1) AS "setCount",
@@ -91,6 +87,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
        LIMIT 3`,
       [userId],
     ),
+    getDueReviewGroups(userId),
   ]);
 
   const counts = countsResult.rows[0];
@@ -123,6 +120,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
       dueReviewCount: Number(counts.dueReviewCount),
       nextReviewAt: counts.nextReviewAt,
     },
+    reviewGroups,
     recentSets: setsResult.rows.map((set, index) => {
       const count = Number(set.cardCount);
       const studiedCount = Number(set.studiedCount);
@@ -135,31 +133,6 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
         color: colors[index % colors.length],
       };
     }),
-  };
-}
-
-export async function getDueReviewStudySet(userId: string): Promise<StudySet> {
-  const result = await query<{ cardId: string; term: string; definition: string }>(
-    `SELECT c.id AS "cardId", c.term, c.definition
-     FROM card_spaced_repetitions sr
-     JOIN cards c ON c.id = sr.card_id
-     JOIN study_sets s ON s.id = c.set_id
-     WHERE sr.user_id = $1 AND s.user_id = $1 AND sr.due_at <= NOW()
-     ORDER BY sr.due_at ASC, sr.updated_at ASC
-     LIMIT 50`,
-    [userId],
-  );
-
-  return {
-    id: "reviews",
-    title: "Повторение",
-    startIndex: 0,
-    mode: "reviews",
-    cards: result.rows.map((row) => ({
-      id: row.cardId,
-      term: row.term,
-      definition: row.definition,
-    })),
   };
 }
 
@@ -321,51 +294,6 @@ export async function recordCardReview(userId: string, cardId: string, review: C
     );
     return true;
   });
-}
-
-export async function getDueReviewUsers(limit = 100): Promise<DueReviewUser[]> {
-  const result = await query<{ userId: string; telegramId: string; dueCount: string }>(
-    `SELECT u.id AS "userId", u.telegram_id AS "telegramId", COUNT(sr.card_id) AS "dueCount"
-     FROM users u
-     JOIN card_spaced_repetitions sr ON sr.user_id = u.id
-     WHERE u.telegram_id IS NOT NULL
-       AND sr.due_at <= NOW()
-       AND (sr.reminder_sent_at IS NULL OR sr.reminder_sent_at < sr.due_at)
-     GROUP BY u.id, u.telegram_id
-     HAVING MAX(sr.reminder_attempted_at) IS NULL
-         OR MAX(sr.reminder_attempted_at) < NOW() - INTERVAL '1 hour'
-     ORDER BY MIN(sr.due_at) ASC
-     LIMIT $1`,
-    [limit],
-  );
-
-  return result.rows.map((row) => ({
-    userId: row.userId,
-    telegramId: row.telegramId,
-    dueCount: Number(row.dueCount),
-  }));
-}
-
-export async function markDueReviewReminderAttempted(userId: string) {
-  await query(
-    `UPDATE card_spaced_repetitions
-     SET reminder_attempted_at = NOW(), updated_at = NOW()
-     WHERE user_id = $1
-       AND due_at <= NOW()
-       AND (reminder_sent_at IS NULL OR reminder_sent_at < due_at)`,
-    [userId],
-  );
-}
-
-export async function markDueReviewReminderSent(userId: string) {
-  await query(
-    `UPDATE card_spaced_repetitions
-     SET reminder_sent_at = NOW(), updated_at = NOW()
-     WHERE user_id = $1
-       AND due_at <= NOW()
-       AND (reminder_sent_at IS NULL OR reminder_sent_at < due_at)`,
-    [userId],
-  );
 }
 
 export async function restartStudySet(userId: string, setId: string) {

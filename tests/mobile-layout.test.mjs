@@ -56,7 +56,7 @@ test("exposes the mobile feature set in the desktop workspace", async () => {
   assert.match(home, /className="mobile-tab-screen mobile-create-screen app-view"/);
   assert.match(home, /className="mobile-tab-screen mobile-library-screen app-view"/);
   assert.match(home, /<CreateMethodPicker \/>/);
-  assert.match(home, /onClick=\{\(\) => setActiveTab\("library"\)\}/);
+  assert.match(home, /href="\/library"/);
   assert.match(home, /onClick=\{\(\) => setActiveTab\("create"\)\}/);
   assert.match(css, /\.app-view \{ min-height:calc\(100dvh - 80px\);/);
   assert.match(css, /\.dashboard-grid \{ display:grid; grid-template-columns:/);

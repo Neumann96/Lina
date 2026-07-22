@@ -3,12 +3,15 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const learning = await readFile(new URL("../src/lib/learning.ts", import.meta.url), "utf8");
+const reviewGroups = await readFile(new URL("../src/lib/review-groups.ts", import.meta.url), "utf8");
+const folderMigration = await readFile(new URL("../db/migrations/007_study_folders.sql", import.meta.url), "utf8");
 const migration = await readFile(new URL("../db/migrations/003_study_set_progress.sql", import.meta.url), "utf8");
 const spacedMigration = await readFile(new URL("../db/migrations/004_spaced_repetition.sql", import.meta.url), "utf8");
 const scienceMigration = await readFile(new URL("../db/migrations/006_science_based_repetition.sql", import.meta.url), "utf8");
 const studySession = await readFile(new URL("../src/components/study-session.tsx", import.meta.url), "utf8");
 const restartRoute = await readFile(new URL("../src/app/api/sets/[setId]/restart/route.ts", import.meta.url), "utf8");
 const reviewsPage = await readFile(new URL("../src/app/study/reviews/page.tsx", import.meta.url), "utf8");
+const scopedReviewsPage = await readFile(new URL("../src/app/study/reviews/[scopeKind]/[scopeId]/page.tsx", import.meta.url), "utf8");
 const notifyRoute = await readFile(new URL("../src/app/api/reviews/notify/route.ts", import.meta.url), "utf8");
 
 test("stores and displays the next card position independently from answer history", () => {
@@ -51,18 +54,28 @@ test("stores each reviewed card in spaced repetition schedule", () => {
 });
 
 test("can study due spaced repetition cards separately", () => {
-  assert.match(learning, /getDueReviewStudySet/);
-  assert.match(learning, /sr\.due_at <= NOW\(\)/);
-  assert.match(reviewsPage, /getDueReviewStudySet\(user\.id\)/);
+  assert.match(reviewGroups, /getDueReviewStudySet/);
+  assert.match(reviewGroups, /sr\.due_at <= NOW\(\)/);
+  assert.match(reviewsPage, /getDueReviewGroups\(user\.id\)/);
+  assert.match(scopedReviewsPage, /getDueReviewStudySet\(user\.id, scopeKind as ReviewScopeKind, scopeId\)/);
   assert.match(studySession, /studySet\.mode === "reviews"/);
 });
 
-test("supports scheduled telegram reminders for due cards", () => {
-  assert.match(learning, /getDueReviewUsers/);
-  assert.match(learning, /reminder_sent_at < sr\.due_at/);
-  assert.match(learning, /MAX\(sr\.reminder_attempted_at\) < NOW\(\) - INTERVAL '1 hour'/);
-  assert.match(learning, /markDueReviewReminderAttempted/);
-  assert.match(learning, /markDueReviewReminderSent/);
+test("groups reviews by one unfiled set or one folder", () => {
+  assert.match(folderMigration, /CREATE TABLE IF NOT EXISTS study_folders/);
+  assert.match(folderMigration, /ADD COLUMN IF NOT EXISTS folder_id/);
+  assert.match(reviewGroups, /CASE WHEN s\.folder_id IS NULL THEN 'set' ELSE 'folder' END/);
+  assert.match(reviewGroups, /COALESCE\(s\.folder_id, s\.id\)/);
+  assert.match(reviewGroups, /\$2 = 'folder' AND s\.folder_id = \$3/);
+  assert.match(reviewGroups, /\$2 = 'set' AND s\.id = \$3 AND s\.folder_id IS NULL/);
+});
+
+test("supports group-specific telegram reminders for due cards", () => {
+  assert.match(reviewGroups, /getDueReviewNotifications/);
+  assert.match(reviewGroups, /reminder_sent_at < sr\.due_at/);
+  assert.match(reviewGroups, /MAX\(sr\.reminder_attempted_at\) FILTER[\s\S]+< NOW\(\) - INTERVAL '1 hour'/);
+  assert.match(reviewGroups, /markDueReviewReminderAttempted/);
+  assert.match(reviewGroups, /markDueReviewReminderSent/);
   assert.match(notifyRoute, /x-lina-reminder-secret/);
   assert.match(notifyRoute, /sendTelegramReviewReminder/);
   assert.match(notifyRoute, /withAdvisoryLock\("lina-review-reminder-dispatch"/);

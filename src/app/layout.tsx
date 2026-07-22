@@ -3,6 +3,7 @@ import Script from "next/script";
 import { ViewTransition } from "react";
 import { TelegramMiniApp } from "@/components/telegram-mini-app";
 import "./globals.css";
+import "./folders.css";
 
 export const metadata: Metadata = {
   title: "Lina — запоминайте надолго",
