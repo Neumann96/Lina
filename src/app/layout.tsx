@@ -4,6 +4,7 @@ import { ViewTransition } from "react";
 import { TelegramMiniApp } from "@/components/telegram-mini-app";
 import "./globals.css";
 import "./folders.css";
+import "./study-session.css";
 
 export const metadata: Metadata = {
   title: "Lina — запоминайте надолго",
@@ -21,7 +22,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ru">
+    <html lang="ru" suppressHydrationWarning>
       <body>
         <ViewTransition
           default="app-route"
@@ -30,9 +31,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         >
           {children}
         </ViewTransition>
+        <Script src="https://telegram.org/js/telegram-web-app.js?61" strategy="beforeInteractive" />
+        <TelegramMiniApp />
       </body>
-      <Script src="https://telegram.org/js/telegram-web-app.js?61" strategy="beforeInteractive" />
-      <TelegramMiniApp />
     </html>
   );
 }

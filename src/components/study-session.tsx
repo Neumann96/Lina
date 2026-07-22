@@ -40,6 +40,9 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
   const [saveError, setSaveError] = useState("");
   const [exitDirection, setExitDirection] = useState<"left" | "middle" | "right" | null>(null);
   const [restarting, setRestarting] = useState(false);
+  const [answerFocused, setAnswerFocused] = useState(false);
+  const studyPage = useRef<HTMLElement>(null);
+  const answerInput = useRef<HTMLTextAreaElement>(null);
   const cardStartedAt = useRef(0);
   const responseTime = useRef<number | null>(null);
   const pendingReviews = useRef(new Set<Promise<void>>());
@@ -57,6 +60,30 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
     cardStartedAt.current = performance.now();
     responseTime.current = null;
   }, [card?.id, current?.retryCount]);
+
+  useEffect(() => {
+    const page = studyPage.current;
+    const viewport = window.visualViewport;
+    if (!page || !viewport) return;
+
+    const syncVisibleViewport = () => {
+      page.style.setProperty("--study-viewport-height", `${Math.max(1, Math.round(viewport.height))}px`);
+    };
+
+    syncVisibleViewport();
+    viewport.addEventListener("resize", syncVisibleViewport);
+    viewport.addEventListener("scroll", syncVisibleViewport);
+
+    return () => {
+      viewport.removeEventListener("resize", syncVisibleViewport);
+      viewport.removeEventListener("scroll", syncVisibleViewport);
+      page.style.removeProperty("--study-viewport-height");
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!revealed) answerInput.current?.focus({ preventScroll: true });
+  }, [card?.id, current?.retryCount, revealed]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -178,7 +205,7 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
     : 0;
 
   return (
-    <main className="study-page">
+    <main ref={studyPage} className={`study-page${answerFocused ? " recall-input-active" : ""}`}>
       <header className="study-header">
         <Link className="study-round-button" href="/" transitionTypes={["nav-back"]} onClick={closeSession} aria-label="Закрыть режим обучения"><StudyIcon name="close" size={27}/></Link>
         <div className="study-heading">
@@ -229,6 +256,7 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
                   <form className="recall-form" onSubmit={revealAnswer}>
                     <label htmlFor={`recall-${card.id}`}>Ваш ответ</label>
                     <textarea
+                      ref={answerInput}
                       id={`recall-${card.id}`}
                       value={answerText}
                       onChange={(event) => setAnswerText(event.target.value)}
@@ -236,7 +264,8 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
                       autoComplete="off"
                       spellCheck={false}
                       rows={2}
-                      autoFocus
+                      onFocus={() => setAnswerFocused(true)}
+                      onBlur={() => setAnswerFocused(false)}
                     />
                     <div>
                       <button className="recall-forgot" type="button" onClick={() => revealAnswer()}>Не помню</button>

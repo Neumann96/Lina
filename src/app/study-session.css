@@ -1,0 +1,92 @@
+/* Keep the fixed study surface aligned with the visual viewport when a mobile keyboard opens. */
+.study-page {
+  --study-viewport-height: 100dvh;
+  height: var(--study-viewport-height);
+}
+
+.study-stage {
+  height: calc(var(--study-viewport-height) - 97px);
+}
+
+@media (max-width: 700px) {
+  .study-stage {
+    height: calc(var(--study-viewport-height) - 82px);
+  }
+
+  .telegram-mini-app .study-stage {
+    height: calc(
+      var(--study-viewport-height) - 110px - var(--tg-content-safe-area-inset-top, 0px)
+    );
+  }
+
+  .study-page.recall-input-active .study-stage {
+    padding: 10px 14px;
+  }
+
+  .study-page.recall-input-active .study-counters {
+    top: 8px;
+  }
+
+  .study-page.recall-input-active .study-card-wrap {
+    height: 100%;
+    min-height: 0;
+    margin: 0;
+  }
+
+  .study-page.recall-input-active .study-card.recall-card {
+    padding: 14px;
+    scroll-padding-bottom: 12px;
+  }
+
+  .study-page.recall-input-active .study-card-action {
+    top: 12px;
+    width: 38px;
+    height: 38px;
+  }
+
+  .study-page.recall-input-active .study-card-action.sound {
+    left: 14px;
+  }
+
+  .study-page.recall-input-active .study-card-action.favorite {
+    right: 14px;
+  }
+
+  .study-page.recall-input-active .recall-card-content {
+    min-height: 0;
+    justify-content: flex-start;
+    padding: 34px 0 4px;
+  }
+
+  .study-page.recall-input-active .recall-kicker {
+    font-size: 9px;
+  }
+
+  .study-page.recall-input-active .recall-term {
+    margin: 4px 0 7px;
+    font-size: clamp(24px, 8vw, 32px);
+  }
+
+  .study-page.recall-input-active .recall-form label {
+    margin-bottom: 5px;
+  }
+
+  .study-page.recall-input-active .recall-form textarea {
+    height: 48px;
+    min-height: 48px;
+    padding: 9px 12px;
+    resize: none;
+  }
+
+  .study-page.recall-input-active .recall-form > div {
+    margin-top: 6px;
+  }
+
+  .study-page.recall-input-active .recall-form button {
+    min-height: 40px;
+  }
+
+  .study-page.recall-input-active .recall-form > small {
+    display: none;
+  }
+}

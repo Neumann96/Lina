@@ -7,8 +7,8 @@ import { cookies } from "next/headers";
 
 const scrypt = promisify(scryptCallback);
 const SESSION_COOKIE = "lina_session";
-const SESSION_LIFETIME_SECONDS = 60 * 60 * 24 * 7;
-const SESSION_IDLE_TIMEOUT_SECONDS = 60 * 60 * 24;
+const SESSION_LIFETIME_SECONDS = 60 * 60 * 24 * 30;
+const SESSION_IDLE_TIMEOUT_SECONDS = 60 * 60 * 24 * 7;
 const SESSION_TOUCH_INTERVAL_MS = 15 * 60 * 1000;
 const MAX_SESSIONS_PER_USER = 10;
 

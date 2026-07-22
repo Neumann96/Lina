@@ -11,8 +11,8 @@ test("stores revocable opaque sessions with absolute and idle expiry", async () 
   assert.match(auth, /randomBytes\(32\)\.toString\("base64url"\)/);
   assert.match(auth, /INSERT INTO auth_sessions/);
   assert.match(auth, /DELETE FROM auth_sessions WHERE token_hash/);
-  assert.match(auth, /SESSION_LIFETIME_SECONDS = 60 \* 60 \* 24 \* 7/);
-  assert.match(auth, /SESSION_IDLE_TIMEOUT_SECONDS = 60 \* 60 \* 24/);
+  assert.match(auth, /SESSION_LIFETIME_SECONDS = 60 \* 60 \* 24 \* 30/);
+  assert.match(auth, /SESSION_IDLE_TIMEOUT_SECONDS = 60 \* 60 \* 24 \* 7/);
   assert.match(migration, /token_hash char\(43\) PRIMARY KEY/);
   assert.match(migration, /REFERENCES users\(id\) ON DELETE CASCADE/);
 });
