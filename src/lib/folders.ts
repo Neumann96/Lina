@@ -48,7 +48,10 @@ export async function getLibraryData(userId: string): Promise<LibraryData> {
          s.folder_id AS "folderId",
          COUNT(DISTINCT c.id) AS "cardCount",
          LEAST(COALESCE(p.next_position, 0), COUNT(DISTINCT c.id)) AS "studiedCount",
-         COUNT(DISTINCT sr.card_id) FILTER (WHERE sr.due_at <= NOW()) AS "dueCount"
+         COUNT(DISTINCT sr.card_id) FILTER (
+           WHERE sr.due_at < (((NOW() AT TIME ZONE 'Europe/Moscow')::date + INTERVAL '1 day')
+             AT TIME ZONE 'Europe/Moscow')
+         ) AS "dueCount"
        FROM study_sets s
        LEFT JOIN cards c ON c.set_id = s.id
        LEFT JOIN card_spaced_repetitions sr ON sr.card_id = c.id AND sr.user_id = $1
@@ -120,17 +123,6 @@ export async function deleteStudyFolder(userId: string, folderId: string) {
     if (!folder.rowCount) return false;
 
     await client.query(
-      `UPDATE card_spaced_repetitions sr
-       SET reminder_sent_at = NULL, reminder_attempted_at = NULL, updated_at = NOW()
-       FROM cards c
-       JOIN study_sets s ON s.id = c.set_id
-       WHERE sr.user_id = $1
-         AND sr.card_id = c.id
-         AND s.user_id = $1
-         AND s.folder_id = $2`,
-      [userId, folderId],
-    );
-    await client.query(
       `DELETE FROM study_folders WHERE id = $1 AND user_id = $2`,
       [folderId, userId],
     );
@@ -157,13 +149,6 @@ export async function moveStudySetToFolder(userId: string, setId: string, folder
     );
     if (!moved.rowCount) return false;
 
-    await client.query(
-      `UPDATE card_spaced_repetitions sr
-       SET reminder_sent_at = NULL, reminder_attempted_at = NULL, updated_at = NOW()
-       FROM cards c
-       WHERE sr.user_id = $1 AND sr.card_id = c.id AND c.set_id = $2`,
-      [userId, setId],
-    );
     return true;
   });
 }

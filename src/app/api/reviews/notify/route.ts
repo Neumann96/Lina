@@ -36,11 +36,7 @@ export async function POST(request: Request) {
     for (let index = 0; index < notifications.length; index += batchSize) {
       const batch = notifications.slice(index, index + batchSize);
       await Promise.all(batch.map(async (notification) => {
-        await markDueReviewReminderAttempted(
-          notification.userId,
-          notification.scopeKind,
-          notification.scopeId,
-        );
+        await markDueReviewReminderAttempted(notification.userId);
         const chatId = Number(notification.telegramId);
         if (!Number.isSafeInteger(chatId)) {
           failed += 1;
@@ -49,11 +45,7 @@ export async function POST(request: Request) {
 
         try {
           await sendTelegramReviewReminder(botToken, chatId, notification);
-          await markDueReviewReminderSent(
-            notification.userId,
-            notification.scopeKind,
-            notification.scopeId,
-          );
+          await markDueReviewReminderSent(notification.userId);
           sent += 1;
         } catch {
           failed += 1;

@@ -597,7 +597,7 @@ export function HomeClient({
             <article className="mobile-resume-card review-due-card">
               <div className="mobile-resume-heading"><h2>{firstReviewGroup?.title ?? "Повторить по расписанию"}</h2></div>
               <div className="review-due-count"><strong>{firstReviewGroup?.dueCount ?? stats.dueReviewCount}</strong><span>карточек в этой очереди</span></div>
-              <p>{initialDashboard.reviewGroups.length > 1 ? `Ещё ${initialDashboard.reviewGroups.length - 1} очередей находятся в библиотеке.` : firstReviewGroup?.scopeKind === "folder" ? "Все готовые карточки из наборов этой папки собраны вместе." : "Карточки других наборов сюда не попадут."}</p>
+              <p>Все карточки, запланированные на сегодня, уже собраны здесь без ожидания точного часа.</p>
               <Link className="mobile-resume-primary" href={firstReviewHref} transitionTypes={["nav-forward"]}>Начать повторение</Link>
             </article>
           )}

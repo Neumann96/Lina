@@ -17,10 +17,8 @@ function LibraryIcon({ name, size = 22 }: { name: "back" | "folder" | "cards" | 
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{paths[name]}</svg>;
 }
 
-function reviewHref(folderId: string | null, setId?: string) {
-  return folderId
-    ? `/study/reviews/folder/${folderId}`
-    : `/study/reviews/set/${setId}`;
+function reviewHref() {
+  return "/study/reviews";
 }
 
 function SetRow({
@@ -168,7 +166,7 @@ export function FolderLibrary({ initialLibrary }: { initialLibrary: LibraryData 
 
       <section className="folder-library-shell">
         <div className="folder-library-heading">
-          <div><span>Все материалы</span><h1>Библиотека</h1><p>Наборы в одной папке повторяются вместе. Наборы без папки — всегда отдельно.</p></div>
+          <div><span>Все материалы</span><h1>Библиотека</h1><p>Карточки со сроком на сегодня собраны в одну дневную очередь.</p></div>
           <form onSubmit={createFolder}>
             <label htmlFor="new-folder">Новая папка</label>
             <div><input id="new-folder" value={newFolderName} onChange={(event) => setNewFolderName(event.target.value)} placeholder="Например, Английский B1" maxLength={120}/><button type="submit" disabled={!newFolderName.trim() || busy !== null}><LibraryIcon name="plus" size={18}/> Создать</button></div>
@@ -184,9 +182,9 @@ export function FolderLibrary({ initialLibrary }: { initialLibrary: LibraryData 
             return (
               <section className="folder-group" key={folder.id}>
                 <header>
-                  <div className="folder-group-title"><span><LibraryIcon name="folder" /></span><div><h2>{folder.name}</h2><p>{folderSets.length} наборов · единая очередь повторения</p></div></div>
+                  <div className="folder-group-title"><span><LibraryIcon name="folder" /></span><div><h2>{folder.name}</h2><p>{folderSets.length} наборов</p></div></div>
                   <div className="folder-group-actions">
-                    {dueCount > 0 && <Link className="folder-review-link" href={reviewHref(folder.id)} transitionTypes={["nav-forward"]}>{dueCount} к повторению</Link>}
+                    {dueCount > 0 && <Link className="folder-review-link" href={reviewHref()} transitionTypes={["nav-forward"]}>{dueCount} к повторению</Link>}
                     <button type="button" onClick={() => renameFolder(folder)} disabled={busy !== null} aria-label={`Переименовать папку ${folder.name}`}><LibraryIcon name="edit" size={18}/></button>
                     <button type="button" onClick={() => deleteFolder(folder)} disabled={busy !== null} aria-label={`Удалить папку ${folder.name}`}><LibraryIcon name="trash" size={18}/></button>
                   </div>
@@ -202,14 +200,14 @@ export function FolderLibrary({ initialLibrary }: { initialLibrary: LibraryData 
 
           <section className="folder-group unfiled">
             <header>
-              <div className="folder-group-title"><span><LibraryIcon name="cards" /></span><div><h2>Без папки</h2><p>Каждый набор повторяется отдельно</p></div></div>
+              <div className="folder-group-title"><span><LibraryIcon name="cards" /></span><div><h2>Без папки</h2><p>{unfiledSets.length} наборов</p></div></div>
             </header>
             <div className="folder-set-list">
               {unfiledSets.length
                 ? unfiledSets.map((set) => (
                   <div className="unfiled-set" key={set.id}>
                     <SetRow set={set} folders={folders} moving={busy === `set:${set.id}`} onMove={moveSet}/>
-                    {set.dueCount > 0 && <Link className="folder-review-link" href={reviewHref(null, set.id)} transitionTypes={["nav-forward"]}>{set.dueCount} к повторению</Link>}
+                    {set.dueCount > 0 && <Link className="folder-review-link" href={reviewHref()} transitionTypes={["nav-forward"]}>{set.dueCount} к повторению</Link>}
                   </div>
                 ))
                 : <p className="folder-empty">Все наборы распределены по папкам.</p>}

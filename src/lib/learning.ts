@@ -60,8 +60,16 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
          (SELECT COUNT(*) FROM cards c JOIN study_sets s ON s.id = c.set_id WHERE s.user_id = $1) AS "cardCount",
          (SELECT COUNT(*) FROM card_reviews WHERE user_id = $1) AS "reviewCount",
          (SELECT COUNT(*) FROM card_reviews WHERE user_id = $1 AND is_correct) AS "correctCount",
-         (SELECT COUNT(*) FROM card_spaced_repetitions WHERE user_id = $1 AND due_at <= NOW()) AS "dueReviewCount",
-         (SELECT MIN(due_at)::text FROM card_spaced_repetitions WHERE user_id = $1 AND due_at > NOW()) AS "nextReviewAt"`,
+         (SELECT COUNT(*)
+          FROM card_spaced_repetitions
+          WHERE user_id = $1
+            AND due_at < (((NOW() AT TIME ZONE 'Europe/Moscow')::date + INTERVAL '1 day')
+              AT TIME ZONE 'Europe/Moscow')) AS "dueReviewCount",
+         (SELECT MIN(due_at)::text
+          FROM card_spaced_repetitions
+          WHERE user_id = $1
+            AND due_at >= (((NOW() AT TIME ZONE 'Europe/Moscow')::date + INTERVAL '1 day')
+              AT TIME ZONE 'Europe/Moscow')) AS "nextReviewAt"`,
       [userId],
     ),
     query<{ day: string; today: string }>(

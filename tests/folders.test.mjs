@@ -19,14 +19,14 @@ test("supports creating, renaming, deleting and assigning folders", async () => 
   assert.match(folderRoute, /export async function PATCH/);
   assert.match(folderRoute, /export async function DELETE/);
   assert.match(setFolderRoute, /folderId/);
-  assert.match(library, /Наборы в одной папке повторяются вместе/);
+  assert.match(library, /Карточки со сроком на сегодня собраны в одну дневную очередь/);
+  assert.match(library, /return "\/study\/reviews"/);
   assert.match(library, /Без папки/);
 });
 
-test("changing folder membership resets stale reminder links", async () => {
+test("changing folder membership does not duplicate a daily reminder", async () => {
   const folders = await read("src/lib/folders.ts");
 
-  assert.match(folders, /reminder_sent_at = NULL, reminder_attempted_at = NULL/);
-  assert.match(folders, /s\.folder_id = \$2/);
-  assert.match(folders, /c\.set_id = \$2/);
+  assert.doesNotMatch(folders, /reminder_sent_at = NULL/);
+  assert.doesNotMatch(folders, /reminder_attempted_at = NULL/);
 });

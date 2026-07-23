@@ -55,25 +55,27 @@ test("stores each reviewed card in spaced repetition schedule", () => {
 
 test("can study due spaced repetition cards separately", () => {
   assert.match(reviewGroups, /getDueReviewStudySet/);
-  assert.match(reviewGroups, /sr\.due_at <= NOW\(\)/);
-  assert.match(reviewsPage, /getDueReviewGroups\(user\.id\)/);
-  assert.match(scopedReviewsPage, /getDueReviewStudySet\(user\.id, scopeKind as ReviewScopeKind, scopeId\)/);
+  assert.match(reviewGroups, /sr\.due_at < \$\{REVIEW_DAY_END_SQL\}/);
+  assert.match(reviewsPage, /getDueReviewStudySet\(user\.id\)/);
+  assert.match(scopedReviewsPage, /redirect\("\/study\/reviews"\)/);
   assert.match(studySession, /studySet\.mode === "reviews"/);
 });
 
-test("groups reviews by one unfiled set or one folder", () => {
+test("collects every review scheduled for today into one daily queue", () => {
   assert.match(folderMigration, /CREATE TABLE IF NOT EXISTS study_folders/);
   assert.match(folderMigration, /ADD COLUMN IF NOT EXISTS folder_id/);
-  assert.match(reviewGroups, /CASE WHEN s\.folder_id IS NULL THEN 'set' ELSE 'folder' END/);
-  assert.match(reviewGroups, /COALESCE\(s\.folder_id, s\.id\)/);
-  assert.match(reviewGroups, /\$2 = 'folder' AND s\.folder_id = \$3/);
-  assert.match(reviewGroups, /\$2 = 'set' AND s\.id = \$3 AND s\.folder_id IS NULL/);
+  assert.match(reviewGroups, /AT TIME ZONE 'Europe\/Moscow'/);
+  assert.match(reviewGroups, /scopeKind: "day"/);
+  assert.match(reviewGroups, /href: DAILY_REVIEW_HREF/);
+  assert.doesNotMatch(reviewGroups, /LIMIT 50/);
+  assert.doesNotMatch(reviewGroups, /s\.folder_id = \$3/);
 });
 
-test("supports group-specific telegram reminders for due cards", () => {
+test("sends one daily telegram reminder per user before the exact due hour", () => {
   assert.match(reviewGroups, /getDueReviewNotifications/);
-  assert.match(reviewGroups, /reminder_sent_at < sr\.due_at/);
-  assert.match(reviewGroups, /MAX\(sr\.reminder_attempted_at\) FILTER[\s\S]+< NOW\(\) - INTERVAL '1 hour'/);
+  assert.match(reviewGroups, /GROUP BY "userId", "telegramId"/);
+  assert.match(reviewGroups, /date_trunc\('day', sr\.due_at AT TIME ZONE 'Europe\/Moscow'\)/);
+  assert.match(reviewGroups, /MAX\("reminderAttemptedAt"\) < NOW\(\) - INTERVAL '1 hour'/);
   assert.match(reviewGroups, /markDueReviewReminderAttempted/);
   assert.match(reviewGroups, /markDueReviewReminderSent/);
   assert.match(notifyRoute, /x-lina-reminder-secret/);
