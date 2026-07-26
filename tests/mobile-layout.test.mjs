@@ -137,8 +137,11 @@ test("uses three recall ratings and requeues forgotten cards", () => {
 
 test("marks case-insensitive exact recall answers as correct", () => {
   assert.match(studySession, /recallAnswersMatch\(answerText, expectedAnswer\)/);
+  assert.match(studySession, /answerMatches \? "matches" : "misses"/);
   assert.match(studySession, /answerMatches \? "Ваш ответ · верно" : "Ваш ответ"/);
-  assert.match(css, /\.answer-comparison>div\.matches \{[^}]*border-color:#badfd5;[^}]*background:#f4fbf8;/);
+  assert.match(css, /\.answer-comparison>div\.matches \{[^}]*border-color:#16845f;[^}]*background:#16845f;/);
+  assert.match(css, /\.answer-comparison>div\.misses \{[^}]*border-color:#d6323f;[^}]*background:#d6323f;/);
+  assert.match(css, /\.answer-comparison>div\.matches span,[^}]*\.answer-comparison>div\.misses p \{[^}]*color:#fff;/);
 });
 
 test("distinguishes server failures from connection failures when saving reviews", () => {

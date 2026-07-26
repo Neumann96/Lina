@@ -327,7 +327,10 @@ html:not(.telegram-mini-app) .telegram-mini-app-login { display:none; }
 .answer-comparison span { color:#9b9297; font-size:8px; font-weight:850; letter-spacing:.09em; text-transform:uppercase; }
 .answer-comparison p { margin:5px 0 0; max-height:92px; overflow:auto; color:#514754; font-size:13px; line-height:1.45; overflow-wrap:anywhere; }
 .answer-comparison>div:last-child p { color:#6e402f; font-weight:650; }
-.answer-comparison>div.matches { border-color:#badfd5; background:#f4fbf8; }.answer-comparison>div.matches span,.answer-comparison>div.matches p { color:#307d69; }
+/* Make recall feedback unmistakable at a glance. */
+.answer-comparison>div.matches { border-color:#16845f; background:#16845f; box-shadow:0 10px 24px #16845f30; }
+.answer-comparison>div.misses { border-color:#d6323f; background:#d6323f; box-shadow:0 10px 24px #d6323f30; }
+.answer-comparison>div.matches span,.answer-comparison>div.matches p,.answer-comparison>div.misses span,.answer-comparison>div.misses p { color:#fff; font-weight:750; }
 .rating-prompt { margin:15px 0 9px; color:#766c79; font-size:11px; font-weight:750; }
 .recall-ratings { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
 .recall-ratings button { min-width:0; min-height:76px; display:grid; justify-items:center; align-content:center; gap:3px; padding:8px 5px; border:1px solid; border-radius:14px; background:#fff; cursor:pointer; }
