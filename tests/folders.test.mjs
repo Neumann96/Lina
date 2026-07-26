@@ -35,7 +35,13 @@ test("supports creating, renaming, deleting and assigning folders", async () => 
   assert.doesNotMatch(library, /<select/);
   assert.match(library, /embedded = false/);
   assert.match(library, /folder-library-page\$\{embedded \? " embedded" : ""\}/);
+  assert.match(library, /COLLAPSED_FOLDERS_STORAGE_KEY/);
+  assert.match(library, /aria-expanded=\{!isCollapsed\}/);
+  assert.match(library, /hidden=\{isCollapsed\}/);
+  assert.match(library, /toggleGroup\(UNFILED_GROUP_ID\)/);
   assert.match(css, /\.folder-library-page\.embedded \{ min-height:0; background:transparent; \}/);
+  assert.match(css, /\.folder-group\.collapsed \.folder-group-chevron \{ transform:rotate\(-90deg\); \}/);
+  assert.match(css, /\.folder-set-list\[hidden\] \{ display:none; \}/);
   assert.match(css, /\.folder-select-menu \{[^}]*overflow:auto;/);
   assert.match(css, /\.folder-delete-modal \{/);
 });

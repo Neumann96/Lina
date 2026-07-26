@@ -4,6 +4,9 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { LibraryData, LibraryStudySet, StudyFolder } from "@/lib/folders";
 
+const COLLAPSED_FOLDERS_STORAGE_KEY = "lina-collapsed-folder-groups";
+const UNFILED_GROUP_ID = "unfiled";
+
 function LibraryIcon({ name, size = 22 }: { name: "back" | "folder" | "cards" | "plus" | "edit" | "trash" | "arrow" | "chevron" | "clock"; size?: number }) {
   const paths: Record<string, React.ReactNode> = {
     back: <path d="m15 18-6-6 6-6" />,
@@ -187,6 +190,8 @@ export function FolderLibrary({
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [setToDelete, setSetToDelete] = useState<LibraryStudySet | null>(null);
+  const [collapsedGroupIds, setCollapsedGroupIds] = useState<string[]>([]);
+  const [collapsePreferencesLoaded, setCollapsePreferencesLoaded] = useState(false);
 
   const setsByFolder = useMemo(() => new Map(folders.map((folder) => [
     folder.id,
@@ -195,6 +200,38 @@ export function FolderLibrary({
   const unfiledSets = useMemo(() => sets.filter((set) => set.folderId === null), [sets]);
   const dueSets = useMemo(() => sets.filter((set) => set.dueCount > 0), [sets]);
   const dueCount = useMemo(() => dueSets.reduce((sum, set) => sum + set.dueCount, 0), [dueSets]);
+
+  useEffect(() => {
+    let storedGroupIds: string[] = [];
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(COLLAPSED_FOLDERS_STORAGE_KEY) ?? "[]") as unknown;
+      if (Array.isArray(stored)) {
+        storedGroupIds = stored.filter((id): id is string => typeof id === "string").slice(0, 200);
+      }
+    } catch {
+      // Ignore malformed or unavailable local storage and keep every group open.
+    }
+    const animationFrame = window.requestAnimationFrame(() => {
+      setCollapsedGroupIds(storedGroupIds);
+      setCollapsePreferencesLoaded(true);
+    });
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, []);
+
+  useEffect(() => {
+    if (!collapsePreferencesLoaded) return;
+    try {
+      window.localStorage.setItem(COLLAPSED_FOLDERS_STORAGE_KEY, JSON.stringify(collapsedGroupIds));
+    } catch {
+      // Folder controls still work when storage is unavailable.
+    }
+  }, [collapsePreferencesLoaded, collapsedGroupIds]);
+
+  function toggleGroup(groupId: string) {
+    setCollapsedGroupIds((current) => current.includes(groupId)
+      ? current.filter((id) => id !== groupId)
+      : [...current, groupId]);
+  }
 
   async function createFolder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -274,6 +311,7 @@ export function FolderLibrary({
       if (!response.ok) throw new Error(result.error ?? "Не удалось удалить папку");
       setFolders((current) => current.filter((item) => item.id !== folder.id));
       setSets((current) => current.map((set) => set.folderId === folder.id ? { ...set, folderId: null } : set));
+      setCollapsedGroupIds((current) => current.filter((id) => id !== folder.id));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Не удалось удалить папку");
     } finally {
@@ -346,16 +384,22 @@ export function FolderLibrary({
         <div className="folder-groups">
           {folders.map((folder) => {
             const folderSets = setsByFolder.get(folder.id) ?? [];
+            const isCollapsed = collapsedGroupIds.includes(folder.id);
+            const contentId = `folder-group-content-${folder.id}`;
             return (
-              <section className="folder-group" key={folder.id}>
+              <section className={`folder-group${isCollapsed ? " collapsed" : ""}`} key={folder.id}>
                 <header>
-                  <div className="folder-group-title"><span><LibraryIcon name="folder" /></span><div><h2>{folder.name}</h2><p>{folderSets.length} наборов</p></div></div>
+                  <button className="folder-group-toggle" type="button" aria-expanded={!isCollapsed} aria-controls={contentId} aria-label={`${isCollapsed ? "Развернуть" : "Свернуть"} папку ${folder.name}`} onClick={() => toggleGroup(folder.id)}>
+                    <span className="folder-group-icon"><LibraryIcon name="folder" /></span>
+                    <span className="folder-group-copy"><strong>{folder.name}</strong><small>{folderSets.length} наборов</small></span>
+                    <span className="folder-group-chevron"><LibraryIcon name="chevron" size={18}/></span>
+                  </button>
                   <div className="folder-group-actions">
                     <button type="button" onClick={() => renameFolder(folder)} disabled={busy !== null} aria-label={`Переименовать папку ${folder.name}`}><LibraryIcon name="edit" size={18}/></button>
                     <button type="button" onClick={() => deleteFolder(folder)} disabled={busy !== null} aria-label={`Удалить папку ${folder.name}`}><LibraryIcon name="trash" size={18}/></button>
                   </div>
                 </header>
-                <div className="folder-set-list">
+                <div className="folder-set-list" id={contentId} hidden={isCollapsed}>
                   {folderSets.length
                     ? folderSets.map((set) => <SetRow key={set.id} set={set} folders={folders} moving={busy !== null} onMove={moveSet} onDelete={setSetToDelete}/>)
                     : <p className="folder-empty">Пока пусто. Выберите эту папку в меню нужного набора.</p>}
@@ -364,11 +408,15 @@ export function FolderLibrary({
             );
           })}
 
-          <section className="folder-group unfiled">
+          <section className={`folder-group unfiled${collapsedGroupIds.includes(UNFILED_GROUP_ID) ? " collapsed" : ""}`}>
             <header>
-              <div className="folder-group-title"><span><LibraryIcon name="cards" /></span><div><h2>Без папки</h2><p>{unfiledSets.length} наборов</p></div></div>
+              <button className="folder-group-toggle" type="button" aria-expanded={!collapsedGroupIds.includes(UNFILED_GROUP_ID)} aria-controls="folder-group-content-unfiled" aria-label={`${collapsedGroupIds.includes(UNFILED_GROUP_ID) ? "Развернуть" : "Свернуть"} папку Без папки`} onClick={() => toggleGroup(UNFILED_GROUP_ID)}>
+                <span className="folder-group-icon"><LibraryIcon name="cards" /></span>
+                <span className="folder-group-copy"><strong>Без папки</strong><small>{unfiledSets.length} наборов</small></span>
+                <span className="folder-group-chevron"><LibraryIcon name="chevron" size={18}/></span>
+              </button>
             </header>
-            <div className="folder-set-list">
+            <div className="folder-set-list" id="folder-group-content-unfiled" hidden={collapsedGroupIds.includes(UNFILED_GROUP_ID)}>
               {unfiledSets.length
                 ? unfiledSets.map((set) => <SetRow key={set.id} set={set} folders={folders} moving={busy !== null} onMove={moveSet} onDelete={setSetToDelete}/>)
                 : <p className="folder-empty">Все наборы распределены по папкам.</p>}

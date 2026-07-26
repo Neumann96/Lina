@@ -21,14 +21,21 @@
 .folder-groups { display:grid; gap:18px; }
 .folder-group { position:relative; overflow:visible; border:1px solid #ebe5e0; border-radius:22px; background:#fff; box-shadow:0 16px 42px #51362d0a; }
 .folder-group>header { min-height:82px; display:flex; align-items:center; justify-content:space-between; gap:20px; padding:16px 20px; border-radius:21px 21px 0 0; border-bottom:1px solid #f0ebe7; background:linear-gradient(110deg,#fff9f5,#fff); }
-.folder-group-title { min-width:0; display:flex; align-items:center; gap:13px; }
-.folder-group-title>span { flex:0 0 auto; width:45px; height:45px; display:grid; place-items:center; border-radius:14px; color:#df683c; background:#fff0e8; }
-.folder-group-title h2 { margin:0; overflow:hidden; font-size:19px; text-overflow:ellipsis; white-space:nowrap; }
-.folder-group-title p { margin:4px 0 0; color:#8a837e; font-size:12px; }
+.folder-group.collapsed>header { border-bottom:0; border-radius:21px; }
+.folder-group-toggle { flex:1; min-width:0; display:grid; grid-template-columns:45px minmax(0,1fr) 34px; align-items:center; gap:13px; padding:0; border:0; color:inherit; background:transparent; text-align:left; }
+.folder-group-icon { width:45px; height:45px; display:grid; place-items:center; border-radius:14px; color:#df683c; background:#fff0e8; }
+.folder-group-copy { min-width:0; }
+.folder-group-copy strong,.folder-group-copy small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.folder-group-copy strong { font-size:19px; }
+.folder-group-copy small { margin-top:4px; color:#8a837e; font-size:12px; }
+.folder-group-chevron { width:34px; height:34px; display:grid; place-items:center; justify-self:end; border-radius:10px; color:#8e8680; transition:transform .2s ease,background .2s ease; }
+.folder-group-toggle:hover .folder-group-chevron { background:#f4eee9; }
+.folder-group.collapsed .folder-group-chevron { transform:rotate(-90deg); }
 .folder-group-actions { display:flex; align-items:center; gap:7px; }
 .folder-group-actions>button { width:37px; height:37px; display:grid; place-items:center; padding:0; border:1px solid #eae4df; border-radius:11px; color:#756e69; background:#fff; }
 .folder-group-actions>button:disabled { opacity:.45; }
 .folder-set-list { display:grid; }
+.folder-set-list[hidden] { display:none; }
 .folder-set-row { position:relative; display:grid; grid-template-columns:minmax(0,1fr) minmax(280px,340px); align-items:center; gap:18px; padding:11px 18px; border-bottom:1px solid #f3efec; }
 .folder-set-list>*:last-child .folder-set-row,.folder-set-list>.folder-set-row:last-child { border-bottom:0; }
 .folder-set-main { min-width:0; display:grid; grid-template-columns:44px minmax(0,1fr) 18px; align-items:center; gap:12px; color:#322e2b; text-decoration:none; }
@@ -60,7 +67,7 @@
 .folder-set-delete:disabled { cursor:wait; opacity:.45; }
 .folder-empty { margin:0; padding:23px; color:#918a85; font-size:13px; text-align:center; }
 .folder-group.unfiled>header { background:#faf9f8; }
-.folder-group.unfiled .folder-group-title>span { color:#7163a9; background:#f0eef8; }
+.folder-group.unfiled .folder-group-icon { color:#7163a9; background:#f0eef8; }
 .folder-review-today { display:grid; grid-template-columns:54px minmax(0,1fr) auto; align-items:center; gap:18px; margin-bottom:38px; padding:23px 24px; border:1px solid #e8e3df; border-radius:20px; background:#fff; box-shadow:0 15px 38px #51362d0b; }
 .folder-review-today.has-due { border-color:#f0c4b4; background:linear-gradient(110deg,#fff5ef,#fff 70%); }
 .folder-review-icon { width:54px; height:54px; display:grid; place-items:center; border-radius:16px; color:#77706b; background:#f3f0ed; }
@@ -104,7 +111,11 @@
   .folder-section-heading { align-items:start; }
   .folder-section-heading h2 { font-size:21px; }
   .folder-section-heading p { max-width:105px; text-align:right; line-height:1.35; }
-  .folder-group>header { align-items:flex-start; padding:15px; }
+  .folder-group>header { align-items:center; gap:8px; padding:15px; }
+  .folder-group-toggle { grid-template-columns:42px minmax(0,1fr) 28px; gap:10px; }
+  .folder-group-icon { width:42px; height:42px; border-radius:13px; }
+  .folder-group-copy strong { font-size:17px; }
+  .folder-group-chevron { width:28px; height:28px; }
   .folder-group-actions { flex-wrap:wrap; justify-content:flex-end; }
   .folder-set-row { grid-template-columns:1fr; gap:9px; padding:12px 14px; }
   .folder-set-controls { padding-left:56px; }
