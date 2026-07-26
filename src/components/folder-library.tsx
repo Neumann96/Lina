@@ -169,6 +169,9 @@ function SetRow({
         <span>Папка</span>
           <FolderSelect set={set} folders={folders} disabled={moving} onMove={onMove}/>
         </label>
+        <Link className="folder-set-edit" href={`/sets/${set.id}/edit`} transitionTypes={["nav-forward"]} aria-label={`Редактировать набор ${set.title}`}>
+          <LibraryIcon name="edit" size={18}/>
+        </Link>
         <button className="folder-set-delete" type="button" onClick={() => onDelete(set)} disabled={moving} aria-label={`Удалить набор ${set.title}`}>
           <LibraryIcon name="trash" size={18}/>
         </button>

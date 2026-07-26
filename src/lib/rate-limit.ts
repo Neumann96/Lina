@@ -12,6 +12,7 @@ type RateLimitOptions = {
     | "telegram-ip"
     | "telegram-user"
     | "sets-user"
+    | "sets-update-user"
     | "sets-delete-user"
     | "folders-user"
     | "reviews-user"

@@ -188,6 +188,129 @@ export async function createStudySet(userId: string, title: string, cards: Array
   return result.rows[0]?.id ?? null;
 }
 
+export type UpdateStudySetCard = {
+  id: string | null;
+  term: string;
+  definition: string;
+};
+
+export type UpdateStudySetResult = "updated" | "not-found" | "invalid-cards" | "limit-exceeded";
+
+export async function updateStudySet(
+  userId: string,
+  setId: string,
+  title: string,
+  cards: UpdateStudySetCard[],
+): Promise<UpdateStudySetResult> {
+  return withTransaction(async (client) => {
+    await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1::uuid::text, 0))", [userId]);
+
+    const target = await client.query(
+      `SELECT id
+       FROM study_sets
+       WHERE id = $1 AND user_id = $2
+       FOR UPDATE`,
+      [setId, userId],
+    );
+    if (!target.rowCount) return "not-found";
+
+    const usage = await client.query<{ cardCount: string }>(
+      `SELECT COUNT(*) AS "cardCount"
+       FROM cards c
+       JOIN study_sets s ON s.id = c.set_id
+       WHERE s.user_id = $1 AND s.id <> $2`,
+      [userId, setId],
+    );
+    if (Number(usage.rows[0]?.cardCount ?? 0) + cards.length > MAX_CARDS_PER_USER) {
+      return "limit-exceeded";
+    }
+
+    const existing = await client.query<{ id: string }>(
+      `SELECT id
+       FROM cards
+       WHERE set_id = $1
+       FOR UPDATE`,
+      [setId],
+    );
+    const existingIds = new Set(existing.rows.map((card) => card.id));
+    const retainedCards = cards.filter((card): card is UpdateStudySetCard & { id: string } => card.id !== null);
+    if (retainedCards.some((card) => !existingIds.has(card.id))) return "invalid-cards";
+
+    const preparedCards = cards.map((card, position) => ({
+      id: card.id ?? randomUUID(),
+      term: card.term,
+      definition: card.definition,
+      position,
+      retained: card.id !== null,
+    }));
+    const retainedIds = retainedCards.map((card) => card.id);
+
+    await client.query(
+      `UPDATE study_sets
+       SET title = $3
+       WHERE id = $1 AND user_id = $2`,
+      [setId, userId, title],
+    );
+    await client.query(
+      `UPDATE cards
+       SET position = position + 1000000
+       WHERE set_id = $1`,
+      [setId],
+    );
+    await client.query(
+      `DELETE FROM cards
+       WHERE set_id = $1
+         AND NOT (id = ANY($2::uuid[]))`,
+      [setId, retainedIds],
+    );
+
+    const retained = preparedCards.filter((card) => card.retained);
+    if (retained.length) {
+      await client.query(
+        `UPDATE cards AS card
+         SET term = input.term,
+             definition = input.definition,
+             position = input.position
+         FROM UNNEST($2::uuid[], $3::text[], $4::text[], $5::integer[])
+           AS input(id, term, definition, position)
+         WHERE card.set_id = $1 AND card.id = input.id`,
+        [
+          setId,
+          retained.map((card) => card.id),
+          retained.map((card) => card.term),
+          retained.map((card) => card.definition),
+          retained.map((card) => card.position),
+        ],
+      );
+    }
+
+    const added = preparedCards.filter((card) => !card.retained);
+    if (added.length) {
+      await client.query(
+        `INSERT INTO cards (id, set_id, term, definition, position)
+         SELECT input.id, $1, input.term, input.definition, input.position
+         FROM UNNEST($2::uuid[], $3::text[], $4::text[], $5::integer[])
+           AS input(id, term, definition, position)`,
+        [
+          setId,
+          added.map((card) => card.id),
+          added.map((card) => card.term),
+          added.map((card) => card.definition),
+          added.map((card) => card.position),
+        ],
+      );
+    }
+
+    await client.query(
+      `UPDATE study_set_progress
+       SET next_position = LEAST(next_position, $3)
+       WHERE user_id = $1 AND set_id = $2`,
+      [userId, setId, cards.length],
+    );
+    return "updated";
+  });
+}
+
 export async function getStudySet(userId: string, setId: string): Promise<StudySet | null> {
   const result = await query<{ setId: string; title: string; nextPosition: number | null; cardId: string | null; term: string | null; definition: string | null }>(
     `SELECT s.id AS "setId", s.title, p.next_position AS "nextPosition", c.id AS "cardId", c.term, c.definition
