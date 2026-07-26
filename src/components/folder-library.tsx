@@ -22,10 +22,10 @@ function LibraryIcon({ name, size = 22 }: { name: "back" | "folder" | "cards" | 
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{paths[name]}</svg>;
 }
 
-function reviewHref(folderId: string | null, setId?: string) {
+function reviewHref(folderId: string | null) {
   return folderId
     ? `/study/reviews/folder/${folderId}`
-    : `/study/reviews/set/${setId}`;
+    : "/study/reviews/unfiled/all";
 }
 
 function FolderSelect({
@@ -215,14 +215,12 @@ export function FolderLibrary({
         ? [{ key: `folder:${folder.id}`, title: folder.name, dueCount: count, href: reviewHref(folder.id) }]
         : [];
     }),
-    ...unfiledSets
-      .filter((set) => set.dueCount > 0)
-      .map((set) => ({
-        key: `set:${set.id}`,
-        title: set.title,
-        dueCount: set.dueCount,
-        href: reviewHref(null, set.id),
-      })),
+    ...(() => {
+      const count = unfiledSets.reduce((sum, set) => sum + set.dueCount, 0);
+      return count > 0
+        ? [{ key: "unfiled:all", title: "Без папки", dueCount: count, href: reviewHref(null) }]
+        : [];
+    })(),
   ], [folders, setsByFolder, unfiledSets]);
 
   useEffect(() => {

@@ -650,8 +650,8 @@ export function HomeClient({
     setDashboard((current) => {
       if (!current) return current;
       const nextDueCount = Math.max(0, current.stats.dueReviewCount - deletedSet.dueCount);
-      const deletedScopeKind = deletedSet.folderId ? "folder" : "set";
-      const deletedScopeId = deletedSet.folderId ?? deletedSet.id;
+      const deletedScopeKind = deletedSet.folderId ? "folder" : "unfiled";
+      const deletedScopeId = deletedSet.folderId ?? "all";
       return {
         ...current,
         stats: {
@@ -677,32 +677,33 @@ export function HomeClient({
     setDashboard((current) => {
       if (!current) return current;
 
-      const oldScopeKind = movedSet.folderId ? "folder" : "set";
-      const oldScopeId = movedSet.folderId ?? movedSet.id;
-      const newScopeKind = targetFolder ? "folder" : "set";
-      const newScopeId = targetFolder?.id ?? movedSet.id;
+      const oldScopeKind = movedSet.folderId ? "folder" : "unfiled";
+      const oldScopeId = movedSet.folderId ?? "all";
+      const newScopeKind = targetFolder ? "folder" : "unfiled";
+      const newScopeId = targetFolder?.id ?? "all";
       const nextGroups = current.reviewGroups
         .map((group) => group.scopeKind === oldScopeKind && group.scopeId === oldScopeId
           ? { ...group, dueCount: Math.max(0, group.dueCount - movedSet.dueCount) }
           : group)
         .filter((group) => group.dueCount > 0);
-      const targetGroup = nextGroups.find(
+      const hasTargetGroup = nextGroups.some(
         (group) => group.scopeKind === newScopeKind && group.scopeId === newScopeId,
       );
 
-      if (targetGroup) {
-        targetGroup.dueCount += movedSet.dueCount;
-      } else {
-        nextGroups.push({
+      return {
+        ...current,
+        reviewGroups: hasTargetGroup
+          ? nextGroups.map((group) => group.scopeKind === newScopeKind && group.scopeId === newScopeId
+            ? { ...group, dueCount: group.dueCount + movedSet.dueCount }
+            : group)
+          : [...nextGroups, {
           scopeKind: newScopeKind,
           scopeId: newScopeId,
-          title: targetFolder?.name ?? movedSet.title,
+          title: targetFolder?.name ?? "Без папки",
           dueCount: movedSet.dueCount,
           href: `/study/reviews/${newScopeKind}/${newScopeId}`,
-        });
-      }
-
-      return { ...current, reviewGroups: nextGroups };
+        }],
+      };
     });
   }
 
@@ -721,18 +722,25 @@ export function HomeClient({
     setDashboard((current) => {
       if (!current) return current;
 
-      const nextGroups = current.reviewGroups.filter(
+      let nextGroups = current.reviewGroups.filter(
         (group) => group.scopeKind !== "folder" || group.scopeId !== folder.id,
       );
-      for (const set of folderSets) {
-        if (!set.dueCount) continue;
-        nextGroups.push({
-          scopeKind: "set",
-          scopeId: set.id,
-          title: set.title,
-          dueCount: set.dueCount,
-          href: `/study/reviews/set/${set.id}`,
-        });
+      const movedDueCount = folderSets.reduce((sum, set) => sum + set.dueCount, 0);
+      if (movedDueCount > 0) {
+        const hasUnfiledGroup = nextGroups.some(
+          (group) => group.scopeKind === "unfiled" && group.scopeId === "all",
+        );
+        nextGroups = hasUnfiledGroup
+          ? nextGroups.map((group) => group.scopeKind === "unfiled" && group.scopeId === "all"
+            ? { ...group, dueCount: group.dueCount + movedDueCount }
+            : group)
+          : [...nextGroups, {
+            scopeKind: "unfiled",
+            scopeId: "all",
+            title: "Без папки",
+            dueCount: movedDueCount,
+            href: "/study/reviews/unfiled/all",
+          }];
       }
 
       return { ...current, reviewGroups: nextGroups };
@@ -826,7 +834,7 @@ export function HomeClient({
                 {dashboard.reviewGroups.map((group) => (
                   <Link className="today-review-group" href={group.href} transitionTypes={["nav-forward"]} key={`${group.scopeKind}:${group.scopeId}`}>
                     <span>
-                      <small>{group.scopeKind === "folder" ? "Папка" : "Набор без папки"}</small>
+                      <small>{group.scopeKind === "folder" ? "Папка" : "Общая очередь"}</small>
                       <strong>{group.title}</strong>
                     </span>
                     <b>{group.dueCount}</b>

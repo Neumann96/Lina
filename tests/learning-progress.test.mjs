@@ -58,26 +58,28 @@ test("can study due spaced repetition cards separately", () => {
   assert.match(reviewGroups, /sr\.due_at < \$\{REVIEW_DAY_END_SQL\}/);
   assert.match(reviewsPage, /getDueReviewGroups\(user\.id\)/);
   assert.match(reviewsPage, /redirect\(firstGroup\?\.href \?\? "\/"\)/);
+  assert.match(scopedReviewsPage, /redirect\("\/study\/reviews\/unfiled\/all"\)/);
   assert.match(scopedReviewsPage, /getDueReviewStudySet\(user\.id, scopeKind as ReviewScopeKind, scopeId\)/);
   assert.match(scopedReviewsPage, /if \(!studySet\) notFound\(\)/);
   assert.match(studySession, /studySet\.mode === "reviews"/);
 });
 
-test("groups today's reviews by folder and keeps unfiled sets isolated", () => {
+test("groups today's reviews by folder and combines every unfiled set", () => {
   assert.match(folderMigration, /CREATE TABLE IF NOT EXISTS study_folders/);
   assert.match(folderMigration, /ADD COLUMN IF NOT EXISTS folder_id/);
   assert.match(reviewGroups, /AT TIME ZONE 'Europe\/Moscow'/);
-  assert.match(reviewGroups, /CASE WHEN s\.folder_id IS NULL THEN 'set' ELSE 'folder' END/);
-  assert.match(reviewGroups, /COALESCE\(s\.folder_id, s\.id\)::text AS "scopeId"/);
+  assert.match(reviewGroups, /CASE WHEN s\.folder_id IS NULL THEN 'unfiled' ELSE 'folder' END/);
+  assert.match(reviewGroups, /CASE WHEN s\.folder_id IS NULL THEN 'all' ELSE s\.folder_id::text END AS "scopeId"/);
+  assert.match(reviewGroups, /COALESCE\(f\.name, 'Без папки'\) AS title/);
   assert.match(reviewGroups, /reviewGroupHref\(row\.scopeKind, row\.scopeId\)/);
-  assert.match(reviewGroups, /\(\$2 = 'folder' AND s\.folder_id = \$3\)/);
-  assert.match(reviewGroups, /\(\$2 = 'set' AND s\.id = \$3 AND s\.folder_id IS NULL\)/);
+  assert.match(reviewGroups, /\(\$2 = 'folder' AND s\.folder_id::text = \$3\)/);
+  assert.match(reviewGroups, /\(\$2 = 'unfiled' AND \$3 = 'all' AND s\.folder_id IS NULL\)/);
   assert.doesNotMatch(reviewGroups, /LIMIT 50/);
 });
 
 test("sends one daily telegram reminder for each folder-scoped queue", () => {
   assert.match(reviewGroups, /getDueReviewNotifications/);
-  assert.match(reviewGroups, /GROUP BY[\s\S]+CASE WHEN s\.folder_id IS NULL THEN 'set' ELSE 'folder' END/);
+  assert.match(reviewGroups, /GROUP BY[\s\S]+CASE WHEN s\.folder_id IS NULL THEN 'unfiled' ELSE 'folder' END/);
   assert.match(reviewGroups, /COUNT\(\*\) FILTER \(WHERE \$\{NEEDS_REMINDER_SQL\}\) > 0/);
   assert.match(reviewGroups, /date_trunc\('day', sr\.due_at AT TIME ZONE 'Europe\/Moscow'\)/);
   assert.match(reviewGroups, /MAX\(sr\.reminder_attempted_at\) FILTER \(WHERE \$\{NEEDS_REMINDER_SQL\}\)/);

@@ -3,7 +3,7 @@ import "server-only";
 import { query } from "@/lib/db";
 import type { StudySet } from "@/lib/learning";
 
-export type ReviewScopeKind = "set" | "folder";
+export type ReviewScopeKind = "folder" | "unfiled";
 
 export type ReviewGroupSummary = {
   scopeKind: ReviewScopeKind;
@@ -55,9 +55,9 @@ function toReviewGroup(row: ReviewGroupRow): ReviewGroupSummary {
 export async function getDueReviewGroups(userId: string): Promise<ReviewGroupSummary[]> {
   const result = await query<ReviewGroupRow>(
     `SELECT
-       CASE WHEN s.folder_id IS NULL THEN 'set' ELSE 'folder' END AS "scopeKind",
-       COALESCE(s.folder_id, s.id)::text AS "scopeId",
-       COALESCE(f.name, s.title) AS title,
+       CASE WHEN s.folder_id IS NULL THEN 'unfiled' ELSE 'folder' END AS "scopeKind",
+       CASE WHEN s.folder_id IS NULL THEN 'all' ELSE s.folder_id::text END AS "scopeId",
+       COALESCE(f.name, 'Без папки') AS title,
        COUNT(sr.card_id) AS "dueCount"
      FROM card_spaced_repetitions sr
      JOIN cards c ON c.id = sr.card_id
@@ -66,10 +66,10 @@ export async function getDueReviewGroups(userId: string): Promise<ReviewGroupSum
      WHERE sr.user_id = $1
        AND sr.due_at < ${REVIEW_DAY_END_SQL}
      GROUP BY
-       CASE WHEN s.folder_id IS NULL THEN 'set' ELSE 'folder' END,
-       COALESCE(s.folder_id, s.id),
-       COALESCE(f.name, s.title)
-     ORDER BY MIN(sr.due_at) ASC, COALESCE(f.name, s.title) ASC`,
+       CASE WHEN s.folder_id IS NULL THEN 'unfiled' ELSE 'folder' END,
+       CASE WHEN s.folder_id IS NULL THEN 'all' ELSE s.folder_id::text END,
+       COALESCE(f.name, 'Без папки')
+     ORDER BY MIN(sr.due_at) ASC, COALESCE(f.name, 'Без папки') ASC`,
     [userId],
   );
 
@@ -81,20 +81,16 @@ export async function getDueReviewStudySet(
   scopeKind: ReviewScopeKind,
   scopeId: string,
 ): Promise<StudySet | null> {
-  const scopeResult = scopeKind === "folder"
-    ? await query<{ title: string }>(
+  const scope = scopeKind === "folder"
+    ? (await query<{ title: string }>(
       `SELECT name AS title
        FROM study_folders
        WHERE id = $1 AND user_id = $2`,
       [scopeId, userId],
-    )
-    : await query<{ title: string }>(
-      `SELECT title
-       FROM study_sets
-       WHERE id = $1 AND user_id = $2 AND folder_id IS NULL`,
-      [scopeId, userId],
-    );
-  const scope = scopeResult.rows[0];
+    )).rows[0]
+    : scopeId === "all"
+      ? { title: "Без папки" }
+      : null;
   if (!scope) return null;
 
   const cardsResult = await query<{ cardId: string; term: string; definition: string }>(
@@ -105,8 +101,8 @@ export async function getDueReviewStudySet(
      WHERE sr.user_id = $1
        AND sr.due_at < ${REVIEW_DAY_END_SQL}
        AND (
-         ($2 = 'folder' AND s.folder_id = $3)
-         OR ($2 = 'set' AND s.id = $3 AND s.folder_id IS NULL)
+         ($2 = 'folder' AND s.folder_id::text = $3)
+         OR ($2 = 'unfiled' AND $3 = 'all' AND s.folder_id IS NULL)
        )
      ORDER BY sr.due_at ASC, sr.updated_at ASC`,
     [userId, scopeKind, scopeId],
@@ -130,9 +126,9 @@ export async function getDueReviewNotifications(limit = 100): Promise<DueReviewN
     `SELECT
        u.id AS "userId",
        u.telegram_id AS "telegramId",
-       CASE WHEN s.folder_id IS NULL THEN 'set' ELSE 'folder' END AS "scopeKind",
-       COALESCE(s.folder_id, s.id)::text AS "scopeId",
-       COALESCE(f.name, s.title) AS title,
+       CASE WHEN s.folder_id IS NULL THEN 'unfiled' ELSE 'folder' END AS "scopeKind",
+       CASE WHEN s.folder_id IS NULL THEN 'all' ELSE s.folder_id::text END AS "scopeId",
+       COALESCE(f.name, 'Без папки') AS title,
        COUNT(sr.card_id) AS "dueCount"
      FROM users u
      JOIN card_spaced_repetitions sr ON sr.user_id = u.id
@@ -144,9 +140,9 @@ export async function getDueReviewNotifications(limit = 100): Promise<DueReviewN
      GROUP BY
        u.id,
        u.telegram_id,
-       CASE WHEN s.folder_id IS NULL THEN 'set' ELSE 'folder' END,
-       COALESCE(s.folder_id, s.id),
-       COALESCE(f.name, s.title)
+       CASE WHEN s.folder_id IS NULL THEN 'unfiled' ELSE 'folder' END,
+       CASE WHEN s.folder_id IS NULL THEN 'all' ELSE s.folder_id::text END,
+       COALESCE(f.name, 'Без папки')
      HAVING COUNT(*) FILTER (WHERE ${NEEDS_REMINDER_SQL}) > 0
        AND (
          MAX(sr.reminder_attempted_at) FILTER (WHERE ${NEEDS_REMINDER_SQL}) IS NULL
@@ -182,8 +178,8 @@ async function markDueReviewReminder(
        AND sr.due_at < ${REVIEW_DAY_END_SQL}
        AND ${NEEDS_REMINDER_SQL}
        AND (
-         ($2 = 'folder' AND s.folder_id = $3)
-         OR ($2 = 'set' AND s.id = $3 AND s.folder_id IS NULL)
+         ($2 = 'folder' AND s.folder_id::text = $3)
+         OR ($2 = 'unfiled' AND $3 = 'all' AND s.folder_id IS NULL)
        )`,
     [userId, scopeKind, scopeId],
   );

@@ -27,7 +27,9 @@ test("supports creating, renaming, deleting and assigning folders", async () => 
   assert.match(learning, /DELETE FROM study_sets[\s\S]+WHERE id = \$1 AND user_id = \$2/);
   assert.match(library, /у каждой папки своя очередь/);
   assert.match(library, /`\/study\/reviews\/folder\/\$\{folderId\}`/);
-  assert.match(library, /`\/study\/reviews\/set\/\$\{setId\}`/);
+  assert.match(library, /"\/study\/reviews\/unfiled\/all"/);
+  assert.match(library, /unfiledSets\.reduce\(\(sum, set\) => sum \+ set\.dueCount, 0\)/);
+  assert.match(library, /key: "unfiled:all", title: "Без папки"/);
   assert.match(library, /карточки из разных тем не смешиваются/);
   assert.match(library, /Без папки/);
   assert.match(library, /role="alertdialog"/);

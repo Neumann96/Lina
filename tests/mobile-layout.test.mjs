@@ -84,7 +84,7 @@ test("exposes the mobile feature set in the desktop workspace", async () => {
   assert.match(home, /<span>Создать набор<\/span><\/button>/);
   assert.match(home, /className="today-review-section"/);
   assert.match(home, /className="today-review-groups"/);
-  assert.match(home, /group\.scopeKind === "folder" \? "Папка" : "Набор без папки"/);
+  assert.match(home, /group\.scopeKind === "folder" \? "Папка" : "Общая очередь"/);
   assert.match(css, /\.app-view \{ min-height:calc\(100dvh - 80px\);/);
   assert.match(css, /\.dashboard-grid \{ display:grid; grid-template-columns:/);
   assert.match(css, /\.mobile-create-screen \.create-method-list \{ grid-template-columns:repeat\(3,minmax\(0,1fr\)\); \}/);

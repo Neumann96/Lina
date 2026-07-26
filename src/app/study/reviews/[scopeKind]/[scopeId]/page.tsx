@@ -14,7 +14,12 @@ export default async function ScopedReviewStudyPage({
   if (!user) redirect("/");
 
   const { scopeKind, scopeId } = await params;
-  if ((scopeKind !== "set" && scopeKind !== "folder") || !UUID_PATTERN.test(scopeId)) notFound();
+  if (scopeKind === "set" && UUID_PATTERN.test(scopeId)) redirect("/study/reviews/unfiled/all");
+  if (
+    (scopeKind === "folder" && !UUID_PATTERN.test(scopeId))
+    || (scopeKind === "unfiled" && scopeId !== "all")
+    || (scopeKind !== "folder" && scopeKind !== "unfiled")
+  ) notFound();
 
   const studySet = await getDueReviewStudySet(user.id, scopeKind as ReviewScopeKind, scopeId);
   if (!studySet) notFound();
