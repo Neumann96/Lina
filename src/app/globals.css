@@ -328,7 +328,7 @@ html:not(.telegram-mini-app) .telegram-mini-app-login { display:none; }
 .answer-comparison p { margin:5px 0 0; max-height:92px; overflow:auto; color:#514754; font-size:13px; line-height:1.45; overflow-wrap:anywhere; }
 .answer-comparison>div:last-child p { color:#6e402f; font-weight:650; }
 /* Make recall feedback unmistakable at a glance. */
-.answer-comparison>div.matches { border-color:#16845f; background:#16845f; box-shadow:0 10px 24px #16845f30; }
+.answer-comparison>div.matches { border-color:#169b6b; background:#169b6b; box-shadow:0 10px 24px #169b6b30; }
 .answer-comparison>div.misses { border-color:#d6323f; background:#d6323f; box-shadow:0 10px 24px #d6323f30; }
 .answer-comparison>div.matches span,.answer-comparison>div.matches p,.answer-comparison>div.misses span,.answer-comparison>div.misses p { color:#fff; font-weight:750; }
 .rating-prompt { margin:15px 0 9px; color:#766c79; font-size:11px; font-weight:750; }

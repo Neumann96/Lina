@@ -320,8 +320,8 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
                 ) : (
                   <div className="recall-feedback">
                     <div className="answer-comparison">
-                      <div className={answerMatches ? "matches" : "misses"}><span>{answerMatches ? "Ваш ответ · верно" : "Ваш ответ"}</span><p>{answerText.trim() || "Не вспомнил"}</p></div>
-                      <div><span>Ответ карточки</span><p>{expectedAnswer}</p></div>
+                      <div><span>{answerMatches ? "Ваш ответ · верно" : "Ваш ответ"}</span><p>{answerText.trim() || "Не вспомнил"}</p></div>
+                      <div className={answerMatches ? "matches" : "misses"}><span>Ответ карточки</span><p>{expectedAnswer}</p></div>
                     </div>
                     <p className="rating-prompt">Как прошла попытка?</p>
                     <div className="recall-ratings" aria-label="Оцените воспроизведение">
