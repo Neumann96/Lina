@@ -1,10 +1,10 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { LibraryData, LibraryStudySet, StudyFolder } from "@/lib/folders";
 
-function LibraryIcon({ name, size = 22 }: { name: "back" | "folder" | "cards" | "plus" | "edit" | "trash" | "arrow"; size?: number }) {
+function LibraryIcon({ name, size = 22 }: { name: "back" | "folder" | "cards" | "plus" | "edit" | "trash" | "arrow" | "chevron" | "clock"; size?: number }) {
   const paths: Record<string, React.ReactNode> = {
     back: <path d="m15 18-6-6 6-6" />,
     folder: <path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />,
@@ -13,6 +13,8 @@ function LibraryIcon({ name, size = 22 }: { name: "back" | "folder" | "cards" | 
     edit: <><path d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4Z"/><path d="m13 7 4 4"/></>,
     trash: <><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13"/></>,
     arrow: <path d="m9 18 6-6-6-6" />,
+    chevron: <path d="m8 10 4 4 4-4" />,
+    clock: <><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>,
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{paths[name]}</svg>;
 }
@@ -21,16 +23,131 @@ function reviewHref() {
   return "/study/reviews";
 }
 
+function FolderSelect({
+  set,
+  folders,
+  disabled,
+  onMove,
+}: {
+  set: LibraryStudySet;
+  folders: StudyFolder[];
+  disabled: boolean;
+  onMove: (setId: string, folderId: string | null) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const selectedFolder = folders.find((folder) => folder.id === set.folderId);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const closeOnPointerDown = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setIsOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnPointerDown);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnPointerDown);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [isOpen]);
+
+  function choose(folderId: string | null) {
+    setIsOpen(false);
+    if (folderId !== set.folderId) onMove(set.id, folderId);
+  }
+
+  return (
+    <div className={`folder-select${isOpen ? " is-open" : ""}`} ref={rootRef}>
+      <button
+        className="folder-select-trigger"
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-label={`Папка для набора ${set.title}`}
+        disabled={disabled}
+        onClick={() => setIsOpen((current) => !current)}
+      >
+        <span>{selectedFolder?.name ?? "Без папки"}</span>
+        <LibraryIcon name="chevron" size={16}/>
+      </button>
+      {isOpen && (
+        <div className="folder-select-menu" role="listbox" aria-label={`Выберите папку для набора ${set.title}`}>
+          <button type="button" role="option" aria-selected={set.folderId === null} className={set.folderId === null ? "selected" : ""} onClick={() => choose(null)}>
+            <span>Без папки</span>
+            {set.folderId === null && <span aria-hidden>✓</span>}
+          </button>
+          {folders.map((folder) => (
+            <button type="button" role="option" aria-selected={set.folderId === folder.id} className={set.folderId === folder.id ? "selected" : ""} onClick={() => choose(folder.id)} key={folder.id}>
+              <span>{folder.name}</span>
+              {set.folderId === folder.id && <span aria-hidden>✓</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DeleteSetModal({
+  set,
+  pending,
+  onClose,
+  onConfirm,
+}: {
+  set: LibraryStudySet;
+  pending: boolean;
+  onClose: () => void;
+  onConfirm: () => Promise<void>;
+}) {
+  const cancelRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    cancelRef.current?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !pending) onClose();
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [onClose, pending]);
+
+  return (
+    <div className="folder-modal-overlay" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && !pending && onClose()}>
+      <section className="folder-delete-modal" role="alertdialog" aria-modal="true" aria-labelledby="delete-set-title" aria-describedby="delete-set-description">
+        <button className="folder-modal-close" type="button" onClick={onClose} disabled={pending} aria-label="Закрыть">×</button>
+        <span className="folder-delete-icon"><LibraryIcon name="trash" size={24}/></span>
+        <span className="folder-delete-eyebrow">Удаление набора</span>
+        <h2 id="delete-set-title">Действительно удалить «{set.title}»?</h2>
+        <p id="delete-set-description">Все карточки, история повторений и прогресс этого набора будут удалены без возможности восстановления.</p>
+        <div className="folder-delete-actions">
+          <button ref={cancelRef} className="folder-delete-cancel" type="button" onClick={onClose} disabled={pending}>Оставить набор</button>
+          <button className="folder-delete-confirm" type="button" onClick={onConfirm} disabled={pending}>{pending ? "Удаляем…" : "Удалить набор"}</button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function SetRow({
   set,
   folders,
   moving,
   onMove,
+  onDelete,
 }: {
   set: LibraryStudySet;
   folders: StudyFolder[];
   moving: boolean;
   onMove: (setId: string, folderId: string | null) => void;
+  onDelete: (set: LibraryStudySet) => void;
 }) {
   return (
     <article className="folder-set-row">
@@ -38,22 +155,19 @@ function SetRow({
         <span className="folder-set-icon"><LibraryIcon name="cards" /></span>
         <span className="folder-set-copy">
           <strong>{set.title}</strong>
-          <small>{set.count} карточек · {set.progress}% изучено{set.dueCount ? ` · ${set.dueCount} к повторению` : ""}</small>
+          <small>{set.count} карточек · {set.progress}% изучено</small>
         </span>
         <LibraryIcon name="arrow" size={18} />
       </Link>
-      <label className="folder-set-move">
+      <div className="folder-set-controls">
+        <label className="folder-set-move">
         <span>Папка</span>
-        <select
-          value={set.folderId ?? ""}
-          onChange={(event) => onMove(set.id, event.target.value || null)}
-          disabled={moving}
-          aria-label={`Папка для набора ${set.title}`}
-        >
-          <option value="">Без папки</option>
-          {folders.map((folder) => <option value={folder.id} key={folder.id}>{folder.name}</option>)}
-        </select>
-      </label>
+          <FolderSelect set={set} folders={folders} disabled={moving} onMove={onMove}/>
+        </label>
+        <button className="folder-set-delete" type="button" onClick={() => onDelete(set)} disabled={moving} aria-label={`Удалить набор ${set.title}`}>
+          <LibraryIcon name="trash" size={18}/>
+        </button>
+      </div>
     </article>
   );
 }
@@ -64,12 +178,15 @@ export function FolderLibrary({ initialLibrary }: { initialLibrary: LibraryData 
   const [newFolderName, setNewFolderName] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [setToDelete, setSetToDelete] = useState<LibraryStudySet | null>(null);
 
   const setsByFolder = useMemo(() => new Map(folders.map((folder) => [
     folder.id,
     sets.filter((set) => set.folderId === folder.id),
   ])), [folders, sets]);
   const unfiledSets = useMemo(() => sets.filter((set) => set.folderId === null), [sets]);
+  const dueSets = useMemo(() => sets.filter((set) => set.dueCount > 0), [sets]);
+  const dueCount = useMemo(() => dueSets.reduce((sum, set) => sum + set.dueCount, 0), [dueSets]);
 
   async function createFolder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -156,6 +273,26 @@ export function FolderLibrary({ initialLibrary }: { initialLibrary: LibraryData 
     }
   }
 
+  async function deleteSet() {
+    if (!setToDelete || busy) return;
+
+    const target = setToDelete;
+    setBusy(`delete:${target.id}`);
+    setError("");
+    try {
+      const response = await fetch(`/api/sets/${target.id}`, { method: "DELETE" });
+      const result = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(result.error ?? "Не удалось удалить набор");
+      setSets((current) => current.filter((set) => set.id !== target.id));
+      setSetToDelete(null);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Не удалось удалить набор");
+      setSetToDelete(null);
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <main className="folder-library-page">
       <header className="folder-library-topbar">
@@ -175,23 +312,41 @@ export function FolderLibrary({ initialLibrary }: { initialLibrary: LibraryData 
 
         {error && <p className="folder-library-error" role="alert">{error}</p>}
 
+        <section className={`folder-review-today${dueCount ? " has-due" : ""}`} aria-labelledby="review-today-title">
+          <div className="folder-review-icon"><LibraryIcon name="clock" size={25}/></div>
+          <div className="folder-review-copy">
+            <span>Повторение сегодня</span>
+            <h2 id="review-today-title">{dueCount ? `${dueCount} карточек ждут повторения` : "На сегодня всё готово"}</h2>
+            <p>{dueCount ? "Пройдите дневную очередь отдельно от основных наборов." : "Новые карточки появятся здесь по вашему расписанию."}</p>
+            {dueSets.length > 0 && (
+              <div className="folder-review-sets" aria-label="Наборы с карточками на повторение">
+                {dueSets.map((set) => <span key={set.id}>{set.title} <strong>{set.dueCount}</strong></span>)}
+              </div>
+            )}
+          </div>
+          {dueCount > 0 && <Link className="folder-review-start" href={reviewHref()} transitionTypes={["nav-forward"]}>Начать повторение <LibraryIcon name="arrow" size={18}/></Link>}
+        </section>
+
+        <div className="folder-section-heading">
+          <div><span>Основные наборы</span><h2>Папки и материалы</h2></div>
+          <p>{sets.length} наборов в библиотеке</p>
+        </div>
+
         <div className="folder-groups">
           {folders.map((folder) => {
             const folderSets = setsByFolder.get(folder.id) ?? [];
-            const dueCount = folderSets.reduce((sum, set) => sum + set.dueCount, 0);
             return (
               <section className="folder-group" key={folder.id}>
                 <header>
                   <div className="folder-group-title"><span><LibraryIcon name="folder" /></span><div><h2>{folder.name}</h2><p>{folderSets.length} наборов</p></div></div>
                   <div className="folder-group-actions">
-                    {dueCount > 0 && <Link className="folder-review-link" href={reviewHref()} transitionTypes={["nav-forward"]}>{dueCount} к повторению</Link>}
                     <button type="button" onClick={() => renameFolder(folder)} disabled={busy !== null} aria-label={`Переименовать папку ${folder.name}`}><LibraryIcon name="edit" size={18}/></button>
                     <button type="button" onClick={() => deleteFolder(folder)} disabled={busy !== null} aria-label={`Удалить папку ${folder.name}`}><LibraryIcon name="trash" size={18}/></button>
                   </div>
                 </header>
                 <div className="folder-set-list">
                   {folderSets.length
-                    ? folderSets.map((set) => <SetRow key={set.id} set={set} folders={folders} moving={busy === `set:${set.id}`} onMove={moveSet}/>)
+                    ? folderSets.map((set) => <SetRow key={set.id} set={set} folders={folders} moving={busy !== null} onMove={moveSet} onDelete={setSetToDelete}/>)
                     : <p className="folder-empty">Пока пусто. Выберите эту папку в меню нужного набора.</p>}
                 </div>
               </section>
@@ -204,17 +359,20 @@ export function FolderLibrary({ initialLibrary }: { initialLibrary: LibraryData 
             </header>
             <div className="folder-set-list">
               {unfiledSets.length
-                ? unfiledSets.map((set) => (
-                  <div className="unfiled-set" key={set.id}>
-                    <SetRow set={set} folders={folders} moving={busy === `set:${set.id}`} onMove={moveSet}/>
-                    {set.dueCount > 0 && <Link className="folder-review-link" href={reviewHref()} transitionTypes={["nav-forward"]}>{set.dueCount} к повторению</Link>}
-                  </div>
-                ))
+                ? unfiledSets.map((set) => <SetRow key={set.id} set={set} folders={folders} moving={busy !== null} onMove={moveSet} onDelete={setSetToDelete}/>)
                 : <p className="folder-empty">Все наборы распределены по папкам.</p>}
             </div>
           </section>
         </div>
       </section>
+      {setToDelete && (
+        <DeleteSetModal
+          set={setToDelete}
+          pending={busy === `delete:${setToDelete.id}`}
+          onClose={() => !busy && setSetToDelete(null)}
+          onConfirm={deleteSet}
+        />
+      )}
     </main>
   );
 }

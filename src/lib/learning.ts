@@ -317,3 +317,13 @@ export async function restartStudySet(userId: string, setId: string) {
   );
   return (result.rowCount ?? 0) > 0;
 }
+
+export async function deleteStudySet(userId: string, setId: string) {
+  const result = await query(
+    `DELETE FROM study_sets
+     WHERE id = $1 AND user_id = $2
+     RETURNING id`,
+    [setId, userId],
+  );
+  return (result.rowCount ?? 0) > 0;
+}

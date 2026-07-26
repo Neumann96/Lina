@@ -26,6 +26,7 @@ function Icon({ name, size = 20 }: { name: string; size?: number }) {
     brain: <><path d="M9.5 4.5A3 3 0 0 0 4 6v1.2A3.5 3.5 0 0 0 3 13a3.5 3.5 0 0 0 3.5 5.5H10V4.8"/><path d="M14.5 4.5A3 3 0 0 1 20 6v1.2a3.5 3.5 0 0 1 1 5.8 3.5 3.5 0 0 1-3.5 5.5H14V4.8M7 9h3M14 9h3M7 15h3M14 15h3"/></>,
     telegram: <><path d="m21 4-3 16-6-5-3 3 1-5 8-6-10 5-5-2 18-6Z"/><path d="m10 13 8-6"/></>,
     check: <path d="m5 12 4 4L19 6"/>,
+    folder: <path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/>,
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{paths[name]}</svg>;
 }
@@ -82,6 +83,9 @@ function TelegramLoginWidget({
         callbackUrl.searchParams.set("state", setup.state);
         window.sessionStorage.setItem("lina-telegram-state", setup.state);
         script.setAttribute("data-auth-url", callbackUrl.toString());
+        script.onload = () => {
+          if (!controller.signal.aborted) container.classList.add("is-ready");
+        };
         script.onerror = () => onError("Не удалось загрузить Telegram. Обновите страницу и попробуйте ещё раз");
         container.replaceChildren(script);
       } catch (error) {
@@ -92,6 +96,7 @@ function TelegramLoginWidget({
 
     return () => {
       controller.abort();
+      container?.classList.remove("is-ready");
       container?.replaceChildren();
     };
   }, [onError]);
@@ -125,7 +130,7 @@ function TelegramLoginWidget({
   }
 
   return <>
-    <div ref={containerRef} className="telegram-login-widget"><span>Загружаем Telegram…</span></div>
+    <div ref={containerRef} className="telegram-login-widget"><span className="telegram-widget-loading"><Icon name="telegram" size={19}/>Загружаем Telegram…</span></div>
     <button className="telegram-login telegram-mini-app-login" type="button" onClick={loginWithMiniApp} disabled={miniAppPending}>
       {miniAppPending ? "Входим через Telegram…" : "Войти через Telegram"}
     </button>
@@ -136,20 +141,38 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
   const [error, setError] = useState("");
   const [errorField, setErrorField] = useState("");
   const [pending, setPending] = useState(false);
-  const emailRef = useRef<HTMLInputElement>(null);
+  const [fieldsInteractive, setFieldsInteractive] = useState(false);
+  const inputInteractionRef = useRef(false);
   const isRegister = mode === "register";
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    emailRef.current?.focus();
+    const clearUnexpectedInputFocus = () => {
+      if (inputInteractionRef.current) return;
+      const activeElement = document.activeElement;
+      if (activeElement instanceof HTMLInputElement && activeElement.closest(".auth-modal")) {
+        activeElement.blur();
+      }
+    };
+    clearUnexpectedInputFocus();
+    const animationFrame = window.requestAnimationFrame(clearUnexpectedInputFocus);
+    const focusGuardTimeout = window.setTimeout(clearUnexpectedInputFocus, 300);
     const onKeyDown = (event: KeyboardEvent) => event.key === "Escape" && onClose();
     document.addEventListener("keydown", onKeyDown);
     return () => {
+      window.cancelAnimationFrame(animationFrame);
+      window.clearTimeout(focusGuardTimeout);
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [onClose]);
+
+  function enableInput(event: React.PointerEvent<HTMLInputElement> | React.KeyboardEvent<HTMLInputElement>) {
+    inputInteractionRef.current = true;
+    event.currentTarget.readOnly = false;
+    setFieldsInteractive(true);
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -203,17 +226,17 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
         <form className="auth-form" onSubmit={submit} noValidate>
           <label>
             <span>Почта</span>
-            <input ref={emailRef} className={errorField === "email" ? "invalid" : ""} type="email" name="email" autoComplete="email" inputMode="email" placeholder="name@example.com" maxLength={254} required />
+            <input className={errorField === "email" ? "invalid" : ""} type="email" name="email" autoComplete="email" inputMode="email" placeholder="name@example.com" maxLength={254} readOnly={!fieldsInteractive} onPointerDown={enableInput} onKeyDown={enableInput} required />
           </label>
           <label>
             <span>Пароль</span>
-            <input className={errorField === "password" ? "invalid" : ""} type="password" name="password" autoComplete={isRegister ? "new-password" : "current-password"} placeholder={isRegister ? "От 8 символов" : "Ваш пароль"} minLength={isRegister ? 8 : undefined} maxLength={128} required />
+            <input className={errorField === "password" ? "invalid" : ""} type="password" name="password" autoComplete={isRegister ? "new-password" : "current-password"} placeholder={isRegister ? "От 8 символов" : "Ваш пароль"} minLength={isRegister ? 8 : undefined} maxLength={128} readOnly={!fieldsInteractive} onPointerDown={enableInput} onKeyDown={enableInput} required />
           </label>
           {isRegister && <>
             <div className="password-hint">8–128 символов, заглавная и строчная буквы, цифра</div>
             <label>
               <span>Повторите пароль</span>
-              <input className={errorField === "confirmation" ? "invalid" : ""} type="password" name="confirmation" autoComplete="new-password" placeholder="Ещё раз для проверки" minLength={8} maxLength={128} required />
+              <input className={errorField === "confirmation" ? "invalid" : ""} type="password" name="confirmation" autoComplete="new-password" placeholder="Ещё раз для проверки" minLength={8} maxLength={128} readOnly={!fieldsInteractive} onPointerDown={enableInput} onKeyDown={enableInput} required />
             </label>
           </>}
           {error && <div className="form-error" role="alert">{error}</div>}
@@ -558,7 +581,8 @@ export function HomeClient({
         <div className="brand"><span className="brand-mark">L</span><span>Lina</span></div>
         <nav className="main-nav" aria-label="Основная навигация">
           <button className={`nav-item${activeTab === "home" ? " active" : ""}`} type="button" onClick={() => setActiveTab("home")} aria-current={activeTab === "home" ? "page" : undefined} title={isSidebarCollapsed ? "Главная" : undefined}><Icon name="home" /><span>Главная</span></button>
-          <Link className="nav-item" href="/library" transitionTypes={["nav-forward"]} title={isSidebarCollapsed ? "Мои наборы" : undefined}><Icon name="cards" /><span>Мои наборы</span></Link>
+          <Link className="nav-item" href="/library" transitionTypes={["nav-forward"]} title={isSidebarCollapsed ? "Папки" : undefined}><Icon name="folder" /><span>Папки</span></Link>
+          <button className={`nav-item${activeTab === "create" ? " active" : ""}`} type="button" onClick={() => setActiveTab("create")} aria-current={activeTab === "create" ? "page" : undefined} title={isSidebarCollapsed ? "Создать набор" : undefined}><Icon name="plus" /><span>Создать набор</span></button>
           <span className="nav-item nav-item-disabled" aria-disabled="true" title="Пока недоступно"><Icon name="chart" /><span>Прогресс</span></span>
           <button className="nav-item mobile-logout-button" type="button" onClick={() => setIsLogoutOpen(true)}><Icon name="logout" /><span>Выйти</span></button>
         </nav>
@@ -592,15 +616,19 @@ export function HomeClient({
             <div><strong>{stats.accuracy}%</strong><span>точность</span></div>
             <div><strong>{stats.dueReviewCount}</strong><span>к повторению</span></div>
           </div>
-          <div className="dashboard-grid">
           {stats.dueReviewCount > 0 && (
-            <article className="mobile-resume-card review-due-card">
-              <div className="mobile-resume-heading"><h2>{firstReviewGroup?.title ?? "Повторить по расписанию"}</h2></div>
-              <div className="review-due-count"><strong>{firstReviewGroup?.dueCount ?? stats.dueReviewCount}</strong><span>карточек в этой очереди</span></div>
-              <p>Все карточки, запланированные на сегодня, уже собраны здесь без ожидания точного часа.</p>
-              <Link className="mobile-resume-primary" href={firstReviewHref} transitionTypes={["nav-forward"]}>Начать повторение</Link>
-            </article>
+            <section className="today-review-section" aria-labelledby="today-review-title">
+              <span className="today-review-icon"><Icon name="bell" size={24}/></span>
+              <div className="today-review-copy">
+                <span>Отдельная очередь</span>
+                <h2 id="today-review-title">{firstReviewGroup?.title ?? "Повторение на сегодня"}</h2>
+                <p>Карточки по расписанию собраны отдельно от ваших основных наборов.</p>
+              </div>
+              <div className="today-review-count"><strong>{firstReviewGroup?.dueCount ?? stats.dueReviewCount}</strong><span>карточек</span></div>
+              <Link className="today-review-start" href={firstReviewHref} transitionTypes={["nav-forward"]}>Начать <Icon name="arrow" size={18}/></Link>
+            </section>
           )}
+          <div className="dashboard-grid">
           {latestSet ? (
             <article className="mobile-resume-card">
               <div className="mobile-resume-heading"><h2>{latestSet.title}</h2></div>
@@ -666,7 +694,7 @@ export function HomeClient({
         <span className="mobile-nav-indicator" aria-hidden="true" />
         <button className={`mobile-nav-item${activeTab === "home" ? " active" : ""}`} type="button" onClick={() => setActiveTab("home")} aria-current={activeTab === "home" ? "page" : undefined}><Icon name="home" size={24}/><span>Главная</span></button>
         <button className={`mobile-nav-item${activeTab === "create" ? " active" : ""}`} type="button" onClick={() => setActiveTab("create")} aria-current={activeTab === "create" ? "page" : undefined}><Icon name="plus" size={25}/><span>Создать</span></button>
-        <Link className="mobile-nav-item" href="/library" transitionTypes={["nav-forward"]}><Icon name="cards" size={24}/><span>Библиотека</span></Link>
+        <Link className="mobile-nav-item" href="/library" transitionTypes={["nav-forward"]}><Icon name="folder" size={24}/><span>Папки</span></Link>
         <span className="mobile-nav-item mobile-nav-disabled" aria-disabled="true"><Icon name="spark" size={24}/><span>Пробный</span></span>
       </nav>
       {isLogoutOpen && <LogoutModal onClose={() => setIsLogoutOpen(false)} onConfirm={logout} />}

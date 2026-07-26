@@ -13,6 +13,25 @@ test("keeps the Mini App navigation at the bottom on mobile", () => {
   assert.match(mobileRule, /left:calc\(18px \+ var\(--tg-content-safe-area-inset-left\)\);/);
 });
 
+test("keeps authentication compact and does not open the mobile keyboard", async () => {
+  const home = await readFile(new URL("../src/components/home-client.tsx", import.meta.url), "utf8");
+
+  assert.doesNotMatch(home, /emailRef\.current\?\.focus\(\)/);
+  assert.match(home, /readOnly=\{!fieldsInteractive\}/);
+  assert.match(home, /onPointerDown=\{enableInput\}/);
+  assert.match(home, /clearUnexpectedInputFocus/);
+  assert.match(css, /\.auth-modal \{ max-height:calc\(100dvh - 20px\); padding:22px 20px 18px;/);
+  assert.match(css, /\.auth-form input \{ height:42px; font-size:16px; \}/);
+});
+
+test("clips the Telegram iframe to the branded button without dark edges", async () => {
+  const home = await readFile(new URL("../src/components/home-client.tsx", import.meta.url), "utf8");
+
+  assert.match(home, /container\.classList\.add\("is-ready"\)/);
+  assert.match(css, /\.telegram-login-widget\.is-ready \{[^}]*overflow:hidden;[^}]*background:#2aabee;[^}]*clip-path:inset\(0 round 11px\);/);
+  assert.match(css, /\.telegram-login-widget iframe \{[^}]*border:0;[^}]*transform:translate\(-50%,-50%\) scale\(1\.018\);/);
+});
+
 test("keeps vertical scrolling inside the Telegram Mini App", () => {
   assert.match(miniApp, /webApp\.disableVerticalSwipes\?\.\(\)/);
   assert.match(miniApp, /webApp\.enableVerticalSwipes\?\.\(\)/);
@@ -58,6 +77,9 @@ test("exposes the mobile feature set in the desktop workspace", async () => {
   assert.match(home, /<CreateMethodPicker \/>/);
   assert.match(home, /href="\/library"/);
   assert.match(home, /onClick=\{\(\) => setActiveTab\("create"\)\}/);
+  assert.match(home, /<span>Папки<\/span><\/Link>/);
+  assert.match(home, /<span>Создать набор<\/span><\/button>/);
+  assert.match(home, /className="today-review-section"/);
   assert.match(css, /\.app-view \{ min-height:calc\(100dvh - 80px\);/);
   assert.match(css, /\.dashboard-grid \{ display:grid; grid-template-columns:/);
   assert.match(css, /\.mobile-create-screen \.create-method-list \{ grid-template-columns:repeat\(3,minmax\(0,1fr\)\); \}/);

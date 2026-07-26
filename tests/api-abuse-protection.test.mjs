@@ -7,6 +7,7 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 test("rate limits authenticated write-heavy endpoints", async () => {
   const routes = await Promise.all([
     read("src/app/api/sets/route.ts"),
+    read("src/app/api/sets/[setId]/route.ts"),
     read("src/app/api/reviews/route.ts"),
     read("src/app/api/sets/[setId]/restart/route.ts"),
     read("src/app/api/sets/[setId]/folder/route.ts"),
