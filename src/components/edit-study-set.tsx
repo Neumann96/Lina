@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { StudySet } from "@/lib/learning";
+import { AutoGrowingTextarea } from "@/components/auto-growing-textarea";
 
 type DraftCard = {
   key: string;
@@ -131,11 +132,11 @@ export function EditStudySet({ studySet }: { studySet: StudySet }) {
               </header>
               <div>
                 <label>
-                  <textarea value={card.term} onChange={(event) => updateCard(card.key, "term", event.target.value)} maxLength={500} rows={2} aria-label={`Термин ${index + 1}`}/>
+                  <AutoGrowingTextarea value={card.term} onChange={(event) => updateCard(card.key, "term", event.target.value)} maxLength={500} aria-label={`Термин ${index + 1}`}/>
                   <span>ТЕРМИН</span>
                 </label>
                 <label>
-                  <textarea value={card.definition} onChange={(event) => updateCard(card.key, "definition", event.target.value)} maxLength={1000} rows={2} aria-label={`Определение ${index + 1}`}/>
+                  <AutoGrowingTextarea value={card.definition} onChange={(event) => updateCard(card.key, "definition", event.target.value)} maxLength={1000} aria-label={`Определение ${index + 1}`}/>
                   <span>ОПРЕДЕЛЕНИЕ</span>
                 </label>
               </div>

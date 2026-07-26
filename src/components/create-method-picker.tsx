@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { parseBulkTerms, type TermPair } from "@/lib/parse-bulk-terms";
 import { CardImporter } from "@/components/card-importer";
+import { AutoGrowingTextarea } from "@/components/auto-growing-textarea";
 
 type CreateMethod = "manual" | "camera" | "file";
 const CAMERA_GUIDE_INSET = 0.08;
@@ -155,8 +156,8 @@ function ManualCardEditor({ onBack }: { onBack: () => void }) {
           <article className="manual-card" key={card.id}>
             <header><strong>{index + 1}</strong><button type="button" onClick={() => removeCard(card.id)} aria-label={`Удалить карточку ${index + 1}`} disabled={pending}><span aria-hidden>×</span></button></header>
             <div>
-              <label><textarea value={card.term} onChange={(event) => updateCard(card.id, "term", event.target.value)} maxLength={500} rows={2} aria-label={`Термин ${index + 1}`} /><span>ТЕРМИН</span></label>
-              <label><textarea value={card.definition} onChange={(event) => updateCard(card.id, "definition", event.target.value)} maxLength={1000} rows={2} aria-label={`Определение ${index + 1}`} /><span>ОПРЕДЕЛЕНИЕ</span></label>
+              <label><AutoGrowingTextarea value={card.term} onChange={(event) => updateCard(card.id, "term", event.target.value)} maxLength={500} aria-label={`Термин ${index + 1}`} /><span>ТЕРМИН</span></label>
+              <label><AutoGrowingTextarea value={card.definition} onChange={(event) => updateCard(card.id, "definition", event.target.value)} maxLength={1000} aria-label={`Определение ${index + 1}`} /><span>ОПРЕДЕЛЕНИЕ</span></label>
             </div>
           </article>
         ))}

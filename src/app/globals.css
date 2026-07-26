@@ -235,13 +235,13 @@ html:not(.telegram-mini-app) .telegram-mini-app-login { display:none; }
 .manual-card header button:hover { color:#a6333e; background:#fff0f1; }
 .manual-card>div { display:grid; grid-template-columns:1fr 1fr; gap:20px; padding:20px; }
 .manual-card label { min-width:0; }
-.manual-card textarea { width:100%; min-height:58px; display:block; padding:7px 0; border:0; border-bottom:2px solid #d9d4dc; border-radius:0; outline:0; color:var(--ink); background:transparent; resize:vertical; font:15px/1.42 inherit; }
-.manual-card textarea:focus { border-color:var(--accent); }
+.manual-card textarea { width:100%; min-height:48px; display:block; overflow:hidden; padding:12px 16px; border:1px solid #ded9e1; border-radius:18px; outline:0; color:var(--ink); background:#faf9fb; resize:none; font:inherit; font-size:15px; line-height:22px; transition:border-color .2s ease,box-shadow .2s ease,background-color .2s ease; }
+.manual-card textarea:focus { border-color:var(--accent); background:#fff; box-shadow:0 0 0 4px #f36f3d16; }
 .manual-add-card { width:100%; min-height:58px; margin-top:13px; border:1px solid #e2dde5; border-radius:17px; color:#625a69; background:#fff; font-size:14px; font-weight:800; box-shadow:0 8px 22px #302b4609; }
 .manual-add-card span { margin-right:6px; color:var(--accent-dark); font-size:20px; vertical-align:-1px; }
 .manual-error { margin:13px 0 0; padding:12px 14px; border-radius:12px; color:#9c3540; background:#fff0f1; font-size:12px; font-weight:700; }
 .manual-create-bottom { width:100%; min-height:52px; margin-top:18px; }
-@media (max-width:600px) { .manual-create-top { display:none; }.manual-heading h2 { font-size:26px; }.manual-title-field { padding:15px 16px 9px; }.manual-title-field input { font-size:16px; }.manual-card>div { grid-template-columns:1fr; gap:14px; padding:16px; }.manual-card textarea { min-height:46px; }.manual-card label:first-child { margin-bottom:2px; } }
+@media (max-width:600px) { .manual-create-top { display:none; }.manual-heading h2 { font-size:26px; }.manual-title-field { padding:15px 16px 9px; }.manual-title-field input { font-size:16px; }.manual-card>div { grid-template-columns:1fr; gap:14px; padding:16px; }.manual-card label:first-child { margin-bottom:2px; } }
 .camera-heading>span,.ocr-result-heading span { color:var(--accent-dark); font-size:10px; font-weight:850; letter-spacing:.08em; text-transform:uppercase; }.camera-heading h2 { margin:7px 0 7px; font-size:26px; letter-spacing:-.8px; }.camera-heading p { margin:0 0 19px; color:#787280; font-size:13px; line-height:1.45; }.camera-heading b { color:#4b4554; }
 .camera-frame { position:relative; aspect-ratio:3/4; max-height:54dvh; overflow:hidden; border-radius:25px; background:#29262d; box-shadow:0 14px 34px #302b4627; }
 .camera-frame video { width:100%; height:100%; display:block; object-fit:cover; }
