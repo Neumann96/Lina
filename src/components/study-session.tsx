@@ -6,6 +6,12 @@ import { useRouter } from "next/navigation";
 import type { StudyCard, StudySet } from "@/lib/learning";
 import { recallAnswersMatch } from "@/lib/recall-answer";
 import type { ReviewKind, ReviewRating } from "@/lib/spaced-repetition";
+import {
+  getExpectedAnswer,
+  getStudyDirectionLabel,
+  getStudyPrompt,
+  type StudyDirection,
+} from "@/lib/study-direction";
 
 type SessionCard = {
   card: StudyCard;
@@ -41,8 +47,8 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
   const [exitDirection, setExitDirection] = useState<"left" | "middle" | "right" | null>(null);
   const [restarting, setRestarting] = useState(false);
   const [answerFocused, setAnswerFocused] = useState(false);
+  const [direction, setDirection] = useState<StudyDirection>("term-to-definition");
   const studyPage = useRef<HTMLElement>(null);
-  const answerInput = useRef<HTMLTextAreaElement>(null);
   const cardStartedAt = useRef(0);
   const responseTime = useRef<number | null>(null);
   const pendingReviews = useRef(new Set<Promise<void>>());
@@ -50,40 +56,54 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
   const current = queue[0];
   const nextCard = queue[1]?.card;
   const card = current?.card;
+  const prompt = card ? getStudyPrompt(card, direction) : "";
+  const expectedAnswer = card ? getExpectedAnswer(card, direction) : "";
+  const nextPrompt = nextCard ? getStudyPrompt(nextCard, direction) : "";
   const finished = queue.length === 0;
   const isReviewSession = studySet.mode === "reviews";
   const initialTotal = initialCards.length;
   const progress = initialTotal ? Math.min(100, scheduledAnswered / initialTotal * 100) : 100;
-  const answerMatches = card ? recallAnswersMatch(answerText, card.definition) : false;
+  const answerMatches = card ? recallAnswersMatch(answerText, expectedAnswer) : false;
 
   useEffect(() => {
     cardStartedAt.current = performance.now();
     responseTime.current = null;
-  }, [card?.id, current?.retryCount]);
+  }, [card?.id, current?.retryCount, direction]);
 
   useEffect(() => {
     const page = studyPage.current;
     const viewport = window.visualViewport;
-    if (!page || !viewport) return;
+    if (!page) return;
+
+    const webApp = window.Telegram?.WebApp;
+    if (webApp?.initData) webApp.hideKeyboard?.();
 
     const syncVisibleViewport = () => {
-      page.style.setProperty("--study-viewport-height", `${Math.max(1, Math.round(viewport.height))}px`);
+      const browserHeight = viewport?.height ?? window.innerHeight;
+      const telegramHeight = webApp?.initData && webApp.viewportHeight && webApp.viewportHeight > 0
+        ? webApp.viewportHeight
+        : browserHeight;
+      const visibleHeight = Math.min(browserHeight, telegramHeight);
+
+      page.style.setProperty("--study-viewport-height", `${Math.max(1, Math.round(visibleHeight))}px`);
+      page.style.setProperty("--study-card-viewport-height", `${Math.max(1, Math.round(visibleHeight * 0.66))}px`);
     };
 
     syncVisibleViewport();
-    viewport.addEventListener("resize", syncVisibleViewport);
-    viewport.addEventListener("scroll", syncVisibleViewport);
+    viewport?.addEventListener("resize", syncVisibleViewport);
+    viewport?.addEventListener("scroll", syncVisibleViewport);
+    window.addEventListener("resize", syncVisibleViewport);
+    webApp?.onEvent("viewportChanged", syncVisibleViewport);
 
     return () => {
-      viewport.removeEventListener("resize", syncVisibleViewport);
-      viewport.removeEventListener("scroll", syncVisibleViewport);
+      viewport?.removeEventListener("resize", syncVisibleViewport);
+      viewport?.removeEventListener("scroll", syncVisibleViewport);
+      window.removeEventListener("resize", syncVisibleViewport);
+      webApp?.offEvent("viewportChanged", syncVisibleViewport);
       page.style.removeProperty("--study-viewport-height");
+      page.style.removeProperty("--study-card-viewport-height");
     };
   }, []);
-
-  useEffect(() => {
-    if (!revealed) answerInput.current?.focus({ preventScroll: true });
-  }, [card?.id, current?.retryCount, revealed]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -104,6 +124,17 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
     responseTime.current = Math.min(300_000, Math.max(0, Math.round(performance.now() - cardStartedAt.current)));
     setSaveError("");
     setRevealed(true);
+  }
+
+  function toggleDirection() {
+    if (revealed || isSaving || exitDirection) return;
+    setDirection((value) => value === "term-to-definition"
+      ? "definition-to-term"
+      : "term-to-definition");
+    setAnswerText("");
+    setSaveError("");
+    responseTime.current = null;
+    cardStartedAt.current = performance.now();
   }
 
   function saveReview(cardId: string, rating: ReviewRating, kind: ReviewKind) {
@@ -240,27 +271,40 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
           </div>
         ) : card && current ? (
           <div className="study-card-wrap">
-            {nextCard && <div className="study-card-next" aria-hidden><strong>{nextCard.term}</strong></div>}
+            {nextCard && <div className="study-card-next" aria-hidden><strong>{nextPrompt}</strong></div>}
             <article
-              key={`${card.id}-${current.retryCount}`}
+              key={`${card.id}-${current.retryCount}-${direction}`}
               className={`study-card recall-card${revealed ? " revealed" : ""}${exitDirection ? ` exits-${exitDirection}` : ""}`}
             >
-              <button className="study-card-action sound" type="button" onClick={() => speak(revealed ? card.definition : card.term)} aria-label="Произнести вслух"><StudyIcon name="volume"/></button>
+              <button className="study-card-action sound" type="button" onClick={() => speak(revealed ? expectedAnswer : prompt)} aria-label="Произнести вслух"><StudyIcon name="volume"/></button>
               <button className={`study-card-action favorite${favorite ? " active" : ""}`} type="button" onClick={() => setFavorite((value) => !value)} aria-label="Добавить в избранное"><StudyIcon name="star"/></button>
 
               <div className="recall-card-content">
-                <span className="recall-kicker">{current.kind === "same_session" ? "Попробуйте ещё раз" : "Вспомните без подсказки"}</span>
-                <strong className="recall-term">{card.term}</strong>
+                <div className="recall-meta">
+                  <span className="recall-kicker">{current.kind === "same_session" ? "Попробуйте ещё раз" : "Вспомните без подсказки"}</span>
+                  <button
+                    className="recall-direction"
+                    type="button"
+                    onClick={toggleDirection}
+                    disabled={revealed || isSaving || Boolean(exitDirection)}
+                    aria-label={`Сменить порядок повторения. Сейчас: ${getStudyDirectionLabel(direction)}`}
+                  >
+                    {getStudyDirectionLabel(direction)}
+                    <span aria-hidden>⇄</span>
+                  </button>
+                </div>
+                <strong className="recall-term">{prompt}</strong>
 
                 {!revealed ? (
                   <form className="recall-form" onSubmit={revealAnswer}>
                     <label htmlFor={`recall-${card.id}`}>Ваш ответ</label>
                     <textarea
-                      ref={answerInput}
                       id={`recall-${card.id}`}
                       value={answerText}
                       onChange={(event) => setAnswerText(event.target.value)}
-                      placeholder="Введите перевод или объяснение своими словами"
+                      placeholder={direction === "term-to-definition"
+                        ? "Введите перевод или объяснение своими словами"
+                        : "Введите исходный термин"}
                       autoComplete="off"
                       spellCheck={false}
                       rows={2}
@@ -277,7 +321,7 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
                   <div className="recall-feedback">
                     <div className="answer-comparison">
                       <div className={answerMatches ? "matches" : undefined}><span>{answerMatches ? "Ваш ответ · верно" : "Ваш ответ"}</span><p>{answerText.trim() || "Не вспомнил"}</p></div>
-                      <div><span>Ответ карточки</span><p>{card.definition}</p></div>
+                      <div><span>Ответ карточки</span><p>{expectedAnswer}</p></div>
                     </div>
                     <p className="rating-prompt">Как прошла попытка?</p>
                     <div className="recall-ratings" aria-label="Оцените воспроизведение">

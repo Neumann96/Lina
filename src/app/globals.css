@@ -305,7 +305,12 @@ html:not(.telegram-mini-app) .telegram-mini-app-login { display:none; }
 .study-card.recall-card.exits-middle { transform:translateY(-35px) scale(.97); opacity:0; }
 .study-card.recall-card.exits-right { transform:translateX(110%) rotate(5deg); opacity:0; }
 .recall-card-content { min-height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:38px 0 12px; text-align:center; }
+.recall-meta { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:7px 10px; }
 .recall-kicker { color:#b0694f; font-size:10px; font-weight:850; letter-spacing:.12em; text-transform:uppercase; }
+.recall-direction { display:inline-flex; align-items:center; gap:5px; padding:6px 9px; border:1px solid #eadfd9; border-radius:999px; color:#746a76; background:#faf7f5; font-size:9px; font-weight:800; line-height:1; white-space:nowrap; }
+.recall-direction span { color:var(--study-coral); font-size:13px; line-height:.8; }
+.recall-direction:hover:not(:disabled) { border-color:#efb39b; background:#fff5ef; }
+.recall-direction:disabled { opacity:.65; cursor:default; }
 .recall-term { max-width:100%; margin:17px 0 25px; font-size:clamp(30px,5vw,45px); line-height:1.12; letter-spacing:-1.4px; overflow-wrap:anywhere; }
 .recall-form,.recall-feedback { width:min(100%,440px); }
 .recall-form label { display:block; margin-bottom:8px; color:#817784; font-size:11px; font-weight:750; text-align:left; }

@@ -1,6 +1,6 @@
-/* Keep the fixed study surface aligned with the visual viewport when a mobile keyboard opens. */
+/* Telegram exposes its visible height before visualViewport settles on iOS. */
 .study-page {
-  --study-viewport-height: 100dvh;
+  --study-viewport-height: var(--tg-viewport-height, 100dvh);
   height: var(--study-viewport-height);
 }
 
@@ -17,6 +17,10 @@
     height: calc(
       var(--study-viewport-height) - 110px - var(--tg-content-safe-area-inset-top, 0px)
     );
+  }
+
+  .study-card-wrap {
+    height: min(var(--study-card-viewport-height, 66dvh), 610px);
   }
 
   .study-page.recall-input-active .study-stage {
@@ -60,6 +64,11 @@
 
   .study-page.recall-input-active .recall-kicker {
     font-size: 9px;
+  }
+
+  .study-page.recall-input-active .recall-direction {
+    padding: 5px 7px;
+    font-size: 8px;
   }
 
   .study-page.recall-input-active .recall-term {

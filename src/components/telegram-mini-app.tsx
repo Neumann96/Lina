@@ -11,10 +11,12 @@ type EdgeInsets = {
 
 type TelegramWebApp = {
   initData?: string;
+  viewportHeight?: number;
   ready: () => void;
   expand: () => void;
   disableVerticalSwipes?: () => void;
   enableVerticalSwipes?: () => void;
+  hideKeyboard?: () => void;
   requestFullscreen?: () => void;
   setHeaderColor?: (color: string) => void;
   setBackgroundColor?: (color: string) => void;

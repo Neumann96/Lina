@@ -136,7 +136,7 @@ test("uses three recall ratings and requeues forgotten cards", () => {
 });
 
 test("marks case-insensitive exact recall answers as correct", () => {
-  assert.match(studySession, /recallAnswersMatch\(answerText, card\.definition\)/);
+  assert.match(studySession, /recallAnswersMatch\(answerText, expectedAnswer\)/);
   assert.match(studySession, /answerMatches \? "Ваш ответ · верно" : "Ваш ответ"/);
   assert.match(css, /\.answer-comparison>div\.matches \{[^}]*border-color:#badfd5;[^}]*background:#f4fbf8;/);
 });
