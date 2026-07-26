@@ -22,8 +22,10 @@ function LibraryIcon({ name, size = 22 }: { name: "back" | "folder" | "cards" | 
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{paths[name]}</svg>;
 }
 
-function reviewHref() {
-  return "/study/reviews";
+function reviewHref(folderId: string | null, setId?: string) {
+  return folderId
+    ? `/study/reviews/folder/${folderId}`
+    : `/study/reviews/set/${setId}`;
 }
 
 function FolderSelect({
@@ -179,10 +181,16 @@ export function FolderLibrary({
   initialLibrary,
   embedded = false,
   onSetDeleted,
+  onSetMoved,
+  onFolderRenamed,
+  onFolderDeleted,
 }: {
   initialLibrary: LibraryData;
   embedded?: boolean;
   onSetDeleted?: (set: LibraryStudySet) => void;
+  onSetMoved?: (set: LibraryStudySet, folder: StudyFolder | null) => void;
+  onFolderRenamed?: (folder: StudyFolder) => void;
+  onFolderDeleted?: (folder: StudyFolder, sets: LibraryStudySet[]) => void;
 }) {
   const [folders, setFolders] = useState(initialLibrary.folders);
   const [sets, setSets] = useState(initialLibrary.sets);
@@ -200,6 +208,22 @@ export function FolderLibrary({
   const unfiledSets = useMemo(() => sets.filter((set) => set.folderId === null), [sets]);
   const dueSets = useMemo(() => sets.filter((set) => set.dueCount > 0), [sets]);
   const dueCount = useMemo(() => dueSets.reduce((sum, set) => sum + set.dueCount, 0), [dueSets]);
+  const dueGroups = useMemo(() => [
+    ...folders.flatMap((folder) => {
+      const count = (setsByFolder.get(folder.id) ?? []).reduce((sum, set) => sum + set.dueCount, 0);
+      return count > 0
+        ? [{ key: `folder:${folder.id}`, title: folder.name, dueCount: count, href: reviewHref(folder.id) }]
+        : [];
+    }),
+    ...unfiledSets
+      .filter((set) => set.dueCount > 0)
+      .map((set) => ({
+        key: `set:${set.id}`,
+        title: set.title,
+        dueCount: set.dueCount,
+        href: reviewHref(null, set.id),
+      })),
+  ], [folders, setsByFolder, unfiledSets]);
 
   useEffect(() => {
     let storedGroupIds: string[] = [];
@@ -258,7 +282,9 @@ export function FolderLibrary({
   }
 
   async function moveSet(setId: string, folderId: string | null) {
-    const previousFolderId = sets.find((set) => set.id === setId)?.folderId ?? null;
+    const targetSet = sets.find((set) => set.id === setId);
+    const previousFolderId = targetSet?.folderId ?? null;
+    const targetFolder = folders.find((folder) => folder.id === folderId) ?? null;
     setBusy(`set:${setId}`);
     setError("");
     setSets((current) => current.map((set) => set.id === setId ? { ...set, folderId } : set));
@@ -270,6 +296,7 @@ export function FolderLibrary({
       });
       const result = await response.json() as { error?: string };
       if (!response.ok) throw new Error(result.error ?? "Не удалось переместить набор");
+      if (targetSet) onSetMoved?.(targetSet, targetFolder);
     } catch (caught) {
       setSets((current) => current.map((set) => set.id === setId ? { ...set, folderId: previousFolderId } : set));
       setError(caught instanceof Error ? caught.message : "Не удалось переместить набор");
@@ -293,6 +320,7 @@ export function FolderLibrary({
       const result = await response.json() as { folder?: StudyFolder; error?: string };
       if (!response.ok || !result.folder) throw new Error(result.error ?? "Не удалось переименовать папку");
       setFolders((current) => current.map((item) => item.id === folder.id ? result.folder! : item));
+      onFolderRenamed?.(result.folder);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Не удалось переименовать папку");
     } finally {
@@ -303,6 +331,7 @@ export function FolderLibrary({
   async function deleteFolder(folder: StudyFolder) {
     if (busy || !window.confirm(`Удалить папку «${folder.name}»? Наборы останутся в библиотеке.`)) return;
 
+    const folderSets = sets.filter((set) => set.folderId === folder.id);
     setBusy(`folder:${folder.id}`);
     setError("");
     try {
@@ -312,6 +341,7 @@ export function FolderLibrary({
       setFolders((current) => current.filter((item) => item.id !== folder.id));
       setSets((current) => current.map((set) => set.folderId === folder.id ? { ...set, folderId: null } : set));
       setCollapsedGroupIds((current) => current.filter((id) => id !== folder.id));
+      onFolderDeleted?.(folder, folderSets);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Не удалось удалить папку");
     } finally {
@@ -352,7 +382,7 @@ export function FolderLibrary({
 
       <section className="folder-library-shell">
         <div className="folder-library-heading">
-          <div><span>Все материалы</span><h1>Библиотека</h1><p>Карточки со сроком на сегодня собраны в одну дневную очередь.</p></div>
+          <div><span>Все материалы</span><h1>Библиотека</h1><p>Повторяйте связанные темы вместе: у каждой папки своя очередь.</p></div>
           <form onSubmit={createFolder}>
             <label htmlFor="new-folder">Новая папка</label>
             <div><input id="new-folder" value={newFolderName} onChange={(event) => setNewFolderName(event.target.value)} placeholder="Например, Английский B1" maxLength={120}/><button type="submit" disabled={!newFolderName.trim() || busy !== null}><LibraryIcon name="plus" size={18}/> Создать</button></div>
@@ -366,14 +396,19 @@ export function FolderLibrary({
           <div className="folder-review-copy">
             <span>Повторение сегодня</span>
             <h2 id="review-today-title">{dueCount ? `${dueCount} карточек ждут повторения` : "На сегодня всё готово"}</h2>
-            <p>{dueCount ? "Пройдите дневную очередь отдельно от основных наборов." : "Новые карточки появятся здесь по вашему расписанию."}</p>
-            {dueSets.length > 0 && (
-              <div className="folder-review-sets" aria-label="Наборы с карточками на повторение">
-                {dueSets.map((set) => <span key={set.id}>{set.title} <strong>{set.dueCount}</strong></span>)}
-              </div>
-            )}
+            <p>{dueCount ? "Выберите папку: карточки из разных тем не смешиваются." : "Новые карточки появятся здесь по вашему расписанию."}</p>
           </div>
-          {dueCount > 0 && <Link className="folder-review-start" href={reviewHref()} transitionTypes={["nav-forward"]}>Начать повторение <LibraryIcon name="arrow" size={18}/></Link>}
+          {dueGroups.length > 0 && (
+            <div className="folder-review-queues" aria-label="Очереди повторения по папкам">
+              {dueGroups.map((group) => (
+                <Link href={group.href} transitionTypes={["nav-forward"]} key={group.key}>
+                  <span><strong>{group.title}</strong><small>Отдельная очередь</small></span>
+                  <b>{group.dueCount}</b>
+                  <LibraryIcon name="arrow" size={17}/>
+                </Link>
+              ))}
+            </div>
+          )}
         </section>
 
         <div className="folder-section-heading">

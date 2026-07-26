@@ -67,14 +67,14 @@ export async function sendTelegramStartMessage(botToken: string, chatId: number)
 export async function sendTelegramReviewReminder(
   botToken: string,
   chatId: number,
-  review: { dueCount: number; href: string },
+  review: { dueCount: number; href: string; title: string },
 ) {
   const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       chat_id: chatId,
-      text: `Пора повторить ${review.dueCount} карточек. Lina собрала в одну очередь всё, что запланировано на сегодня.`,
+      text: `Пора повторить ${review.dueCount} карточек по теме «${review.title}». Другие папки в эту очередь не попадут.`,
       reply_markup: {
         inline_keyboard: [[{
           text: "Повторить сейчас →",

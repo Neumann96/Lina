@@ -6,7 +6,7 @@ import Link from "next/link";
 import { CreateMethodPicker } from "@/components/create-method-picker";
 import { FolderLibrary } from "@/components/folder-library";
 import type { AuthUser } from "@/lib/auth";
-import type { LibraryData, LibraryStudySet } from "@/lib/folders";
+import type { LibraryData, LibraryStudySet, StudyFolder } from "@/lib/folders";
 import type { DashboardData } from "@/lib/learning";
 import { parseTelegramAuthResult } from "@/lib/telegram-auth-result";
 
@@ -650,6 +650,8 @@ export function HomeClient({
     setDashboard((current) => {
       if (!current) return current;
       const nextDueCount = Math.max(0, current.stats.dueReviewCount - deletedSet.dueCount);
+      const deletedScopeKind = deletedSet.folderId ? "folder" : "set";
+      const deletedScopeId = deletedSet.folderId ?? deletedSet.id;
       return {
         ...current,
         stats: {
@@ -660,10 +662,80 @@ export function HomeClient({
           dueReviewCount: nextDueCount,
         },
         recentSets: current.recentSets.filter((set) => set.id !== deletedSet.id),
-        reviewGroups: nextDueCount
-          ? current.reviewGroups.map((group, index) => index === 0 ? { ...group, dueCount: nextDueCount } : group)
-          : [],
+        reviewGroups: current.reviewGroups
+          .map((group) => group.scopeKind === deletedScopeKind && group.scopeId === deletedScopeId
+            ? { ...group, dueCount: Math.max(0, group.dueCount - deletedSet.dueCount) }
+            : group)
+          .filter((group) => group.dueCount > 0),
       };
+    });
+  }
+
+  function handleSetMoved(movedSet: LibraryStudySet, targetFolder: StudyFolder | null) {
+    if (!movedSet.dueCount || movedSet.folderId === targetFolder?.id) return;
+
+    setDashboard((current) => {
+      if (!current) return current;
+
+      const oldScopeKind = movedSet.folderId ? "folder" : "set";
+      const oldScopeId = movedSet.folderId ?? movedSet.id;
+      const newScopeKind = targetFolder ? "folder" : "set";
+      const newScopeId = targetFolder?.id ?? movedSet.id;
+      const nextGroups = current.reviewGroups
+        .map((group) => group.scopeKind === oldScopeKind && group.scopeId === oldScopeId
+          ? { ...group, dueCount: Math.max(0, group.dueCount - movedSet.dueCount) }
+          : group)
+        .filter((group) => group.dueCount > 0);
+      const targetGroup = nextGroups.find(
+        (group) => group.scopeKind === newScopeKind && group.scopeId === newScopeId,
+      );
+
+      if (targetGroup) {
+        targetGroup.dueCount += movedSet.dueCount;
+      } else {
+        nextGroups.push({
+          scopeKind: newScopeKind,
+          scopeId: newScopeId,
+          title: targetFolder?.name ?? movedSet.title,
+          dueCount: movedSet.dueCount,
+          href: `/study/reviews/${newScopeKind}/${newScopeId}`,
+        });
+      }
+
+      return { ...current, reviewGroups: nextGroups };
+    });
+  }
+
+  function handleFolderRenamed(folder: StudyFolder) {
+    setDashboard((current) => current
+      ? {
+        ...current,
+        reviewGroups: current.reviewGroups.map((group) => group.scopeKind === "folder" && group.scopeId === folder.id
+          ? { ...group, title: folder.name }
+          : group),
+      }
+      : current);
+  }
+
+  function handleFolderDeleted(folder: StudyFolder, folderSets: LibraryStudySet[]) {
+    setDashboard((current) => {
+      if (!current) return current;
+
+      const nextGroups = current.reviewGroups.filter(
+        (group) => group.scopeKind !== "folder" || group.scopeId !== folder.id,
+      );
+      for (const set of folderSets) {
+        if (!set.dueCount) continue;
+        nextGroups.push({
+          scopeKind: "set",
+          scopeId: set.id,
+          title: set.title,
+          dueCount: set.dueCount,
+          href: `/study/reviews/set/${set.id}`,
+        });
+      }
+
+      return { ...current, reviewGroups: nextGroups };
     });
   }
 
@@ -745,12 +817,23 @@ export function HomeClient({
             <section className="today-review-section" aria-labelledby="today-review-title">
               <span className="today-review-icon"><Icon name="bell" size={24}/></span>
               <div className="today-review-copy">
-                <span>Отдельная очередь</span>
-                <h2 id="today-review-title">{firstReviewGroup?.title ?? "Повторение на сегодня"}</h2>
-                <p>Карточки по расписанию собраны отдельно от ваших основных наборов.</p>
+                <span>Очереди по папкам</span>
+                <h2 id="today-review-title">Повторение на сегодня</h2>
+                <p>Темы разделены: карточки из разных папок не перемешиваются.</p>
               </div>
-              <div className="today-review-count"><strong>{firstReviewGroup?.dueCount ?? stats.dueReviewCount}</strong><span>карточек</span></div>
-              <Link className="today-review-start" href={firstReviewHref} transitionTypes={["nav-forward"]}>Начать <Icon name="arrow" size={18}/></Link>
+              <div className="today-review-count"><strong>{stats.dueReviewCount}</strong><span>карточек</span></div>
+              <div className="today-review-groups">
+                {dashboard.reviewGroups.map((group) => (
+                  <Link className="today-review-group" href={group.href} transitionTypes={["nav-forward"]} key={`${group.scopeKind}:${group.scopeId}`}>
+                    <span>
+                      <small>{group.scopeKind === "folder" ? "Папка" : "Набор без папки"}</small>
+                      <strong>{group.title}</strong>
+                    </span>
+                    <b>{group.dueCount}</b>
+                    <Icon name="arrow" size={18}/>
+                  </Link>
+                ))}
+              </div>
             </section>
           )}
           <div className="dashboard-grid">
@@ -798,7 +881,14 @@ export function HomeClient({
 
         {activeTab === "library" && (
           <section className="mobile-tab-screen mobile-library-screen app-view" aria-label="Папки и наборы">
-            <FolderLibrary initialLibrary={initialLibrary} embedded onSetDeleted={handleSetDeleted}/>
+            <FolderLibrary
+              initialLibrary={initialLibrary}
+              embedded
+              onSetDeleted={handleSetDeleted}
+              onSetMoved={handleSetMoved}
+              onFolderRenamed={handleFolderRenamed}
+              onFolderDeleted={handleFolderDeleted}
+            />
           </section>
         )}
       </main>

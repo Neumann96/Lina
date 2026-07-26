@@ -74,13 +74,17 @@ test("exposes the mobile feature set in the desktop workspace", async () => {
   assert.match(home, /className="desktop-dashboard-stats"/);
   assert.match(home, /className="mobile-tab-screen mobile-create-screen app-view"/);
   assert.match(home, /className="mobile-tab-screen mobile-library-screen app-view"/);
-  assert.match(home, /<FolderLibrary initialLibrary=\{initialLibrary\} embedded onSetDeleted=\{handleSetDeleted\}\/>/);
+  assert.match(home, /<FolderLibrary[\s\S]+onSetDeleted=\{handleSetDeleted\}/);
+  assert.match(home, /onSetMoved=\{handleSetMoved\}/);
+  assert.match(home, /onFolderDeleted=\{handleFolderDeleted\}/);
   assert.match(home, /<CreateMethodPicker \/>/);
   assert.match(home, /onClick=\{\(\) => setActiveTab\("create"\)\}/);
   assert.match(home, /onClick=\{\(\) => setActiveTab\("library"\)\}/);
   assert.match(home, /<span>Папки<\/span><\/button>/);
   assert.match(home, /<span>Создать набор<\/span><\/button>/);
   assert.match(home, /className="today-review-section"/);
+  assert.match(home, /className="today-review-groups"/);
+  assert.match(home, /group\.scopeKind === "folder" \? "Папка" : "Набор без папки"/);
   assert.match(css, /\.app-view \{ min-height:calc\(100dvh - 80px\);/);
   assert.match(css, /\.dashboard-grid \{ display:grid; grid-template-columns:/);
   assert.match(css, /\.mobile-create-screen \.create-method-list \{ grid-template-columns:repeat\(3,minmax\(0,1fr\)\); \}/);

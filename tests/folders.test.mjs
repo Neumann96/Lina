@@ -25,12 +25,15 @@ test("supports creating, renaming, deleting and assigning folders", async () => 
   assert.match(setRoute, /export async function DELETE/);
   assert.match(setRoute, /deleteStudySet\(user\.id, setId\)/);
   assert.match(learning, /DELETE FROM study_sets[\s\S]+WHERE id = \$1 AND user_id = \$2/);
-  assert.match(library, /Карточки со сроком на сегодня собраны в одну дневную очередь/);
-  assert.match(library, /return "\/study\/reviews"/);
+  assert.match(library, /у каждой папки своя очередь/);
+  assert.match(library, /`\/study\/reviews\/folder\/\$\{folderId\}`/);
+  assert.match(library, /`\/study\/reviews\/set\/\$\{setId\}`/);
+  assert.match(library, /карточки из разных тем не смешиваются/);
   assert.match(library, /Без папки/);
   assert.match(library, /role="alertdialog"/);
   assert.match(library, /Действительно удалить «\{set\.title\}»\?/);
   assert.match(library, /folder-review-today/);
+  assert.match(library, /folder-review-queues/);
   assert.match(library, /className="folder-select-menu"/);
   assert.doesNotMatch(library, /<select/);
   assert.match(library, /embedded = false/);
