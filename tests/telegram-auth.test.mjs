@@ -34,6 +34,7 @@ test("accepts a fresh Telegram payload with a valid signature", () => {
   assert.deepEqual(verifyTelegramAuthSignature(signedPayload(), token, 1_800_000_020), {
     telegramId: "987654321",
     name: "Лина",
+    username: "lina_user",
   });
 });
 
@@ -46,6 +47,7 @@ test("accepts Telegram callback query values serialized as strings", () => {
   }, token, 1_800_000_020), {
     telegramId: "987654321",
     name: "Лина",
+    username: "lina_user",
   });
 });
 
@@ -91,6 +93,7 @@ test("accepts fresh Telegram Mini App initData", () => {
   assert.deepEqual(verifyTelegramMiniAppSignature(signedMiniAppData(), token, 1_800_000_020), {
     telegramId: "987654321",
     name: "Лина",
+    username: "lina_user",
   });
 });
 

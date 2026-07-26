@@ -58,8 +58,8 @@ export async function GET(request: Request) {
     });
     if (!telegramLimit.allowed) return redirectHome(request, "limited");
 
-    const user = await authenticateTelegramUser(identity.telegramId, identity.name);
-    await setSession(user);
+    const user = await authenticateTelegramUser(identity.telegramId, identity.name, identity.username);
+    await setSession(user, "telegram");
   } catch {
     return redirectHome(request, "failed");
   }

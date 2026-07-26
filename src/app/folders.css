@@ -1,9 +1,11 @@
 .folder-library-page { min-height:100dvh; color:#2f2b29; background:linear-gradient(180deg,#faf8f6 0,#fff 36%); }
+.folder-library-page.embedded { min-height:0; background:transparent; }
 .folder-library-topbar { height:74px; display:grid; grid-template-columns:44px 1fr 44px; align-items:center; padding:0 max(22px,calc((100vw - 1180px)/2)); border-bottom:1px solid #eee9e5; background:#ffffffdc; backdrop-filter:blur(18px); }
 .folder-library-topbar>a { width:42px; height:42px; display:grid; place-items:center; border-radius:13px; color:#5d5753; background:#f4f1ef; }
 .folder-library-topbar>div { display:flex; align-items:center; justify-content:center; gap:9px; font-size:17px; }
 .folder-library-brand { width:31px; height:31px; display:grid; place-items:center; border-radius:10px; color:#fff; background:linear-gradient(145deg,#f47a4c,#ef6331); font-weight:850; }
 .folder-library-shell { width:min(1120px,calc(100% - 40px)); margin:0 auto; padding:58px 0 80px; }
+.folder-library-page.embedded .folder-library-shell { width:100%; padding:0; }
 .folder-library-heading { display:grid; grid-template-columns:minmax(0,1fr) minmax(330px,430px); align-items:end; gap:50px; margin-bottom:35px; }
 .folder-library-heading>div>span { color:#ef7041; font-size:12px; font-weight:800; letter-spacing:.11em; text-transform:uppercase; }
 .folder-library-heading h1 { margin:8px 0 8px; font-size:43px; line-height:1; letter-spacing:-1.8px; }
@@ -92,6 +94,7 @@
 @media (max-width:760px) {
   .folder-library-topbar { padding:0 16px; }
   .folder-library-shell { width:calc(100% - 28px); padding:34px 0 120px; }
+  .folder-library-page.embedded .folder-library-shell { width:100%; padding:0 0 92px; }
   .folder-library-heading { grid-template-columns:1fr; gap:23px; margin-bottom:25px; }
   .folder-library-heading h1 { font-size:34px; }
   .folder-review-today { grid-template-columns:46px minmax(0,1fr); gap:13px; margin-bottom:31px; padding:18px 16px; }

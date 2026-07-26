@@ -44,6 +44,6 @@ export async function POST(request: Request) {
 
   const user = await registerUser(email, password);
   if (!user) return Response.json({ error: "Аккаунт с этой почтой уже существует", field: "email" }, { status: 409 });
-  await setSession(user);
+  await setSession(user, "email");
   return Response.json({ user }, { status: 201 });
 }

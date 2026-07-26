@@ -39,6 +39,6 @@ export async function POST(request: Request) {
 
   const user = await authenticateUser(email, password);
   if (!user) return Response.json({ error: "Неверная почта или пароль" }, { status: 401 });
-  await setSession(user);
+  await setSession(user, "email");
   return Response.json({ user });
 }

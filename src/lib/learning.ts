@@ -13,6 +13,7 @@ import { getDueReviewGroups, type ReviewGroupSummary } from "@/lib/review-groups
 
 export type DashboardStats = {
   cardCount: number;
+  studiedCardCount: number;
   setCount: number;
   accuracy: number;
   streak: number;
@@ -54,10 +55,16 @@ const MAX_CARDS_PER_USER = 50_000;
 
 export async function getDashboardData(userId: string): Promise<DashboardData> {
   const [countsResult, daysResult, setsResult, reviewGroups] = await Promise.all([
-    query<{ setCount: string; cardCount: string; reviewCount: string; correctCount: string; dueReviewCount: string; nextReviewAt: string | null }>(
+    query<{ setCount: string; cardCount: string; studiedCardCount: string; reviewCount: string; correctCount: string; dueReviewCount: string; nextReviewAt: string | null }>(
       `SELECT
          (SELECT COUNT(*) FROM study_sets WHERE user_id = $1) AS "setCount",
          (SELECT COUNT(*) FROM cards c JOIN study_sets s ON s.id = c.set_id WHERE s.user_id = $1) AS "cardCount",
+         (SELECT COUNT(*)
+          FROM cards c
+          JOIN study_sets s ON s.id = c.set_id
+          LEFT JOIN study_set_progress p ON p.set_id = s.id AND p.user_id = $1
+          WHERE s.user_id = $1
+            AND c.position < COALESCE(p.next_position, 0)) AS "studiedCardCount",
          (SELECT COUNT(*) FROM card_reviews WHERE user_id = $1) AS "reviewCount",
          (SELECT COUNT(*) FROM card_reviews WHERE user_id = $1 AND is_correct) AS "correctCount",
          (SELECT COUNT(*)
@@ -122,6 +129,7 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
   return {
     stats: {
       cardCount: Number(counts.cardCount),
+      studiedCardCount: Number(counts.studiedCardCount),
       setCount: Number(counts.setCount),
       accuracy: reviewCount ? Math.round(Number(counts.correctCount) / reviewCount * 100) : 0,
       streak,

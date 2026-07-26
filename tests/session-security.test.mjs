@@ -30,3 +30,17 @@ test("binds Telegram browser login to a one-time state cookie", async () => {
   assert.match(callbackRoute, /url\.searchParams\.delete\("state"\)/);
   assert.match(client, /callbackUrl\.searchParams\.set\("state", setup\.state\)/);
 });
+
+test("keeps account identity and login method available to the profile", async () => {
+  const auth = await read("src/lib/auth.ts");
+  const migration = await read("db/migrations/008_account_profile.sql");
+
+  assert.match(auth, /telegramUsername: string \| null/);
+  assert.match(auth, /loginMethod: AuthMethod/);
+  assert.match(auth, /createdAt: string/);
+  assert.match(auth, /INSERT INTO auth_sessions \(token_hash, user_id, auth_method, expires_at\)/);
+  assert.match(auth, /s\.auth_method AS "loginMethod"/);
+  assert.match(migration, /ADD COLUMN IF NOT EXISTS telegram_username text/);
+  assert.match(migration, /ADD COLUMN IF NOT EXISTS auth_method text DEFAULT 'email'/);
+  assert.match(migration, /CHECK \(auth_method IN \('email', 'telegram'\)\)/);
+});

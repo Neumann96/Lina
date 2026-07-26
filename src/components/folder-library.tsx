@@ -172,7 +172,15 @@ function SetRow({
   );
 }
 
-export function FolderLibrary({ initialLibrary }: { initialLibrary: LibraryData }) {
+export function FolderLibrary({
+  initialLibrary,
+  embedded = false,
+  onSetDeleted,
+}: {
+  initialLibrary: LibraryData;
+  embedded?: boolean;
+  onSetDeleted?: (set: LibraryStudySet) => void;
+}) {
   const [folders, setFolders] = useState(initialLibrary.folders);
   const [sets, setSets] = useState(initialLibrary.sets);
   const [newFolderName, setNewFolderName] = useState("");
@@ -284,6 +292,7 @@ export function FolderLibrary({ initialLibrary }: { initialLibrary: LibraryData 
       const result = await response.json() as { error?: string };
       if (!response.ok) throw new Error(result.error ?? "Не удалось удалить набор");
       setSets((current) => current.filter((set) => set.id !== target.id));
+      onSetDeleted?.(target);
       setSetToDelete(null);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Не удалось удалить набор");
@@ -294,12 +303,14 @@ export function FolderLibrary({ initialLibrary }: { initialLibrary: LibraryData 
   }
 
   return (
-    <main className="folder-library-page">
-      <header className="folder-library-topbar">
-        <Link href="/" transitionTypes={["nav-back"]} aria-label="Вернуться на главную"><LibraryIcon name="back" /></Link>
-        <div><span className="folder-library-brand">L</span><strong>Lina</strong></div>
-        <span />
-      </header>
+    <div className={`folder-library-page${embedded ? " embedded" : ""}`}>
+      {!embedded && (
+        <header className="folder-library-topbar">
+          <Link href="/" transitionTypes={["nav-back"]} aria-label="Вернуться на главную"><LibraryIcon name="back" /></Link>
+          <div><span className="folder-library-brand">L</span><strong>Lina</strong></div>
+          <span />
+        </header>
+      )}
 
       <section className="folder-library-shell">
         <div className="folder-library-heading">
@@ -373,6 +384,6 @@ export function FolderLibrary({ initialLibrary }: { initialLibrary: LibraryData 
           onConfirm={deleteSet}
         />
       )}
-    </main>
+    </div>
   );
 }

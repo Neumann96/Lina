@@ -60,5 +60,9 @@ export function verifyTelegramMiniAppSignature(
   const username = typeof user.username === "string" ? user.username.trim() : "";
   const name = [firstName, lastName].filter(Boolean).join(" ") || (username ? `@${username}` : "Пользователь Telegram");
 
-  return { telegramId, name: name.slice(0, 120) };
+  return {
+    telegramId,
+    name: name.slice(0, 120),
+    username: /^[A-Za-z0-9_]{5,32}$/.test(username) ? username : null,
+  };
 }

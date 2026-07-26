@@ -31,8 +31,8 @@ export async function POST(request: Request) {
     });
     if (!telegramLimit.allowed) return rateLimitResponse(telegramLimit.retryAfter);
 
-    const user = await authenticateTelegramUser(identity.telegramId, identity.name);
-    await setSession(user);
+    const user = await authenticateTelegramUser(identity.telegramId, identity.name, identity.username);
+    await setSession(user, "telegram");
     return Response.json({ user });
   } catch {
     return Response.json({ error: "Не удалось подтвердить запуск через Telegram" }, { status: 401 });

@@ -74,15 +74,30 @@ test("exposes the mobile feature set in the desktop workspace", async () => {
   assert.match(home, /className="desktop-dashboard-stats"/);
   assert.match(home, /className="mobile-tab-screen mobile-create-screen app-view"/);
   assert.match(home, /className="mobile-tab-screen mobile-library-screen app-view"/);
+  assert.match(home, /<FolderLibrary initialLibrary=\{initialLibrary\} embedded onSetDeleted=\{handleSetDeleted\}\/>/);
   assert.match(home, /<CreateMethodPicker \/>/);
-  assert.match(home, /href="\/library"/);
   assert.match(home, /onClick=\{\(\) => setActiveTab\("create"\)\}/);
-  assert.match(home, /<span>Папки<\/span><\/Link>/);
+  assert.match(home, /onClick=\{\(\) => setActiveTab\("library"\)\}/);
+  assert.match(home, /<span>Папки<\/span><\/button>/);
   assert.match(home, /<span>Создать набор<\/span><\/button>/);
   assert.match(home, /className="today-review-section"/);
   assert.match(css, /\.app-view \{ min-height:calc\(100dvh - 80px\);/);
   assert.match(css, /\.dashboard-grid \{ display:grid; grid-template-columns:/);
   assert.match(css, /\.mobile-create-screen \.create-method-list \{ grid-template-columns:repeat\(3,minmax\(0,1fr\)\); \}/);
+});
+
+test("opens an account profile dialog that fits the mobile Mini App viewport", async () => {
+  const home = await readFile(new URL("../src/components/home-client.tsx", import.meta.url), "utf8");
+
+  assert.match(home, /function ProfileModal/);
+  assert.match(home, /className="auth-overlay profile-overlay"/);
+  assert.match(home, /stats\.studiedCardCount/);
+  assert.match(home, /user\.telegramUsername/);
+  assert.match(home, /user\.loginMethod === "telegram"/);
+  assert.match(home, /setIsProfileOpen\(true\)/);
+  assert.match(css, /\.profile-modal \{ position:relative; width:min\(660px,100%\); max-height:calc\(100dvh - 48px\); overflow:auto;/);
+  assert.match(css, /\.profile-modal \{ width:100%; max-height:calc\(100dvh - 20px\);/);
+  assert.match(css, /\.profile-stats \{ grid-template-columns:repeat\(2,minmax\(0,1fr\)\);/);
 });
 
 test("keeps retrieval practice fixed and saves before advancing", () => {

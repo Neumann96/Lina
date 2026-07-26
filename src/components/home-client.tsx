@@ -4,7 +4,9 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { CreateMethodPicker } from "@/components/create-method-picker";
+import { FolderLibrary } from "@/components/folder-library";
 import type { AuthUser } from "@/lib/auth";
+import type { LibraryData, LibraryStudySet } from "@/lib/folders";
 import type { DashboardData } from "@/lib/learning";
 import { parseTelegramAuthResult } from "@/lib/telegram-auth-result";
 
@@ -27,6 +29,10 @@ function Icon({ name, size = 20 }: { name: string; size?: number }) {
     telegram: <><path d="m21 4-3 16-6-5-3 3 1-5 8-6-10 5-5-2 18-6Z"/><path d="m10 13 8-6"/></>,
     check: <path d="m5 12 4 4L19 6"/>,
     folder: <path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/>,
+    user: <><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></>,
+    mail: <><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7 8 6 8-6"/></>,
+    key: <><circle cx="8" cy="15" r="4"/><path d="m11 12 8-8M15 8l2 2M17 6l2 2"/></>,
+    calendar: <><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></>,
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{paths[name]}</svg>;
 }
@@ -299,6 +305,99 @@ function LogoutModal({ onClose, onConfirm }: LogoutModalProps) {
   );
 }
 
+function formatAccountDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Дата не указана";
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/Moscow",
+  }).format(date);
+}
+
+function ProfileModal({
+  user,
+  stats,
+  onClose,
+  onLogout,
+}: {
+  user: AuthUser;
+  stats: DashboardData["stats"];
+  onClose: () => void;
+  onLogout: () => void;
+}) {
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const studiedPercent = stats.cardCount
+    ? Math.round(stats.studiedCardCount / stats.cardCount * 100)
+    : 0;
+  const telegramAccount = user.telegramUsername
+    ? `@${user.telegramUsername}`
+    : user.telegramId
+      ? `Telegram ID ${user.telegramId}`
+      : "Не привязан";
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => event.key === "Escape" && onClose();
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [onClose]);
+
+  return (
+    <div className="auth-overlay profile-overlay" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <section className="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profile-title">
+        <button ref={closeButtonRef} className="modal-close" type="button" onClick={onClose} aria-label="Закрыть">×</button>
+        <header className="profile-identity">
+          <span className="profile-avatar">{user.name.charAt(0)}</span>
+          <div>
+            <span>Ваш аккаунт</span>
+            <h2 id="profile-title">{user.name}</h2>
+            <p>С Lina с {formatAccountDate(user.createdAt)}</p>
+          </div>
+        </header>
+
+        <div className="profile-stats" aria-label="Статистика аккаунта">
+          <div><strong>{stats.cardCount}</strong><span>всего карточек</span></div>
+          <div><strong>{stats.studiedCardCount}</strong><span>изучено</span></div>
+          <div><strong>{stats.setCount}</strong><span>наборов</span></div>
+          <div><strong>{studiedPercent}%</strong><span>пройдено</span></div>
+        </div>
+
+        <section className="profile-details" aria-labelledby="profile-details-title">
+          <h3 id="profile-details-title">Личные данные</h3>
+          <div>
+            <span className="profile-detail-icon"><Icon name="user" size={18}/></span>
+            <span><small>Имя</small><strong>{user.name}</strong></span>
+          </div>
+          <div>
+            <span className="profile-detail-icon"><Icon name="mail" size={18}/></span>
+            <span><small>Почта</small><strong>{user.email ?? "Не указана"}</strong></span>
+          </div>
+          <div>
+            <span className="profile-detail-icon telegram"><Icon name="telegram" size={18}/></span>
+            <span><small>Telegram</small><strong>{telegramAccount}</strong></span>
+          </div>
+          <div>
+            <span className="profile-detail-icon"><Icon name="key" size={18}/></span>
+            <span><small>Текущий вход</small><strong>{user.loginMethod === "telegram" ? "Через Telegram" : "Почта и пароль"}</strong></span>
+          </div>
+        </section>
+
+        <footer className="profile-footer">
+          <span><Icon name="calendar" size={16}/> Серия: {stats.streak} дней</span>
+          <button type="button" onClick={onLogout}><Icon name="logout" size={18}/>Выйти из аккаунта</button>
+        </footer>
+      </section>
+    </div>
+  );
+}
+
 function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
   const [authMode, setAuthMode] = useState<AuthMode | null>(telegramError ? "login" : null);
 
@@ -474,13 +573,17 @@ function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
 export function HomeClient({
   initialUser,
   initialDashboard,
+  initialLibrary,
   initialSidebarCollapsed,
 }: {
   initialUser: AuthUser | null;
   initialDashboard: DashboardData | null;
+  initialLibrary: LibraryData | null;
   initialSidebarCollapsed: boolean;
 }) {
   const [user, setUser] = useState(initialUser);
+  const [dashboard, setDashboard] = useState(initialDashboard);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(initialSidebarCollapsed);
   const [activeTab, setActiveTab] = useState<AppTab>("home");
@@ -538,8 +641,30 @@ export function HomeClient({
     const response = await fetch("/api/auth/logout", { method: "POST" });
     if (response.ok) {
       setUser(null);
+      setIsProfileOpen(false);
       setIsLogoutOpen(false);
     }
+  }
+
+  function handleSetDeleted(deletedSet: LibraryStudySet) {
+    setDashboard((current) => {
+      if (!current) return current;
+      const nextDueCount = Math.max(0, current.stats.dueReviewCount - deletedSet.dueCount);
+      return {
+        ...current,
+        stats: {
+          ...current.stats,
+          cardCount: Math.max(0, current.stats.cardCount - deletedSet.count),
+          studiedCardCount: Math.max(0, current.stats.studiedCardCount - deletedSet.studiedCount),
+          setCount: Math.max(0, current.stats.setCount - 1),
+          dueReviewCount: nextDueCount,
+        },
+        recentSets: current.recentSets.filter((set) => set.id !== deletedSet.id),
+        reviewGroups: nextDueCount
+          ? current.reviewGroups.map((group, index) => index === 0 ? { ...group, dueCount: nextDueCount } : group)
+          : [],
+      };
+    });
   }
 
   async function restartSet(setId: string, openAfterRestart: boolean) {
@@ -555,15 +680,15 @@ export function HomeClient({
     }
   }
 
-  if (!user || !initialDashboard) {
+  if (!user || !dashboard || !initialLibrary) {
     return <GuestLanding telegramError={telegramReturnError} />;
   }
 
-  const { stats, recentSets } = initialDashboard;
+  const { stats, recentSets } = dashboard;
   const latestSet = recentSets[0];
   const latestSetComplete = Boolean(latestSet && latestSet.count > 0 && latestSet.studiedCount >= latestSet.count);
   const dueReviewLabel = stats.dueReviewCount > 99 ? "99+" : String(stats.dueReviewCount);
-  const firstReviewGroup = initialDashboard.reviewGroups[0];
+  const firstReviewGroup = dashboard.reviewGroups[0];
   const firstReviewHref = firstReviewGroup?.href ?? "/study/reviews";
 
   return (
@@ -581,7 +706,7 @@ export function HomeClient({
         <div className="brand"><span className="brand-mark">L</span><span>Lina</span></div>
         <nav className="main-nav" aria-label="Основная навигация">
           <button className={`nav-item${activeTab === "home" ? " active" : ""}`} type="button" onClick={() => setActiveTab("home")} aria-current={activeTab === "home" ? "page" : undefined} title={isSidebarCollapsed ? "Главная" : undefined}><Icon name="home" /><span>Главная</span></button>
-          <Link className="nav-item" href="/library" transitionTypes={["nav-forward"]} title={isSidebarCollapsed ? "Папки" : undefined}><Icon name="folder" /><span>Папки</span></Link>
+          <button className={`nav-item${activeTab === "library" ? " active" : ""}`} type="button" onClick={() => setActiveTab("library")} aria-current={activeTab === "library" ? "page" : undefined} title={isSidebarCollapsed ? "Папки" : undefined}><Icon name="folder" /><span>Папки</span></button>
           <button className={`nav-item${activeTab === "create" ? " active" : ""}`} type="button" onClick={() => setActiveTab("create")} aria-current={activeTab === "create" ? "page" : undefined} title={isSidebarCollapsed ? "Создать набор" : undefined}><Icon name="plus" /><span>Создать набор</span></button>
           <span className="nav-item nav-item-disabled" aria-disabled="true" title="Пока недоступно"><Icon name="chart" /><span>Прогресс</span></span>
           <button className="nav-item mobile-logout-button" type="button" onClick={() => setIsLogoutOpen(true)}><Icon name="logout" /><span>Выйти</span></button>
@@ -592,13 +717,13 @@ export function HomeClient({
           <strong className="streak-count">{stats.streak}</strong>
           <div className="streak-details"><strong>{stats.streak} {stats.streak === 1 ? "день" : "дней"} подряд</strong><p>{stats.streak ? "Продолжайте в том же духе" : "Начните серию сегодня"}</p></div>
         </div>
-        <button className="profile-button" onClick={() => setIsLogoutOpen(true)}><span className="avatar">{user.name.charAt(0)}</span><span><strong>{user.name}</strong><small>Выйти из аккаунта</small></span><Icon name="arrow" size={17}/></button>
+        <button className="profile-button" onClick={() => setIsProfileOpen(true)}><span className="avatar">{user.name.charAt(0)}</span><span><strong>{user.name}</strong><small>Профиль и аккаунт</small></span><Icon name="arrow" size={17}/></button>
       </aside>
 
       <main className="content">
         <header className="topbar">
           <div className="mobile-topbar-brand"><span className="brand-mark">L</span><span>Lina</span></div>
-          <button className="mobile-profile-button" type="button" onClick={() => setIsLogoutOpen(true)} aria-label={`Открыть профиль ${user.name}`}>
+          <button className="mobile-profile-button" type="button" onClick={() => setIsProfileOpen(true)} aria-label={`Открыть профиль ${user.name}`}>
             <span className="avatar">{user.name.charAt(0)}</span>
           </button>
           <Link className={`icon-button review-bell${stats.dueReviewCount ? " has-due" : ""}`} href={firstReviewHref} transitionTypes={["nav-forward"]} aria-label={stats.dueReviewCount ? `Повторить ${stats.dueReviewCount} карточек` : "Нет карточек для повторения"}>
@@ -672,21 +797,8 @@ export function HomeClient({
         )}
 
         {activeTab === "library" && (
-          <section className="mobile-tab-screen mobile-library-screen app-view" aria-label="Библиотека наборов">
-            <div className="dashboard-heading"><div><span>Все материалы</span><h1>Библиотека</h1></div><button type="button" onClick={() => setActiveTab("create")}><Icon name="plus" size={18}/> Новый набор</button></div>
-            {recentSets.length ? (
-              <div className="mobile-recents-list">
-                {recentSets.map((set) => (
-                  <Link href={`/study/${set.id}`} transitionTypes={["nav-forward"]} className="mobile-recent-set" key={set.id}>
-                    <span className={`mobile-set-icon ${set.color}`}><Icon name="cards" size={25}/></span>
-                    <span><strong>{set.title}</strong><small>{set.count} карточек · {set.progress}% изучено</small></span>
-                    <Icon name="arrow" size={18}/>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="sets-empty mobile-sets-empty"><span>Пока здесь тихо</span><h3>Создайте свой первый набор</h3><button type="button" onClick={() => setActiveTab("create")}>Создать набор →</button></div>
-            )}
+          <section className="mobile-tab-screen mobile-library-screen app-view" aria-label="Папки и наборы">
+            <FolderLibrary initialLibrary={initialLibrary} embedded onSetDeleted={handleSetDeleted}/>
           </section>
         )}
       </main>
@@ -694,9 +806,20 @@ export function HomeClient({
         <span className="mobile-nav-indicator" aria-hidden="true" />
         <button className={`mobile-nav-item${activeTab === "home" ? " active" : ""}`} type="button" onClick={() => setActiveTab("home")} aria-current={activeTab === "home" ? "page" : undefined}><Icon name="home" size={24}/><span>Главная</span></button>
         <button className={`mobile-nav-item${activeTab === "create" ? " active" : ""}`} type="button" onClick={() => setActiveTab("create")} aria-current={activeTab === "create" ? "page" : undefined}><Icon name="plus" size={25}/><span>Создать</span></button>
-        <Link className="mobile-nav-item" href="/library" transitionTypes={["nav-forward"]}><Icon name="folder" size={24}/><span>Папки</span></Link>
+        <button className={`mobile-nav-item${activeTab === "library" ? " active" : ""}`} type="button" onClick={() => setActiveTab("library")} aria-current={activeTab === "library" ? "page" : undefined}><Icon name="folder" size={24}/><span>Папки</span></button>
         <span className="mobile-nav-item mobile-nav-disabled" aria-disabled="true"><Icon name="spark" size={24}/><span>Пробный</span></span>
       </nav>
+      {isProfileOpen && (
+        <ProfileModal
+          user={user}
+          stats={stats}
+          onClose={() => setIsProfileOpen(false)}
+          onLogout={() => {
+            setIsProfileOpen(false);
+            setIsLogoutOpen(true);
+          }}
+        />
+      )}
       {isLogoutOpen && <LogoutModal onClose={() => setIsLogoutOpen(false)} onConfirm={logout} />}
     </div>
   );

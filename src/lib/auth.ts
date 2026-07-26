@@ -12,7 +12,17 @@ const SESSION_IDLE_TIMEOUT_SECONDS = 60 * 60 * 24 * 7;
 const SESSION_TOUCH_INTERVAL_MS = 15 * 60 * 1000;
 const MAX_SESSIONS_PER_USER = 10;
 
-export type AuthUser = { id: string; email: string | null; name: string };
+export type AuthMethod = "email" | "telegram";
+
+export type AuthUser = {
+  id: string;
+  email: string | null;
+  name: string;
+  telegramId: string | null;
+  telegramUsername: string | null;
+  loginMethod: AuthMethod;
+  createdAt: string;
+};
 
 function displayName(email: string) {
   const localPart = email.split("@")[0].replace(/[._-]+/g, " ").trim();
@@ -59,20 +69,37 @@ async function hashPassword(password: string, salt: string) {
 export async function registerUser(email: string, password: string): Promise<AuthUser | null> {
   const salt = randomBytes(16).toString("hex");
   const passwordHash = await hashPassword(password, salt);
-  const result = await query<{ id: string; email: string }>(
+  const result = await query<{ id: string; email: string; createdAt: string }>(
     `INSERT INTO users (id, email, password_hash, salt)
      VALUES ($1, $2, $3, $4)
      ON CONFLICT (email) DO NOTHING
-     RETURNING id, email`,
+     RETURNING id, email, created_at::text AS "createdAt"`,
     [randomUUID(), email, passwordHash, salt],
   );
   const user = result.rows[0];
-  return user ? { ...user, name: displayName(user.email) } : null;
+  return user ? {
+    ...user,
+    name: displayName(user.email),
+    telegramId: null,
+    telegramUsername: null,
+    loginMethod: "email",
+  } : null;
 }
 
 export async function authenticateUser(email: string, password: string): Promise<AuthUser | null> {
-  const result = await query<{ id: string; email: string; passwordHash: string; salt: string }>(
-    `SELECT id, email, password_hash AS "passwordHash", salt
+  const result = await query<{
+    id: string;
+    email: string;
+    passwordHash: string;
+    salt: string;
+    telegramId: string | null;
+    telegramUsername: string | null;
+    createdAt: string;
+  }>(
+    `SELECT id, email, password_hash AS "passwordHash", salt,
+       telegram_id AS "telegramId",
+       telegram_username AS "telegramUsername",
+       created_at::text AS "createdAt"
      FROM users
      WHERE email = $1
      LIMIT 1`,
@@ -83,19 +110,43 @@ export async function authenticateUser(email: string, password: string): Promise
   const actual = Buffer.from(await hashPassword(password, user.salt), "hex");
   const expected = Buffer.from(user.passwordHash, "hex");
   if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) return null;
-  return { id: user.id, email: user.email, name: displayName(user.email) };
+  return {
+    id: user.id,
+    email: user.email,
+    name: displayName(user.email),
+    telegramId: user.telegramId,
+    telegramUsername: user.telegramUsername,
+    loginMethod: "email",
+    createdAt: user.createdAt,
+  };
 }
 
-export async function authenticateTelegramUser(telegramId: string, name: string): Promise<AuthUser> {
-  const result = await query<{ id: string; email: string | null; name: string }>(
-    `INSERT INTO users (id, telegram_id, display_name)
-     VALUES ($1, $2, $3)
+export async function authenticateTelegramUser(
+  telegramId: string,
+  name: string,
+  telegramUsername: string | null,
+): Promise<AuthUser> {
+  const result = await query<{
+    id: string;
+    email: string | null;
+    name: string;
+    telegramId: string;
+    telegramUsername: string | null;
+    createdAt: string;
+  }>(
+    `INSERT INTO users (id, telegram_id, telegram_username, display_name)
+     VALUES ($1, $2, $3, $4)
      ON CONFLICT (telegram_id) WHERE telegram_id IS NOT NULL
-     DO UPDATE SET display_name = EXCLUDED.display_name
-     RETURNING id, email, display_name AS name`,
-    [randomUUID(), telegramId, name],
+     DO UPDATE SET
+       display_name = EXCLUDED.display_name,
+       telegram_username = EXCLUDED.telegram_username
+     RETURNING id, email, telegram_id AS "telegramId",
+       telegram_username AS "telegramUsername",
+       display_name AS name,
+       created_at::text AS "createdAt"`,
+    [randomUUID(), telegramId, telegramUsername, name],
   );
-  return result.rows[0];
+  return { ...result.rows[0], loginMethod: "telegram" };
 }
 
 function sessionSecret() {
@@ -114,13 +165,13 @@ function validSessionToken(token?: string): token is string {
   return Boolean(token && /^[A-Za-z0-9_-]{43}$/.test(token));
 }
 
-export async function setSession(user: AuthUser) {
+export async function setSession(user: AuthUser, authMethod: AuthMethod) {
   const token = randomBytes(32).toString("base64url");
   const tokenHash = sessionTokenDigest(token);
   await query(
-    `INSERT INTO auth_sessions (token_hash, user_id, expires_at)
-     VALUES ($1, $2, NOW() + make_interval(secs => $3::int))`,
-    [tokenHash, user.id, SESSION_LIFETIME_SECONDS],
+    `INSERT INTO auth_sessions (token_hash, user_id, auth_method, expires_at)
+     VALUES ($1, $2, $3, NOW() + make_interval(secs => $4::int))`,
+    [tokenHash, user.id, authMethod, SESSION_LIFETIME_SECONDS],
   );
   await query(
     `DELETE FROM auth_sessions
@@ -161,8 +212,22 @@ export async function getCurrentUser() {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!validSessionToken(token)) return null;
 
-  const result = await query<{ id: string; email: string | null; name: string | null; lastSeenAt: Date }>(
-    `SELECT u.id, u.email, u.display_name AS name, s.last_seen_at AS "lastSeenAt"
+  const result = await query<{
+    id: string;
+    email: string | null;
+    name: string | null;
+    telegramId: string | null;
+    telegramUsername: string | null;
+    loginMethod: AuthMethod;
+    createdAt: string;
+    lastSeenAt: Date;
+  }>(
+    `SELECT u.id, u.email, u.display_name AS name,
+       u.telegram_id AS "telegramId",
+       u.telegram_username AS "telegramUsername",
+       u.created_at::text AS "createdAt",
+       s.auth_method AS "loginMethod",
+       s.last_seen_at AS "lastSeenAt"
      FROM auth_sessions s
      JOIN users u ON u.id = s.user_id
      WHERE s.token_hash = $1
@@ -184,5 +249,13 @@ export async function getCurrentUser() {
   }
 
   const name = session.name?.trim() || (session.email ? displayName(session.email) : "Пользователь");
-  return { id: session.id, email: session.email, name };
+  return {
+    id: session.id,
+    email: session.email,
+    name,
+    telegramId: session.telegramId,
+    telegramUsername: session.telegramUsername,
+    loginMethod: session.loginMethod,
+    createdAt: session.createdAt,
+  };
 }

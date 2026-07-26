@@ -33,6 +33,9 @@ test("supports creating, renaming, deleting and assigning folders", async () => 
   assert.match(library, /folder-review-today/);
   assert.match(library, /className="folder-select-menu"/);
   assert.doesNotMatch(library, /<select/);
+  assert.match(library, /embedded = false/);
+  assert.match(library, /folder-library-page\$\{embedded \? " embedded" : ""\}/);
+  assert.match(css, /\.folder-library-page\.embedded \{ min-height:0; background:transparent; \}/);
   assert.match(css, /\.folder-select-menu \{[^}]*overflow:auto;/);
   assert.match(css, /\.folder-delete-modal \{/);
 });
