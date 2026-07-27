@@ -47,6 +47,23 @@ test("publishes a crawlable page for every approved search intent", async () => 
   assert.match(structuredData, /application\/ld\+json/);
 });
 
+test("uses one identical public header on the landing and marketing pages", async () => {
+  const [landing, marketing, header, globals, marketingCss] = await Promise.all([
+    read("src/components/home-client.tsx"),
+    read("src/components/marketing/marketing-page.tsx"),
+    read("src/components/marketing/public-header.tsx"),
+    read("src/app/globals.css"),
+    read("src/app/(marketing)/marketing.css"),
+  ]);
+
+  assert.match(landing, /<PublicHeader \/>/);
+  assert.match(marketing, /<PublicHeader \/>/);
+  assert.match(header, /className="landing-header"/);
+  assert.match(header, /className="create-button"/);
+  assert.match(globals, /\.create-button \{[^}]*background:var\(--ink\)/);
+  assert.doesNotMatch(marketingCss, /\.marketing-header|\.marketing-signup/);
+});
+
 test("keeps private application routes out of search and preserves old URLs", async () => {
   const [appPage, privateMetadata, legacyLibrary, legacyStudy, legacyEdit, legacyReviews] = await Promise.all([
     read("src/app/(product)/app/page.tsx"),

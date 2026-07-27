@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PublicHeader } from "@/components/marketing/public-header";
 import { StructuredData } from "@/components/structured-data";
 import { SITE_URL } from "@/lib/seo";
 
@@ -23,21 +24,7 @@ type MarketingPageProps = {
 };
 
 export function MarketingHeader() {
-  return (
-    <header className="marketing-header">
-      <Link className="marketing-brand" href="/"><span>L</span><strong>Lina</strong></Link>
-      <nav aria-label="Основная навигация">
-        <Link href="/how-it-works">Как работает</Link>
-        <Link href="/features">Возможности</Link>
-        <Link href="/science">Методика</Link>
-        <Link href="/guides">Материалы</Link>
-      </nav>
-      <div>
-        <Link className="marketing-login" href="/login">Войти</Link>
-        <Link className="marketing-signup" href="/signup">Начать бесплатно</Link>
-      </div>
-    </header>
-  );
+  return <PublicHeader />;
 }
 
 export function MarketingFooter() {
@@ -107,7 +94,7 @@ export function MarketingPage({
   return (
     <div className="marketing-page">
       <StructuredData data={schema} />
-      <MarketingHeader />
+      <PublicHeader />
       <main>
         <nav className="marketing-breadcrumbs" aria-label="Хлебные крошки">
           <Link href="/">Lina</Link><span>›</span><span>{title}</span>

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CreateMethodPicker } from "@/components/create-method-picker";
 import { FolderLibrary } from "@/components/folder-library";
+import { PublicHeader } from "@/components/marketing/public-header";
 import type { AuthUser } from "@/lib/auth";
 import type { LibraryData, LibraryStudySet, StudyFolder } from "@/lib/folders";
 import type { DashboardData } from "@/lib/learning";
@@ -489,11 +490,7 @@ export function GuestLanding({
 
   return (
     <div className="landing">
-      <header className="landing-header">
-        <Link className="landing-brand" href="/"><span className="brand-mark">L</span><span>Lina</span></Link>
-        <nav aria-label="Навигация по сайту"><Link href="/how-it-works">Как работает</Link><Link href="/features">Возможности</Link><Link href="/science">Методика</Link><Link href="/guides">Материалы</Link></nav>
-        <div className="landing-auth"><Link className="login-button" href="/login">Войти</Link><Link className="create-button" href="/signup">Начать бесплатно</Link></div>
-      </header>
+      <PublicHeader />
 
       <main id="top">
         <section className="landing-hero">
