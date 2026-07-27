@@ -71,6 +71,13 @@ test("does not advertise Lina as an installable browser PWA", async () => {
   );
 });
 
+test("serves the Yandex Webmaster ownership verification file", async () => {
+  const verification = await read("public/yandex_a5b0046f2f2bffb1.html");
+
+  assert.match(verification, /<meta http-equiv="Content-Type" content="text\/html; charset=UTF-8">/);
+  assert.match(verification, /<body>Verification: a5b0046f2f2bffb1<\/body>/);
+});
+
 test("keeps private application routes out of search and preserves old URLs", async () => {
   const [appPage, privateMetadata, legacyLibrary, legacyStudy, legacyEdit, legacyReviews] = await Promise.all([
     read("src/app/(product)/app/page.tsx"),
