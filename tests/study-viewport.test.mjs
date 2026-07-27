@@ -5,11 +5,12 @@ import test from "node:test";
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
 test("fits recall practice to the mobile visual viewport while the answer is focused", async () => {
-  const [component, telegram, css, layout] = await Promise.all([
+  const [component, telegram, css, rootLayout, productLayout] = await Promise.all([
     read("src/components/study-session.tsx"),
     read("src/components/telegram-mini-app.tsx"),
     read("src/app/study-session.css"),
     read("src/app/layout.tsx"),
+    read("src/app/(product)/layout.tsx"),
   ]);
 
   assert.match(component, /window\.visualViewport/);
@@ -25,9 +26,9 @@ test("fits recall practice to the mobile visual viewport while the answer is foc
   assert.match(component, /onFocus=\{\(\) => setAnswerFocused\(true\)\}/);
   assert.match(telegram, /viewportHeight\?: number/);
   assert.match(telegram, /hideKeyboard\?: \(\) => void/);
-  assert.match(layout, /import "\.\/study-session\.css"/);
-  assert.match(layout, /<html lang="ru" suppressHydrationWarning>/);
-  assert.match(layout, /<body>[\s\S]*?<Script[^>]+telegram-web-app\.js\?61[^>]+\/>[\s\S]*?<TelegramMiniApp \/>[\s\S]*?<\/body>/);
+  assert.match(productLayout, /import "\.\.\/study-session\.css"/);
+  assert.match(rootLayout, /<html lang="ru" suppressHydrationWarning>/);
+  assert.match(productLayout, /<Script[^>]+telegram-web-app\.js\?61[^>]+\/>[\s\S]*?<TelegramMiniApp \/>/);
   assert.match(css, /--study-viewport-height: var\(--tg-viewport-height, 100dvh\)/);
   assert.match(css, /height: var\(--study-viewport-height\)/);
   assert.match(component, /--study-card-viewport-height/);

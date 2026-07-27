@@ -21,9 +21,19 @@ npm run dev
 ## Проверки
 
 ```bash
+npm test
 npm run lint
 npm run build
+python -m unittest discover -s tests -p "*_test.py"
 ```
+
+## Маршруты
+
+- `/` и тематические страницы (`/features`, `/science`, `/guides`, страницы аудиторий) — публичная индексируемая часть;
+- `/login` и `/signup` — авторизация, закрытая от поисковой индексации;
+- `/app`, `/app/library`, `/app/sets/new`, `/app/study/:setId`, `/app/reviews/...` — личный кабинет, закрытый от индексации и доступный только после входа;
+- прежние `/library`, `/study/...` и `/sets/...` отвечают постоянным редиректом на новые адреса;
+- `/robots.txt`, `/sitemap.xml` и `/manifest.webmanifest` генерируются Next.js.
 
 ## Production
 

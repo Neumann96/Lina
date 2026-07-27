@@ -56,10 +56,10 @@ test("renders the authenticated mobile dashboard and floating navigation", async
   assert.match(home, /latestSet\.studiedCount/);
   assert.match(home, /"Пройти заново"/);
   assert.match(home, /↻ Начать заново/);
-  assert.match(home, /href=\{`\/study\/\$\{set\.id\}`\} transitionTypes=\{\["nav-forward"\]\} className="mobile-recent-set"/);
+  assert.match(home, /href=\{`\/app\/study\/\$\{set\.id\}`\} transitionTypes=\{\["nav-forward"\]\} className="mobile-recent-set"/);
   assert.match(home, /activeTab === "create"/);
   assert.match(home, /activeTab === "library"/);
-  assert.match(home, /setActiveTab\("home"\)/);
+  assert.match(home, /href="\/app" transitionTypes=\{\["nav-back"\]\}/);
   assert.match(css, /\.mobile-bottom-nav \{ position:fixed;/);
   assert.match(css, /border-radius:28px/);
   assert.match(css, /\.mobile-nav-indicator \{[^}]*transition:transform/);
@@ -78,10 +78,10 @@ test("exposes the mobile feature set in the desktop workspace", async () => {
   assert.match(home, /onSetMoved=\{handleSetMoved\}/);
   assert.match(home, /onFolderDeleted=\{handleFolderDeleted\}/);
   assert.match(home, /<CreateMethodPicker \/>/);
-  assert.match(home, /onClick=\{\(\) => setActiveTab\("create"\)\}/);
-  assert.match(home, /onClick=\{\(\) => setActiveTab\("library"\)\}/);
-  assert.match(home, /<span>Папки<\/span><\/button>/);
-  assert.match(home, /<span>Создать набор<\/span><\/button>/);
+  assert.match(home, /href="\/app\/sets\/new" transitionTypes=\{\["nav-forward"\]\}/);
+  assert.match(home, /href="\/app\/library" transitionTypes=\{\["nav-forward"\]\}/);
+  assert.match(home, /<span>Папки<\/span><\/Link>/);
+  assert.match(home, /<span>Создать набор<\/span><\/Link>/);
   assert.match(home, /className="today-review-section"/);
   assert.match(home, /className="today-review-groups"/);
   assert.match(home, /group\.scopeKind === "folder" \? "Папка" : "Общая очередь"/);
@@ -114,7 +114,7 @@ test("keeps retrieval practice fixed and saves before advancing", () => {
   assert.match(studySession, /await saveReview\(current\.card\.id, rating, current\.kind\)/);
   assert.match(studySession, /keepalive: true/);
   assert.match(studySession, /await Promise\.allSettled\(\[\.\.\.pendingReviews\.current\]\)/);
-  assert.match(studySession, /router\.push\(`\/\?studyExit=\$\{Date\.now\(\)\}`/);
+  assert.match(studySession, /router\.push\("\/app", \{ transitionTypes: \["nav-back"\] \}\)/);
   assert.doesNotMatch(studySession, /window\.location\.assign\("\/"\)/);
   assert.match(studySession, /aria-label="Начать набор заново"/);
 });

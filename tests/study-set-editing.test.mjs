@@ -59,16 +59,23 @@ test("rejects malformed, duplicate and incomplete edit rows", () => {
 });
 
 test("wires the library pencil, edit page and atomic update API", async () => {
-  const [library, page, editor, route, learning] = await Promise.all([
+  const [library, libraryPage, legacyLibraryPage, home, page, editor, route, learning] = await Promise.all([
     read("src/components/folder-library.tsx"),
-    read("src/app/sets/[setId]/edit/page.tsx"),
+    read("src/app/(product)/app/library/page.tsx"),
+    read("src/app/library/page.tsx"),
+    read("src/components/home-client.tsx"),
+    read("src/app/(product)/app/sets/[setId]/edit/page.tsx"),
     read("src/components/edit-study-set.tsx"),
     read("src/app/api/sets/[setId]/route.ts"),
     read("src/lib/learning.ts"),
   ]);
 
-  assert.match(library, /href=\{`\/sets\/\$\{set\.id\}\/edit`\}/);
+  assert.match(library, /href=\{`\/app\/sets\/\$\{set\.id\}\/edit`\}/);
   assert.match(library, /Редактировать набор \$\{set\.title\}/);
+  assert.match(libraryPage, /<HomeClient/);
+  assert.match(libraryPage, /initialActiveTab="library"/);
+  assert.match(legacyLibraryPage, /permanentRedirect\("\/app\/library"\)/);
+  assert.match(home, /const activeTab = initialActiveTab/);
   assert.match(page, /getStudySet\(user\.id, setId\)/);
   assert.match(editor, /method: "PATCH"/);
   assert.match(editor, /Добавить карточку/);

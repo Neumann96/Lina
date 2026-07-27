@@ -10,8 +10,8 @@ const spacedMigration = await readFile(new URL("../db/migrations/004_spaced_repe
 const scienceMigration = await readFile(new URL("../db/migrations/006_science_based_repetition.sql", import.meta.url), "utf8");
 const studySession = await readFile(new URL("../src/components/study-session.tsx", import.meta.url), "utf8");
 const restartRoute = await readFile(new URL("../src/app/api/sets/[setId]/restart/route.ts", import.meta.url), "utf8");
-const reviewsPage = await readFile(new URL("../src/app/study/reviews/page.tsx", import.meta.url), "utf8");
-const scopedReviewsPage = await readFile(new URL("../src/app/study/reviews/[scopeKind]/[scopeId]/page.tsx", import.meta.url), "utf8");
+const reviewsPage = await readFile(new URL("../src/app/(product)/app/reviews/page.tsx", import.meta.url), "utf8");
+const scopedReviewsPage = await readFile(new URL("../src/app/(product)/app/reviews/[scopeKind]/[scopeId]/page.tsx", import.meta.url), "utf8");
 const notifyRoute = await readFile(new URL("../src/app/api/reviews/notify/route.ts", import.meta.url), "utf8");
 
 test("stores and displays the next card position independently from answer history", () => {
@@ -57,8 +57,8 @@ test("can study due spaced repetition cards separately", () => {
   assert.match(reviewGroups, /getDueReviewStudySet/);
   assert.match(reviewGroups, /sr\.due_at < \$\{REVIEW_DAY_END_SQL\}/);
   assert.match(reviewsPage, /getDueReviewGroups\(user\.id\)/);
-  assert.match(reviewsPage, /redirect\(firstGroup\?\.href \?\? "\/"\)/);
-  assert.match(scopedReviewsPage, /redirect\("\/study\/reviews\/unfiled\/all"\)/);
+  assert.match(reviewsPage, /redirect\(firstGroup\?\.href \?\? "\/app"\)/);
+  assert.match(scopedReviewsPage, /redirect\("\/app\/reviews\/unfiled\/all"\)/);
   assert.match(scopedReviewsPage, /getDueReviewStudySet\(user\.id, scopeKind as ReviewScopeKind, scopeId\)/);
   assert.match(scopedReviewsPage, /if \(!studySet\) notFound\(\)/);
   assert.match(studySession, /studySet\.mode === "reviews"/);

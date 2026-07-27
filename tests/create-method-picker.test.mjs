@@ -34,6 +34,6 @@ test("manual creation uses an editable Quizlet-style card list and the sets API"
   assert.match(picker, /ОПРЕДЕЛЕНИЕ/);
   assert.match(picker, /Добавить карточку/);
   assert.match(picker, /fetch\("\/api\/sets"/);
-  assert.match(picker, /window\.location\.assign\(`\/study\/\$\{result\.id\}`\)/);
+  assert.match(picker, /window\.location\.assign\(`\/app\/study\/\$\{result\.id\}`\)/);
   assert.doesNotMatch(picker, /id: "manual"[^\n]+badge: "Скоро"/);
 });

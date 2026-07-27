@@ -17,7 +17,7 @@ test("uses the requested /start greeting", () => {
 Превращаю списки слов в карточки быстрее, чем вы успеете отложить их до понедельника. Просто вставьте слова и переводы — я всё разберу и подготовлю к практике.
 
 Учить всё ещё придётся вам. Мы проверяли...`);
-  assert.equal(TELEGRAM_MINI_APP_URL, "https://lina-lern.ru");
+  assert.equal(TELEGRAM_MINI_APP_URL, "https://lina-lern.ru/app");
 });
 
 test("sends an inline button that opens the Mini App", async () => {
@@ -58,7 +58,7 @@ test("sends due review reminders to the Mini App review session", async () => {
   try {
     await sendTelegramReviewReminder("123:token", 42, {
       dueCount: 7,
-      href: "/study/reviews/folder/folder-1",
+      href: "/app/reviews/folder/folder-1",
       title: "Немецкий",
     });
   } finally {
@@ -72,7 +72,7 @@ test("sends due review reminders to the Mini App review session", async () => {
     reply_markup: {
       inline_keyboard: [[{
         text: "Повторить сейчас →",
-        web_app: { url: `${TELEGRAM_MINI_APP_URL}/study/reviews/folder/folder-1` },
+        web_app: { url: "https://lina-lern.ru/app/reviews/folder/folder-1" },
       }]],
     },
   });
