@@ -12,7 +12,7 @@ START_MESSAGE = """Привет! Я Lina ✨
 Превращаю списки слов в карточки быстрее, чем вы успеете отложить их до понедельника. Просто вставьте слова и переводы — я всё разберу и подготовлю к практике.
 
 Учить всё ещё придётся вам. Мы проверяли..."""
-MINI_APP_URL = "https://lina-lern.ru"
+MINI_APP_URL = "https://lina-lern.ru/app"
 DEFAULT_REMINDER_URL = "http://127.0.0.1:3000/api/reviews/notify"
 DEFAULT_REMINDER_INTERVAL_SECONDS = 300
 

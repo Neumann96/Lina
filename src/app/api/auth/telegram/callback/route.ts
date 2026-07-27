@@ -3,6 +3,7 @@ import { authenticateTelegramUser, setSession } from "@/lib/auth";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { getClientAddress, validateAuthRequest } from "@/lib/request-security";
 import { verifyTelegramAuthPayload } from "@/lib/telegram-auth";
+import { safeAppPath } from "@/lib/navigation";
 import { cookies } from "next/headers";
 
 const TELEGRAM_STATE_COOKIE = "lina_telegram_state";
@@ -14,26 +15,30 @@ function statesMatch(received: string, expected: string) {
     && timingSafeEqual(receivedBuffer, expectedBuffer);
 }
 
-function redirectHome(request: Request, status?: "failed" | "limited") {
+function redirectAfterAuth(request: Request, nextPath: string, status?: "failed" | "limited") {
   const configuredOrigin = process.env.APP_ORIGIN?.trim();
-  const url = new URL("/", configuredOrigin || new URL(request.url).origin);
-  if (status) url.searchParams.set("telegramAuth", status);
+  const url = new URL(status ? "/login" : safeAppPath(nextPath), configuredOrigin || new URL(request.url).origin);
+  if (status) {
+    url.searchParams.set("telegramAuth", status);
+    url.searchParams.set("next", safeAppPath(nextPath));
+  }
   return Response.redirect(url, 303);
 }
 
 export async function GET(request: Request) {
   const securityError = validateAuthRequest(request);
   if (securityError) return securityError;
+  const url = new URL(request.url);
+  const nextPath = safeAppPath(url.searchParams.get("next"));
 
   const ipLimit = await consumeRateLimit(getClientAddress(request), {
     scope: "telegram-ip",
     limit: 20,
     windowSeconds: 15 * 60,
   });
-  if (!ipLimit.allowed) return redirectHome(request, "limited");
+  if (!ipLimit.allowed) return redirectAfterAuth(request, nextPath, "limited");
 
   const cookieStore = await cookies();
-  const url = new URL(request.url);
   const receivedState = url.searchParams.get("state") ?? "";
   const expectedState = cookieStore.get(TELEGRAM_STATE_COOKIE)?.value ?? "";
   cookieStore.set(TELEGRAM_STATE_COOKIE, "", {
@@ -44,10 +49,11 @@ export async function GET(request: Request) {
     path: "/api/auth/telegram/callback",
   });
   if (!receivedState || !expectedState || !statesMatch(receivedState, expectedState)) {
-    return redirectHome(request, "failed");
+    return redirectAfterAuth(request, nextPath, "failed");
   }
 
   url.searchParams.delete("state");
+  url.searchParams.delete("next");
   const payload = Object.fromEntries(url.searchParams.entries());
   try {
     const identity = verifyTelegramAuthPayload(payload);
@@ -56,13 +62,13 @@ export async function GET(request: Request) {
       limit: 10,
       windowSeconds: 15 * 60,
     });
-    if (!telegramLimit.allowed) return redirectHome(request, "limited");
+    if (!telegramLimit.allowed) return redirectAfterAuth(request, nextPath, "limited");
 
     const user = await authenticateTelegramUser(identity.telegramId, identity.name, identity.username);
     await setSession(user, "telegram");
   } catch {
-    return redirectHome(request, "failed");
+    return redirectAfterAuth(request, nextPath, "failed");
   }
 
-  return redirectHome(request);
+  return redirectAfterAuth(request, nextPath);
 }

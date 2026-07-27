@@ -1,11 +1,5 @@
-import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
-import { getDueReviewGroups } from "@/lib/review-groups";
+import { permanentRedirect } from "next/navigation";
 
-export default async function ReviewStudyPage() {
-  const user = await getCurrentUser();
-  if (!user) redirect("/");
-
-  const firstGroup = (await getDueReviewGroups(user.id))[0];
-  redirect(firstGroup?.href ?? "/");
+export default function LegacyReviewsPage() {
+  permanentRedirect("/app/reviews");
 }

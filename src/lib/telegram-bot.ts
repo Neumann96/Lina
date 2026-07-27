@@ -6,7 +6,8 @@ export const TELEGRAM_START_MESSAGE = `Привет! Я Lina ✨
 
 Учить всё ещё придётся вам. Мы проверяли...`;
 
-export const TELEGRAM_MINI_APP_URL = "https://lina-lern.ru";
+export const TELEGRAM_SITE_ORIGIN = "https://lina-lern.ru";
+export const TELEGRAM_MINI_APP_URL = `${TELEGRAM_SITE_ORIGIN}/app`;
 
 type TelegramUpdate = {
   message?: {
@@ -78,7 +79,7 @@ export async function sendTelegramReviewReminder(
       reply_markup: {
         inline_keyboard: [[{
           text: "Повторить сейчас →",
-          web_app: { url: `${TELEGRAM_MINI_APP_URL}${review.href}` },
+          web_app: { url: new URL(review.href, TELEGRAM_SITE_ORIGIN).toString() },
         }]],
       },
     }),

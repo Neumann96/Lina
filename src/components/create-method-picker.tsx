@@ -126,7 +126,7 @@ function ManualCardEditor({ onBack }: { onBack: () => void }) {
         setError(result.error ?? "Не удалось создать набор");
         return;
       }
-      window.location.assign(`/study/${result.id}`);
+      window.location.assign(`/app/study/${result.id}`);
     } catch {
       setError("Не удалось связаться с сервером. Попробуйте ещё раз");
     } finally {

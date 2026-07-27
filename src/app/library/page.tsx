@@ -1,12 +1,5 @@
-import { redirect } from "next/navigation";
-import { FolderLibrary } from "@/components/folder-library";
-import { getCurrentUser } from "@/lib/auth";
-import { getLibraryData } from "@/lib/folders";
+import { permanentRedirect } from "next/navigation";
 
-export default async function LibraryPage() {
-  const user = await getCurrentUser();
-  if (!user) redirect("/");
-
-  const library = await getLibraryData(user.id);
-  return <FolderLibrary initialLibrary={library} />;
+export default function LegacyLibraryPage() {
+  permanentRedirect("/app/library");
 }

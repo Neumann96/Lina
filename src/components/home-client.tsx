@@ -3,11 +3,13 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CreateMethodPicker } from "@/components/create-method-picker";
 import { FolderLibrary } from "@/components/folder-library";
 import type { AuthUser } from "@/lib/auth";
 import type { LibraryData, LibraryStudySet, StudyFolder } from "@/lib/folders";
 import type { DashboardData } from "@/lib/learning";
+import { safeAppPath } from "@/lib/navigation";
 import { parseTelegramAuthResult } from "@/lib/telegram-auth-result";
 
 function Icon({ name, size = 20 }: { name: string; size?: number }) {
@@ -42,15 +44,18 @@ type AppTab = "home" | "create" | "library";
 
 type AuthModalProps = {
   mode: AuthMode;
+  nextPath: string;
   onClose: () => void;
   onModeChange: (mode: AuthMode) => void;
   onSuccess: (user: AuthUser) => void;
 };
 
 function TelegramLoginWidget({
+  nextPath,
   onError,
   onSuccess,
 }: {
+  nextPath: string;
   onError: (message: string) => void;
   onSuccess: (user: AuthUser) => void;
 }) {
@@ -87,6 +92,7 @@ function TelegramLoginWidget({
         script.setAttribute("data-lang", "ru");
         const callbackUrl = new URL("/api/auth/telegram/callback", window.location.origin);
         callbackUrl.searchParams.set("state", setup.state);
+        callbackUrl.searchParams.set("next", safeAppPath(nextPath));
         window.sessionStorage.setItem("lina-telegram-state", setup.state);
         script.setAttribute("data-auth-url", callbackUrl.toString());
         script.onload = () => {
@@ -105,7 +111,7 @@ function TelegramLoginWidget({
       container?.classList.remove("is-ready");
       container?.replaceChildren();
     };
-  }, [onError]);
+  }, [nextPath, onError]);
 
   async function loginWithMiniApp() {
     const initData = window.Telegram?.WebApp?.initData;
@@ -143,7 +149,7 @@ function TelegramLoginWidget({
   </>;
 }
 
-function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
+function AuthModal({ mode, nextPath, onClose, onModeChange, onSuccess }: AuthModalProps) {
   const [error, setError] = useState("");
   const [errorField, setErrorField] = useState("");
   const [pending, setPending] = useState(false);
@@ -249,7 +255,7 @@ function AuthModal({ mode, onClose, onModeChange, onSuccess }: AuthModalProps) {
           <button className="auth-submit" type="submit" disabled={pending}>{pending ? "Подождите…" : isRegister ? "Зарегистрироваться" : "Войти"}</button>
         </form>
         <div className="auth-divider"><span>или</span></div>
-        <TelegramLoginWidget onError={setError} onSuccess={onSuccess} />
+        <TelegramLoginWidget nextPath={nextPath} onError={setError} onSuccess={onSuccess} />
         <div className="auth-switch">
           {isRegister ? "Уже есть аккаунт?" : "Впервые в Lina?"}
           <button type="button" onClick={() => switchMode(isRegister ? "login" : "register")}>{isRegister ? "Войти" : "Зарегистрироваться"}</button>
@@ -398,8 +404,18 @@ function ProfileModal({
   );
 }
 
-function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
-  const [authMode, setAuthMode] = useState<AuthMode | null>(telegramError ? "login" : null);
+export function GuestLanding({
+  initialAuthMode = null,
+  telegramError = "",
+  authNextPath = "/app",
+}: {
+  initialAuthMode?: AuthMode | null;
+  telegramError?: string;
+  authNextPath?: string;
+}) {
+  const router = useRouter();
+  const nextPath = safeAppPath(authNextPath);
+  const [authMode, setAuthMode] = useState<AuthMode | null>(initialAuthMode);
 
   useEffect(() => {
     const landing = document.querySelector<HTMLElement>(".landing");
@@ -443,14 +459,40 @@ function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
     };
   }, []);
 
-  const openRegister = () => setAuthMode("register");
+  useEffect(() => {
+    const telegramUser = parseTelegramAuthResult(window.location.hash);
+    if (!telegramUser) return;
+
+    const callbackUrl = new URL("/api/auth/telegram/callback", window.location.origin);
+    const telegramState = window.sessionStorage.getItem("lina-telegram-state");
+    if (!telegramState) {
+      const failedUrl = new URL("/login", window.location.origin);
+      failedUrl.searchParams.set("telegramAuth", "failed");
+      failedUrl.searchParams.set("next", nextPath);
+      window.location.replace(failedUrl);
+      return;
+    }
+    callbackUrl.searchParams.set("state", telegramState);
+    callbackUrl.searchParams.set("next", nextPath);
+    window.sessionStorage.removeItem("lina-telegram-state");
+    for (const [key, value] of Object.entries(telegramUser)) {
+      callbackUrl.searchParams.set(key, String(value));
+    }
+    window.location.replace(callbackUrl);
+  }, [nextPath]);
+
+  function changeAuthMode(mode: AuthMode) {
+    setAuthMode(mode);
+    const query = nextPath === "/app" ? "" : `?next=${encodeURIComponent(nextPath)}`;
+    router.replace(`/${mode === "login" ? "login" : "signup"}${query}`);
+  }
 
   return (
     <div className="landing">
       <header className="landing-header">
-        <a className="landing-brand" href="#top"><span className="brand-mark">L</span><span>Lina</span></a>
-        <nav aria-label="Навигация по странице"><a href="#science">Методика</a><a href="#how">Как работает</a><a href="#research">Исследования</a></nav>
-        <div className="landing-auth"><button className="login-button" onClick={() => setAuthMode("login")}>Войти</button><button className="create-button" onClick={openRegister}>Начать запоминать</button></div>
+        <Link className="landing-brand" href="/"><span className="brand-mark">L</span><span>Lina</span></Link>
+        <nav aria-label="Навигация по сайту"><Link href="/how-it-works">Как работает</Link><Link href="/features">Возможности</Link><Link href="/science">Методика</Link><Link href="/guides">Материалы</Link></nav>
+        <div className="landing-auth"><Link className="login-button" href="/login">Войти</Link><Link className="create-button" href="/signup">Начать бесплатно</Link></div>
       </header>
 
       <main id="top">
@@ -458,14 +500,14 @@ function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
           <div className="landing-hero-copy">
             <div className="eyebrow"><Icon name="spark" size={16}/> Запоминание, основанное на исследованиях</div>
             <h1>Запоминайте надолго.<br/><em>Lina знает, когда повторить.</em></h1>
-            <p>Загрузите конспект, документ или фотографию. Lina создаст карточки, составит расписание повторений и напомнит о занятии в Telegram.</p>
-            <div className="landing-cta"><button onClick={openRegister}>Запомнить первый материал <span>→</span></button></div>
-            <div className="landing-use-cases" aria-label="Примеры материалов"><span>Термины</span><span>Формулы</span><span>Даты</span><span>Определения</span></div>
+            <p>Создайте карточки вручную, вставьте готовый список или перенесите публичный набор Quizlet. Lina составит расписание повторений и напомнит о занятии в Telegram.</p>
+            <div className="landing-cta"><Link href="/signup">Запомнить первый материал <span>→</span></Link></div>
+            <div className="landing-use-cases" aria-label="Примеры материалов"><Link href="/for-school">Школа</Link><Link href="/for-students">Учёба</Link><Link href="/for-language-learning">Языки</Link><Link href="/for-exams">Экзамены</Link></div>
           </div>
           <div className="landing-system-demo" aria-label="Как Lina превращает материал в запланированное повторение">
             <div className="system-orbit orbit-one"/><div className="system-orbit orbit-two"/>
             <article className="capture-card">
-              <span className="demo-icon"><Icon name="camera" size={19}/></span>
+              <span className="demo-icon"><Icon name="file" size={19}/></span>
               <div><small>Источник</small><strong>Конспект по биологии</strong></div>
               <span className="scan-line"/>
             </article>
@@ -484,7 +526,7 @@ function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
 
         <section className="landing-proof">
           <p>Вам не нужно планировать собственную память</p>
-          <div><span>Загрузите материал</span><i>→</i><span>Lina составит план</span><i>→</i><span>Бот позовёт вовремя</span></div>
+          <div><span>Добавьте карточки</span><i>→</i><span>Lina составит план</span><i>→</i><span>Бот позовёт вовремя</span></div>
         </section>
 
         <section className="landing-science" id="science">
@@ -527,8 +569,8 @@ function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
         <section className="landing-how" id="how">
           <div className="landing-section-title" data-reveal><span>Как это работает</span><h2>От материала до долговременной памяти</h2><p>Без ручного расписания и вечера, потраченного на создание карточек.</p></div>
           <div className="landing-steps">
-            <article data-reveal><div className="step-visual upload-visual"><Icon name="camera" size={28}/><Icon name="file" size={28}/><span>+ вставить текст</span></div><h3>Загрузите материал</h3><p>Сфотографируйте страницу, импортируйте файл или вставьте готовый текст.</p></article>
-            <article data-reveal style={{ "--reveal-delay": "90ms" } as React.CSSProperties}><div className="step-visual cards-stack"><i/><i/><i/></div><h3>Lina создаст карточки</h3><p>Термины, даты, формулы и определения — не только иностранные слова.</p></article>
+            <article data-reveal><div className="step-visual upload-visual"><Icon name="file" size={28}/><span>+ вставить текст</span></div><h3>Добавьте материал</h3><p>Создайте карточки вручную, вставьте список или перенесите публичный набор Quizlet.</p></article>
+            <article data-reveal style={{ "--reveal-delay": "90ms" } as React.CSSProperties}><div className="step-visual cards-stack"><i/><i/><i/></div><h3>Проверьте карточки</h3><p>Исправьте пары перед сохранением: термины, даты, формулы и определения.</p></article>
             <article data-reveal style={{ "--reveal-delay": "180ms" } as React.CSSProperties}><div className="step-visual schedule-visual"><span><small>ПН</small><strong>16</strong></span><span><small>ВТ</small><strong>17</strong></span><span><small>СР</small><strong>18</strong></span><span><small>ЧТ</small><strong>19</strong></span><span><small>ПТ</small><strong>20</strong></span></div><h3>Повторяйте по плану</h3><p>Lina выберет нужные карточки, а бот напомнит, когда пора вернуться.</p></article>
           </div>
         </section>
@@ -561,10 +603,10 @@ function GuestLanding({ telegramError = "" }: { telegramError?: string }) {
           </div>
         </section>
 
-        <section className="landing-final" data-reveal><h2>Загрузите то, что хотите запомнить.<br/><em>Lina вернёт это в нужный момент.</em></h2><p>Без ручного создания карточек, расписаний и чувства, что вы опять что-то забыли.</p><button onClick={openRegister}>Начать запоминать <span>→</span></button></section>
+        <section className="landing-final" data-reveal><h2>Добавьте то, что хотите запомнить.<br/><em>Lina вернёт это в нужный момент.</em></h2><p>Без ручного расписания и чувства, что вы опять что-то забыли.</p><Link href="/signup">Начать запоминать <span>→</span></Link></section>
       </main>
-      <footer className="landing-footer"><a className="landing-brand" href="#top"><span className="brand-mark">L</span><span>Lina</span></a><p>Память любит систему. Lina тоже.</p><a className="landing-footer-telegram" href="https://t.me/linalernbot?start=start" target="_blank" rel="noreferrer" aria-label="Открыть бота Lina в Telegram"><Image src="/telegram-logo.png" alt="" width={34} height={34}/></a><span>© {new Date().getFullYear()} Lina</span></footer>
-      {authMode && <AuthModal mode={authMode} onClose={() => setAuthMode(null)} onModeChange={setAuthMode} onSuccess={() => window.location.reload()} />}
+      <footer className="landing-footer"><Link className="landing-brand" href="/"><span className="brand-mark">L</span><span>Lina</span></Link><p>Память любит систему. Lina тоже.</p><nav aria-label="Ссылки в подвале"><Link href="/about">О Lina</Link><Link href="/privacy">Конфиденциальность</Link><Link href="/terms">Условия</Link></nav><a className="landing-footer-telegram" href="https://t.me/linalernbot?start=start" target="_blank" rel="noreferrer" aria-label="Открыть бота Lina в Telegram"><Image src="/telegram-logo.png" alt="" width={34} height={34}/></a><span>© {new Date().getFullYear()} Lina</span></footer>
+      {authMode && <AuthModal mode={authMode} nextPath={nextPath} onClose={() => router.push("/")} onModeChange={changeAuthMode} onSuccess={() => window.location.assign(nextPath)} />}
       {telegramError && <div className="telegram-return-error" role="alert">{telegramError}</div>}
     </div>
   );
@@ -575,61 +617,21 @@ export function HomeClient({
   initialDashboard,
   initialLibrary,
   initialSidebarCollapsed,
+  initialActiveTab = "home",
 }: {
   initialUser: AuthUser | null;
   initialDashboard: DashboardData | null;
   initialLibrary: LibraryData | null;
   initialSidebarCollapsed: boolean;
+  initialActiveTab?: AppTab;
 }) {
-  const [user, setUser] = useState(initialUser);
+  const user = initialUser;
   const [dashboard, setDashboard] = useState(initialDashboard);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(initialSidebarCollapsed);
-  const [activeTab, setActiveTab] = useState<AppTab>("home");
-  const [telegramReturnError, setTelegramReturnError] = useState("");
+  const activeTab = initialActiveTab;
   const [restartingSetId, setRestartingSetId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const callbackStatus = searchParams.get("telegramAuth");
-    if (callbackStatus) {
-      void Promise.resolve().then(() => {
-        setTelegramReturnError(callbackStatus === "limited"
-          ? "Слишком много попыток. Попробуйте позже"
-          : "Не удалось подтвердить вход через Telegram");
-      });
-    }
-
-    if (callbackStatus || searchParams.has("studyExit")) {
-      searchParams.delete("telegramAuth");
-      searchParams.delete("studyExit");
-      const query = searchParams.toString();
-      window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
-    }
-
-    const telegramUser = parseTelegramAuthResult(window.location.hash);
-    if (!telegramUser) return;
-
-    // A mobile Telegram client can finish in a different browser/WebView.
-    // Continue with a full navigation so session creation does not depend on
-    // the JavaScript context that originally opened Telegram.
-    const callbackUrl = new URL("/api/auth/telegram/callback", window.location.origin);
-    const telegramState = window.sessionStorage.getItem("lina-telegram-state");
-    if (!telegramState) {
-      const failedUrl = new URL(window.location.href);
-      failedUrl.hash = "";
-      failedUrl.searchParams.set("telegramAuth", "failed");
-      window.location.replace(failedUrl);
-      return;
-    }
-    callbackUrl.searchParams.set("state", telegramState);
-    window.sessionStorage.removeItem("lina-telegram-state");
-    for (const [key, value] of Object.entries(telegramUser)) {
-      callbackUrl.searchParams.set(key, String(value));
-    }
-    window.location.replace(callbackUrl);
-  }, []);
 
   function toggleSidebar() {
     const collapsed = !isSidebarCollapsed;
@@ -640,9 +642,7 @@ export function HomeClient({
   async function logout() {
     const response = await fetch("/api/auth/logout", { method: "POST" });
     if (response.ok) {
-      setUser(null);
-      setIsProfileOpen(false);
-      setIsLogoutOpen(false);
+      window.location.assign("/");
     }
   }
 
@@ -701,7 +701,7 @@ export function HomeClient({
           scopeId: newScopeId,
           title: targetFolder?.name ?? "Без папки",
           dueCount: movedSet.dueCount,
-          href: `/study/reviews/${newScopeKind}/${newScopeId}`,
+          href: `/app/reviews/${newScopeKind}/${newScopeId}`,
         }],
       };
     });
@@ -739,7 +739,7 @@ export function HomeClient({
             scopeId: "all",
             title: "Без папки",
             dueCount: movedDueCount,
-            href: "/study/reviews/unfiled/all",
+            href: "/app/reviews/unfiled/all",
           }];
       }
 
@@ -753,7 +753,7 @@ export function HomeClient({
     try {
       const response = await fetch(`/api/sets/${setId}/restart`, { method: "POST" });
       if (!response.ok) throw new Error();
-      window.location.assign(openAfterRestart ? `/study/${setId}` : "/");
+      window.location.assign(openAfterRestart ? `/app/study/${setId}` : "/app");
     } catch {
       window.alert("Не удалось начать набор заново. Попробуйте ещё раз.");
       setRestartingSetId(null);
@@ -761,7 +761,7 @@ export function HomeClient({
   }
 
   if (!user || !dashboard || !initialLibrary) {
-    return <GuestLanding telegramError={telegramReturnError} />;
+    return null;
   }
 
   const { stats, recentSets } = dashboard;
@@ -769,7 +769,7 @@ export function HomeClient({
   const latestSetComplete = Boolean(latestSet && latestSet.count > 0 && latestSet.studiedCount >= latestSet.count);
   const dueReviewLabel = stats.dueReviewCount > 99 ? "99+" : String(stats.dueReviewCount);
   const firstReviewGroup = dashboard.reviewGroups[0];
-  const firstReviewHref = firstReviewGroup?.href ?? "/study/reviews";
+  const firstReviewHref = firstReviewGroup?.href ?? "/app/reviews";
 
   return (
     <div className="app-shell">
@@ -785,9 +785,9 @@ export function HomeClient({
         </button>
         <div className="brand"><span className="brand-mark">L</span><span>Lina</span></div>
         <nav className="main-nav" aria-label="Основная навигация">
-          <button className={`nav-item${activeTab === "home" ? " active" : ""}`} type="button" onClick={() => setActiveTab("home")} aria-current={activeTab === "home" ? "page" : undefined} title={isSidebarCollapsed ? "Главная" : undefined}><Icon name="home" /><span>Главная</span></button>
-          <button className={`nav-item${activeTab === "library" ? " active" : ""}`} type="button" onClick={() => setActiveTab("library")} aria-current={activeTab === "library" ? "page" : undefined} title={isSidebarCollapsed ? "Папки" : undefined}><Icon name="folder" /><span>Папки</span></button>
-          <button className={`nav-item${activeTab === "create" ? " active" : ""}`} type="button" onClick={() => setActiveTab("create")} aria-current={activeTab === "create" ? "page" : undefined} title={isSidebarCollapsed ? "Создать набор" : undefined}><Icon name="plus" /><span>Создать набор</span></button>
+          <Link className={`nav-item${activeTab === "home" ? " active" : ""}`} href="/app" transitionTypes={["nav-back"]} aria-current={activeTab === "home" ? "page" : undefined} title={isSidebarCollapsed ? "Главная" : undefined}><Icon name="home" /><span>Главная</span></Link>
+          <Link className={`nav-item${activeTab === "library" ? " active" : ""}`} href="/app/library" transitionTypes={["nav-forward"]} aria-current={activeTab === "library" ? "page" : undefined} title={isSidebarCollapsed ? "Папки" : undefined}><Icon name="folder" /><span>Папки</span></Link>
+          <Link className={`nav-item${activeTab === "create" ? " active" : ""}`} href="/app/sets/new" transitionTypes={["nav-forward"]} aria-current={activeTab === "create" ? "page" : undefined} title={isSidebarCollapsed ? "Создать набор" : undefined}><Icon name="plus" /><span>Создать набор</span></Link>
           <span className="nav-item nav-item-disabled" aria-disabled="true" title="Пока недоступно"><Icon name="chart" /><span>Прогресс</span></span>
           <button className="nav-item mobile-logout-button" type="button" onClick={() => setIsLogoutOpen(true)}><Icon name="logout" /><span>Выйти</span></button>
         </nav>
@@ -810,7 +810,7 @@ export function HomeClient({
             <Icon name="bell" />
             {stats.dueReviewCount > 0 && <span>{dueReviewLabel}</span>}
           </Link>
-          <button className="create-button" type="button" onClick={() => setActiveTab("create")}><Icon name="plus" size={19}/>Создать набор</button>
+          <Link className="create-button" href="/app/sets/new" transitionTypes={["nav-forward"]}><Icon name="plus" size={19}/>Создать набор</Link>
         </header>
 
         {activeTab === "home" && <section className="mobile-dashboard app-view" aria-label="Продолжить обучение">
@@ -853,14 +853,14 @@ export function HomeClient({
               {latestSetComplete ? (
                 <button className="mobile-resume-primary" type="button" onClick={() => restartSet(latestSet.id, true)} disabled={restartingSetId === latestSet.id}>{restartingSetId === latestSet.id ? "Начинаем…" : "Пройти заново"}</button>
               ) : (
-                <Link className="mobile-resume-primary" href={`/study/${latestSet.id}`} transitionTypes={["nav-forward"]}>Продолжить</Link>
+                <Link className="mobile-resume-primary" href={`/app/study/${latestSet.id}`} transitionTypes={["nav-forward"]}>Продолжить</Link>
               )}
               {latestSet.studiedCount > 0 && !latestSetComplete && (
                 <button className="mobile-resume-restart" type="button" onClick={() => restartSet(latestSet.id, true)} disabled={restartingSetId === latestSet.id}>↻ Начать заново</button>
               )}
             </article>
           ) : (
-            <div className="sets-empty mobile-sets-empty"><span>Пока здесь тихо</span><h3>Создайте свой первый набор</h3><p>Lina соберёт карточки и сохранит их в вашем аккаунте.</p><button type="button" onClick={() => setActiveTab("create")}>Добавить слова →</button></div>
+            <div className="sets-empty mobile-sets-empty"><span>Пока здесь тихо</span><h3>Создайте свой первый набор</h3><p>Lina соберёт карточки и сохранит их в вашем аккаунте.</p><Link href="/app/sets/new" transitionTypes={["nav-forward"]}>Добавить слова →</Link></div>
           )}
 
           {recentSets.length > 0 && (
@@ -868,7 +868,7 @@ export function HomeClient({
               <h2>Недавние</h2>
               <div className="mobile-recents-list">
                 {recentSets.map((set) => (
-                  <Link href={`/study/${set.id}`} transitionTypes={["nav-forward"]} className="mobile-recent-set" key={set.id}>
+                  <Link href={`/app/study/${set.id}`} transitionTypes={["nav-forward"]} className="mobile-recent-set" key={set.id}>
                     <span className={`mobile-set-icon ${set.color}`}><Icon name="cards" size={25}/></span>
                     <span><strong>{set.title}</strong><small>{set.count} карточек · {set.progress}% изучено</small></span>
                     <Icon name="arrow" size={18}/>
@@ -902,9 +902,9 @@ export function HomeClient({
       </main>
       <nav className="mobile-bottom-nav" data-active-tab={activeTab} aria-label="Мобильная навигация">
         <span className="mobile-nav-indicator" aria-hidden="true" />
-        <button className={`mobile-nav-item${activeTab === "home" ? " active" : ""}`} type="button" onClick={() => setActiveTab("home")} aria-current={activeTab === "home" ? "page" : undefined}><Icon name="home" size={24}/><span>Главная</span></button>
-        <button className={`mobile-nav-item${activeTab === "create" ? " active" : ""}`} type="button" onClick={() => setActiveTab("create")} aria-current={activeTab === "create" ? "page" : undefined}><Icon name="plus" size={25}/><span>Создать</span></button>
-        <button className={`mobile-nav-item${activeTab === "library" ? " active" : ""}`} type="button" onClick={() => setActiveTab("library")} aria-current={activeTab === "library" ? "page" : undefined}><Icon name="folder" size={24}/><span>Папки</span></button>
+        <Link className={`mobile-nav-item${activeTab === "home" ? " active" : ""}`} href="/app" transitionTypes={["nav-back"]} aria-current={activeTab === "home" ? "page" : undefined}><Icon name="home" size={24}/><span>Главная</span></Link>
+        <Link className={`mobile-nav-item${activeTab === "create" ? " active" : ""}`} href="/app/sets/new" transitionTypes={["nav-forward"]} aria-current={activeTab === "create" ? "page" : undefined}><Icon name="plus" size={25}/><span>Создать</span></Link>
+        <Link className={`mobile-nav-item${activeTab === "library" ? " active" : ""}`} href="/app/library" transitionTypes={["nav-forward"]} aria-current={activeTab === "library" ? "page" : undefined}><Icon name="folder" size={24}/><span>Папки</span></Link>
         <span className="mobile-nav-item mobile-nav-disabled" aria-disabled="true"><Icon name="spark" size={24}/><span>Пробный</span></span>
       </nav>
       {isProfileOpen && (

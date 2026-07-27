@@ -1,21 +1,37 @@
 import type { Metadata, Viewport } from "next";
-import Script from "next/script";
 import { ViewTransition } from "react";
-import { TelegramMiniApp } from "@/components/telegram-mini-app";
+import { DEFAULT_DESCRIPTION, SITE_URL, SOCIAL_IMAGE } from "@/lib/seo";
 import "./globals.css";
-import "./folders.css";
-import "./study-session.css";
 
 export const metadata: Metadata = {
-  title: "Lina — запоминайте надолго",
-  description: "Карточки из фото и документов, интервальное повторение и напоминания в Telegram — для любых знаний.",
+  metadataBase: new URL(SITE_URL),
+  applicationName: "Lina",
+  title: {
+    default: "Lina — запоминайте надолго",
+    template: "%s — Lina",
+  },
+  description: DEFAULT_DESCRIPTION,
+  category: "education",
+  icons: { icon: "/icon.svg" },
+  openGraph: {
+    type: "website",
+    locale: "ru_RU",
+    siteName: "Lina",
+    title: "Lina — запоминайте надолго",
+    description: DEFAULT_DESCRIPTION,
+    images: [SOCIAL_IMAGE],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Lina — запоминайте надолго",
+    description: DEFAULT_DESCRIPTION,
+    images: [SOCIAL_IMAGE.url],
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   interactiveWidget: "resizes-content",
   themeColor: "#ffffff",
 };
@@ -31,8 +47,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         >
           {children}
         </ViewTransition>
-        <Script src="https://telegram.org/js/telegram-web-app.js?61" strategy="beforeInteractive" />
-        <TelegramMiniApp />
       </body>
     </html>
   );

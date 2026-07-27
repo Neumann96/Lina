@@ -24,8 +24,8 @@ function LibraryIcon({ name, size = 22 }: { name: "back" | "folder" | "cards" | 
 
 function reviewHref(folderId: string | null) {
   return folderId
-    ? `/study/reviews/folder/${folderId}`
-    : "/study/reviews/unfiled/all";
+    ? `/app/reviews/folder/${folderId}`
+    : "/app/reviews/unfiled/all";
 }
 
 function FolderSelect({
@@ -156,7 +156,7 @@ function SetRow({
 }) {
   return (
     <article className="folder-set-row">
-      <Link href={`/study/${set.id}`} transitionTypes={["nav-forward"]} className="folder-set-main">
+      <Link href={`/app/study/${set.id}`} transitionTypes={["nav-forward"]} className="folder-set-main">
         <span className="folder-set-icon"><LibraryIcon name="cards" /></span>
         <span className="folder-set-copy">
           <strong>{set.title}</strong>
@@ -169,7 +169,7 @@ function SetRow({
         <span>Папка</span>
           <FolderSelect set={set} folders={folders} disabled={moving} onMove={onMove}/>
         </label>
-        <Link className="folder-set-edit" href={`/sets/${set.id}/edit`} transitionTypes={["nav-forward"]} aria-label={`Редактировать набор ${set.title}`}>
+        <Link className="folder-set-edit" href={`/app/sets/${set.id}/edit`} transitionTypes={["nav-forward"]} aria-label={`Редактировать набор ${set.title}`}>
           <LibraryIcon name="edit" size={18}/>
         </Link>
         <button className="folder-set-delete" type="button" onClick={() => onDelete(set)} disabled={moving} aria-label={`Удалить набор ${set.title}`}>

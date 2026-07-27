@@ -39,7 +39,7 @@ const NEEDS_REMINDER_SQL = `
 `;
 
 export function reviewGroupHref(scopeKind: ReviewScopeKind, scopeId: string) {
-  return `/study/reviews/${scopeKind}/${scopeId}`;
+  return `/app/reviews/${scopeKind}/${scopeId}`;
 }
 
 function toReviewGroup(row: ReviewGroupRow): ReviewGroupSummary {

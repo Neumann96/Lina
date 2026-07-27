@@ -90,7 +90,7 @@ export function EditStudySet({ studySet }: { studySet: StudySet }) {
         setError(result.error ?? "Не удалось сохранить изменения");
         return;
       }
-      router.push(`/study/${studySet.id}`, { transitionTypes: ["nav-forward"] });
+      router.push(`/app/study/${studySet.id}`, { transitionTypes: ["nav-forward"] });
     } catch {
       setError("Не удалось связаться с сервером. Попробуйте ещё раз");
     } finally {
@@ -101,7 +101,7 @@ export function EditStudySet({ studySet }: { studySet: StudySet }) {
   return (
     <div className="edit-set-page">
       <header className="edit-set-topbar">
-        <Link href="/library" transitionTypes={["nav-back"]} aria-label="Вернуться в библиотеку"><EditIcon name="back"/></Link>
+        <Link href="/app/library" transitionTypes={["nav-back"]} aria-label="Вернуться в библиотеку"><EditIcon name="back"/></Link>
         <div><span className="folder-library-brand">L</span><strong>Lina</strong></div>
         <button type="button" onClick={saveSet} disabled={pending}>{pending ? "Сохраняем…" : "Сохранить"}</button>
       </header>
@@ -147,7 +147,7 @@ export function EditStudySet({ studySet }: { studySet: StudySet }) {
         <button className="manual-add-card edit-set-add" type="button" onClick={addCard} disabled={pending || cards.length >= 500}><EditIcon name="plus" size={19}/> Добавить карточку</button>
         {error && <p className="manual-error" role="alert">{error}</p>}
         <div className="edit-set-footer">
-          <Link href="/library" transitionTypes={["nav-back"]}>Отмена</Link>
+          <Link href="/app/library" transitionTypes={["nav-back"]}>Отмена</Link>
           <button type="button" onClick={saveSet} disabled={pending}>{pending ? "Сохраняем изменения…" : "Сохранить изменения"}</button>
         </div>
       </main>

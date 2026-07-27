@@ -69,12 +69,12 @@ export function CardImporter({ onBack }: { onBack: () => void }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, cards }),
       });
-      const result = await response.json() as { error?: string };
-      if (!response.ok) {
+      const result = await response.json() as { id?: string; error?: string };
+      if (!response.ok || !result.id) {
         setError(result.error ?? "Не удалось создать набор");
         return;
       }
-      window.location.reload();
+      window.location.assign(`/app/study/${result.id}`);
     } catch {
       setError("Не удалось связаться с сервером. Попробуйте ещё раз.");
     } finally {

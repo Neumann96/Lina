@@ -208,7 +208,7 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
     if (exiting.current) return;
     exiting.current = true;
     await Promise.allSettled([...pendingReviews.current]);
-    router.push(`/?studyExit=${Date.now()}`, { transitionTypes: ["nav-back"] });
+    router.push("/app", { transitionTypes: ["nav-back"] });
   }
 
   async function restartSession() {
@@ -238,14 +238,14 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
   return (
     <main ref={studyPage} className={`study-page${answerFocused ? " recall-input-active" : ""}`}>
       <header className="study-header">
-        <Link className="study-round-button" href="/" transitionTypes={["nav-back"]} onClick={closeSession} aria-label="Закрыть режим обучения"><StudyIcon name="close" size={27}/></Link>
+        <Link className="study-round-button" href="/app" transitionTypes={["nav-back"]} onClick={closeSession} aria-label="Закрыть режим обучения"><StudyIcon name="close" size={27}/></Link>
         <div className="study-heading">
           <strong>{studySet.title}</strong>
           <span>{position} / {initialTotal}</span>
           {current?.kind === "same_session" && <small>закрепляем ошибку</small>}
         </div>
         {isReviewSession ? (
-          <Link className="study-round-button" href="/" transitionTypes={["nav-back"]} onClick={closeSession} aria-label="На главную"><StudyIcon name="close" size={25}/></Link>
+          <Link className="study-round-button" href="/app" transitionTypes={["nav-back"]} onClick={closeSession} aria-label="На главную"><StudyIcon name="close" size={25}/></Link>
         ) : (
           <button className="study-round-button" type="button" onClick={restartSession} disabled={restarting} aria-label="Начать набор заново"><StudyIcon name="restart" size={25}/></button>
         )}
@@ -267,7 +267,7 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
               <b className="result-b">{ratings.B}<small>с трудом</small></b>
               <b className="result-a">{ratings.A}<small>уверенно</small></b>
             </div>
-            <Link href="/" transitionTypes={["nav-back"]} onClick={closeSession}>Вернуться на главную</Link>
+            <Link href="/app" transitionTypes={["nav-back"]} onClick={closeSession}>Вернуться на главную</Link>
           </div>
         ) : card && current ? (
           <div className="study-card-wrap">
