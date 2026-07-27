@@ -33,7 +33,7 @@ python -m unittest discover -s tests -p "*_test.py"
 - `/login` и `/signup` — авторизация, закрытая от поисковой индексации;
 - `/app`, `/app/library`, `/app/sets/new`, `/app/study/:setId`, `/app/reviews/...` — личный кабинет, закрытый от индексации и доступный только после входа;
 - прежние `/library`, `/study/...` и `/sets/...` отвечают постоянным редиректом на новые адреса;
-- `/robots.txt`, `/sitemap.xml` и `/manifest.webmanifest` генерируются Next.js.
+- `/robots.txt` и `/sitemap.xml` генерируются Next.js.
 
 ## Production
 

@@ -64,6 +64,13 @@ test("uses one identical public header on the landing and marketing pages", asyn
   assert.doesNotMatch(marketingCss, /\.marketing-header|\.marketing-signup/);
 });
 
+test("does not advertise Lina as an installable browser PWA", async () => {
+  await assert.rejects(
+    access(new URL("../src/app/manifest.ts", import.meta.url)),
+    (error) => error?.code === "ENOENT",
+  );
+});
+
 test("keeps private application routes out of search and preserves old URLs", async () => {
   const [appPage, privateMetadata, legacyLibrary, legacyStudy, legacyEdit, legacyReviews] = await Promise.all([
     read("src/app/(product)/app/page.tsx"),
@@ -91,14 +98,21 @@ test("only accepts internal application destinations after authentication", () =
 });
 
 test("canonicalizes the production host and keeps Telegram on the app shell", async () => {
-  const [nginx, telegram, callback] = await Promise.all([
+  const [nginx, telegram, callback, marketingLayout, miniApp] = await Promise.all([
     read("deploy/nginx.ssl.conf"),
     read("src/lib/telegram-bot.ts"),
     read("src/app/api/auth/telegram/callback/route.ts"),
+    read("src/app/(marketing)/layout.tsx"),
+    read("src/components/telegram-mini-app.tsx"),
   ]);
 
   assert.match(nginx, /server_name www\.lina-lern\.ru;[\s\S]*return 308 https:\/\/lina-lern\.ru\$request_uri;/);
   assert.match(telegram, /TELEGRAM_MINI_APP_URL = `\$\{TELEGRAM_SITE_ORIGIN\}\/app`/);
   assert.match(callback, /const nextPath = safeAppPath\(url\.searchParams\.get\("next"\)\)/);
   assert.match(callback, /url\.searchParams\.delete\("next"\)/);
+  assert.match(marketingLayout, /telegram-web-app\.js\?61/);
+  assert.match(marketingLayout, /<TelegramMiniApp redirectTo="\/app" \/>/);
+  assert.match(miniApp, /window\.location\.replace\(redirectTo\)/);
+  assert.match(miniApp, /webApp\.requestFullscreen\?\.\(\)/);
+  assert.match(miniApp, /window\.setTimeout\(maximize, 250\)/);
 });

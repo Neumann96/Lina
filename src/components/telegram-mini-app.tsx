@@ -11,6 +11,7 @@ type EdgeInsets = {
 
 type TelegramWebApp = {
   initData?: string;
+  isFullscreen?: boolean;
   viewportHeight?: number;
   ready: () => void;
   expand: () => void;
@@ -46,7 +47,7 @@ function writeInsets(prefix: string, insets?: EdgeInsets) {
   }
 }
 
-export function TelegramMiniApp() {
+export function TelegramMiniApp({ redirectTo }: { redirectTo?: string } = {}) {
   useEffect(() => {
     const webApp = window.Telegram?.WebApp;
     // The SDK is loaded on every page, including ordinary desktop browsers.
@@ -58,35 +59,47 @@ export function TelegramMiniApp() {
       writeInsets("safe-area-inset", webApp.safeAreaInset);
       writeInsets("content-safe-area-inset", webApp.contentSafeAreaInset);
     };
+    const maximize = () => {
+      webApp.expand();
+      try {
+        if (!webApp.isFullscreen) webApp.requestFullscreen?.();
+      } catch {
+        // Older Telegram clients still receive the expanded layout.
+      }
+    };
 
     root.classList.add("telegram-mini-app");
     updateInsets();
     webApp.setHeaderColor?.("#ffffff");
     webApp.setBackgroundColor?.("#ffffff");
     webApp.ready();
-    webApp.expand();
+    maximize();
+    const maximizeRetry = window.setTimeout(maximize, 250);
 
     try {
       // Keep downward page scrolling inside the app instead of letting
       // Telegram interpret it as a request to collapse the Mini App.
       webApp.disableVerticalSwipes?.();
-      webApp.requestFullscreen?.();
     } catch {
-      // Older Telegram clients still receive the expanded layout.
+      // Vertical swipe control is unavailable in older Telegram clients.
     }
 
     webApp.onEvent("safeAreaChanged", updateInsets);
     webApp.onEvent("contentSafeAreaChanged", updateInsets);
     webApp.onEvent("viewportChanged", updateInsets);
+    if (redirectTo && window.location.pathname !== redirectTo) {
+      window.location.replace(redirectTo);
+    }
 
     return () => {
+      window.clearTimeout(maximizeRetry);
       webApp.offEvent("safeAreaChanged", updateInsets);
       webApp.offEvent("contentSafeAreaChanged", updateInsets);
       webApp.offEvent("viewportChanged", updateInsets);
       webApp.enableVerticalSwipes?.();
       root.classList.remove("telegram-mini-app");
     };
-  }, []);
+  }, [redirectTo]);
 
   return null;
 }

@@ -232,6 +232,14 @@ jobs:
                 echo "Telegram webhook configuration failed"
                 exit 1
               fi
+              if ! printf '{"menu_button":{"type":"web_app","text":"Открыть Lina","web_app":{"url":"https://lina-lern.ru/app"}}}' \
+                | curl --fail --silent --show-error --connect-timeout 5 --max-time 10 \
+                  --header 'Content-Type: application/json' --data-binary @- \
+                  "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setChatMenuButton" \
+                | grep -q '"ok":true'; then
+                echo "Telegram Mini App menu configuration failed"
+                exit 1
+              fi
               systemctl enable lina-telegram-bot
               systemctl restart lina-telegram-bot
               for bot_attempt in {1..10}; do

@@ -1,3 +1,5 @@
+import Script from "next/script";
+import { TelegramMiniApp } from "@/components/telegram-mini-app";
 import { StructuredData } from "@/components/structured-data";
 import { SITE_URL } from "@/lib/seo";
 import "./marketing.css";
@@ -27,6 +29,8 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
         ],
       }} />
       {children}
+      <Script src="https://telegram.org/js/telegram-web-app.js?61" strategy="beforeInteractive" />
+      <TelegramMiniApp redirectTo="/app" />
     </>
   );
 }

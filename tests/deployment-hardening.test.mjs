@@ -61,6 +61,8 @@ test("deploys and verifies the Telegram reminder worker", async () => {
   assert.match(workflow, /TELEGRAM_POLLING_ENABLED=false/);
   assert.match(workflow, /api\/telegram\/webhook/);
   assert.match(workflow, /\/setWebhook/);
+  assert.match(workflow, /\/setChatMenuButton/);
+  assert.match(workflow, /"url":"https:\/\/lina-lern\.ru\/app"/);
   assert.doesNotMatch(workflow, /\/deleteWebhook/);
   assert.match(botService, /ExecStart=\/usr\/bin\/python3 \/opt\/lina\/current\/lina_telegram_bot\.py/);
   assert.match(bot, /trigger_review_reminders/);

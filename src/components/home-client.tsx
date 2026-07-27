@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -61,6 +61,7 @@ function TelegramLoginWidget({
   onSuccess: (user: AuthUser) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const autoLoginAttempted = useRef(false);
   const [miniAppPending, setMiniAppPending] = useState(false);
 
   useEffect(() => {
@@ -114,7 +115,7 @@ function TelegramLoginWidget({
     };
   }, [nextPath, onError]);
 
-  async function loginWithMiniApp() {
+  const loginWithMiniApp = useCallback(async () => {
     const initData = window.Telegram?.WebApp?.initData;
     if (!initData) {
       onError("Telegram не передал данные для входа");
@@ -140,7 +141,13 @@ function TelegramLoginWidget({
     } finally {
       setMiniAppPending(false);
     }
-  }
+  }, [onError, onSuccess]);
+
+  useEffect(() => {
+    if (!window.Telegram?.WebApp?.initData || autoLoginAttempted.current) return;
+    autoLoginAttempted.current = true;
+    void loginWithMiniApp();
+  }, [loginWithMiniApp]);
 
   return <>
     <div ref={containerRef} className="telegram-login-widget"><span className="telegram-widget-loading"><Icon name="telegram" size={19}/>Загружаем Telegram…</span></div>

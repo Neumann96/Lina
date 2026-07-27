@@ -35,6 +35,17 @@ test("clips the Telegram iframe to the branded button without dark edges", async
 test("keeps vertical scrolling inside the Telegram Mini App", () => {
   assert.match(miniApp, /webApp\.disableVerticalSwipes\?\.\(\)/);
   assert.match(miniApp, /webApp\.enableVerticalSwipes\?\.\(\)/);
+  assert.match(miniApp, /webApp\.requestFullscreen\?\.\(\)/);
+  assert.match(miniApp, /window\.setTimeout\(maximize, 250\)/);
+});
+
+test("automatically restores the Telegram Mini App session", async () => {
+  const home = await readFile(new URL("../src/components/home-client.tsx", import.meta.url), "utf8");
+
+  assert.match(home, /const autoLoginAttempted = useRef\(false\)/);
+  assert.match(home, /if \(!window\.Telegram\?\.WebApp\?\.initData \|\| autoLoginAttempted\.current\) return/);
+  assert.match(home, /void loginWithMiniApp\(\)/);
+  assert.match(home, /window\.location\.assign\(nextPath\)/);
 });
 
 test("uses one white background across the mobile app shell", () => {
