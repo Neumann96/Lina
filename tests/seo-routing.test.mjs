@@ -78,6 +78,12 @@ test("serves the Yandex Webmaster ownership verification file", async () => {
   assert.match(verification, /<body>Verification: a5b0046f2f2bffb1<\/body>/);
 });
 
+test("serves the Google Search Console ownership verification file", async () => {
+  const verification = await read("public/googleaa9d58e6db10b25e.html");
+
+  assert.equal(verification.trim(), "google-site-verification: googleaa9d58e6db10b25e.html");
+});
+
 test("keeps private application routes out of search and preserves old URLs", async () => {
   const [appPage, privateMetadata, legacyLibrary, legacyStudy, legacyEdit, legacyReviews] = await Promise.all([
     read("src/app/(product)/app/page.tsx"),
