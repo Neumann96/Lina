@@ -46,7 +46,6 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
   const [saveError, setSaveError] = useState("");
   const [exitDirection, setExitDirection] = useState<"left" | "middle" | "right" | null>(null);
   const [restarting, setRestarting] = useState(false);
-  const [answerFocused, setAnswerFocused] = useState(false);
   const [direction, setDirection] = useState<StudyDirection>("term-to-definition");
   const studyPage = useRef<HTMLElement>(null);
   const cardStartedAt = useRef(0);
@@ -236,7 +235,7 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
     : 0;
 
   return (
-    <main ref={studyPage} className={`study-page${answerFocused ? " recall-input-active" : ""}`}>
+    <main ref={studyPage} className="study-page">
       <header className="study-header">
         <Link className="study-round-button" href="/app" transitionTypes={["nav-back"]} onClick={closeSession} aria-label="Закрыть режим обучения"><StudyIcon name="close" size={27}/></Link>
         <div className="study-heading">
@@ -308,8 +307,6 @@ export function StudySession({ studySet }: { studySet: StudySet }) {
                       autoComplete="off"
                       spellCheck={false}
                       rows={2}
-                      onFocus={() => setAnswerFocused(true)}
-                      onBlur={() => setAnswerFocused(false)}
                     />
                     <div>
                       <button className="recall-forgot" type="button" onClick={() => revealAnswer()}>Не помню</button>
