@@ -60,13 +60,14 @@ function TelegramLoginWidget({
   onError: (message: string) => void;
   onSuccess: (user: AuthUser) => void;
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const browserSetupRef = useRef<{ botId: string; state: string } | null>(null);
   const autoLoginAttempted = useRef(false);
+  const [browserReady, setBrowserReady] = useState(false);
+  const [browserPending, setBrowserPending] = useState(false);
   const [miniAppPending, setMiniAppPending] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
-    const container = containerRef.current;
 
     // Telegram Mini Apps already provide signed user data. In that context we
     // render an explicit button below instead of starting the browser widget.
@@ -78,30 +79,28 @@ function TelegramLoginWidget({
           cache: "no-store",
           signal: controller.signal,
         });
-        const setup = await response.json() as { botUsername?: string; state?: string; error?: string };
-        if (!response.ok || !setup.botUsername || !setup.state) {
+        const setup = await response.json() as { botId?: string; state?: string; error?: string };
+        if (!response.ok || !setup.botId || !setup.state) {
           throw new Error(setup.error ?? "Вход через Telegram пока недоступен");
         }
-        if (!container || controller.signal.aborted) return;
+        if (controller.signal.aborted) return;
+
+        browserSetupRef.current = { botId: setup.botId, state: setup.state };
+        window.sessionStorage.setItem("lina-telegram-state", setup.state);
+
+        if (window.Telegram?.Login) {
+          setBrowserReady(true);
+          return;
+        }
 
         const script = document.createElement("script");
         script.src = "https://telegram.org/js/telegram-widget.js?23";
         script.async = true;
-        script.setAttribute("data-telegram-login", setup.botUsername);
-        script.setAttribute("data-size", "large");
-        script.setAttribute("data-radius", "11");
-        script.setAttribute("data-userpic", "false");
-        script.setAttribute("data-lang", "ru");
-        const callbackUrl = new URL("/api/auth/telegram/callback", window.location.origin);
-        callbackUrl.searchParams.set("state", setup.state);
-        callbackUrl.searchParams.set("next", safeAppPath(nextPath));
-        window.sessionStorage.setItem("lina-telegram-state", setup.state);
-        script.setAttribute("data-auth-url", callbackUrl.toString());
         script.onload = () => {
-          if (!controller.signal.aborted) container.classList.add("is-ready");
+          if (!controller.signal.aborted && window.Telegram?.Login) setBrowserReady(true);
         };
         script.onerror = () => onError("Не удалось загрузить Telegram. Обновите страницу и попробуйте ещё раз");
-        container.replaceChildren(script);
+        document.head.appendChild(script);
       } catch (error) {
         if (controller.signal.aborted) return;
         onError(error instanceof Error ? error.message : "Вход через Telegram пока недоступен");
@@ -110,9 +109,39 @@ function TelegramLoginWidget({
 
     return () => {
       controller.abort();
-      container?.classList.remove("is-ready");
-      container?.replaceChildren();
+      browserSetupRef.current = null;
     };
+  }, [onError]);
+
+  const loginWithBrowser = useCallback(() => {
+    const setup = browserSetupRef.current;
+    const telegramLogin = window.Telegram?.Login;
+    if (!setup || !telegramLogin) {
+      onError("Telegram ещё загружается. Попробуйте через секунду");
+      return;
+    }
+
+    setBrowserPending(true);
+    onError("");
+    try {
+      telegramLogin.auth({ bot_id: setup.botId, lang: "ru" }, (telegramUser) => {
+        if (!telegramUser) {
+          setBrowserPending(false);
+          return;
+        }
+
+        const callbackUrl = new URL("/api/auth/telegram/callback", window.location.origin);
+        callbackUrl.searchParams.set("state", setup.state);
+        callbackUrl.searchParams.set("next", safeAppPath(nextPath));
+        for (const [key, value] of Object.entries(telegramUser)) {
+          callbackUrl.searchParams.set(key, String(value));
+        }
+        window.location.assign(callbackUrl.toString());
+      });
+    } catch {
+      setBrowserPending(false);
+      onError("Не удалось открыть Telegram. Попробуйте ещё раз");
+    }
   }, [nextPath, onError]);
 
   const loginWithMiniApp = useCallback(async () => {
@@ -150,7 +179,10 @@ function TelegramLoginWidget({
   }, [loginWithMiniApp]);
 
   return <>
-    <div ref={containerRef} className="telegram-login-widget"><span className="telegram-widget-loading"><Icon name="telegram" size={19}/>Загружаем Telegram…</span></div>
+    <button className="telegram-login telegram-browser-login" type="button" onClick={loginWithBrowser} disabled={!browserReady || browserPending}>
+      <Icon name="telegram" size={20}/>
+      {browserPending ? "Открываем Telegram…" : browserReady ? "Войти через Telegram" : "Загружаем Telegram…"}
+    </button>
     <button className="telegram-login telegram-mini-app-login" type="button" onClick={loginWithMiniApp} disabled={miniAppPending}>
       {miniAppPending ? "Входим через Telegram…" : "Войти через Telegram"}
     </button>

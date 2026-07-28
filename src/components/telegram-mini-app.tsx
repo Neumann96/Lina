@@ -27,9 +27,21 @@ type TelegramWebApp = {
   offEvent: (event: string, handler: () => void) => void;
 };
 
+type TelegramAuthUser = Record<string, string | number>;
+
+type TelegramLogin = {
+  auth: (
+    options: { bot_id: string; lang?: string; request_access?: string },
+    callback: (user: TelegramAuthUser | false) => void,
+  ) => void;
+};
+
 declare global {
   interface Window {
-    Telegram?: { WebApp?: TelegramWebApp };
+    Telegram?: {
+      WebApp?: TelegramWebApp;
+      Login?: TelegramLogin;
+    };
   }
 }
 

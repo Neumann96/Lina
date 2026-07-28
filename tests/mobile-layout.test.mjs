@@ -24,12 +24,14 @@ test("keeps authentication compact and does not open the mobile keyboard", async
   assert.match(css, /\.auth-form input \{ height:42px; font-size:16px; \}/);
 });
 
-test("clips the Telegram iframe to the branded button without dark edges", async () => {
+test("renders Telegram login as one full-width button without iframe layers", async () => {
   const home = await readFile(new URL("../src/components/home-client.tsx", import.meta.url), "utf8");
 
-  assert.match(home, /container\.classList\.add\("is-ready"\)/);
-  assert.match(css, /\.telegram-login-widget\.is-ready \{[^}]*overflow:hidden;[^}]*background:#2aabee;[^}]*clip-path:inset\(0 round 11px\);/);
-  assert.match(css, /\.telegram-login-widget iframe \{[^}]*border:0;[^}]*transform:translate\(-50%,-50%\) scale\(1\.018\);/);
+  assert.match(home, /className="telegram-login telegram-browser-login"/);
+  assert.match(home, /window\.Telegram\?\.Login/);
+  assert.doesNotMatch(home, /className="telegram-login-widget"/);
+  assert.match(css, /\.telegram-login \{ width:100%; height:46px;[^}]*background:#2aabee;/);
+  assert.doesNotMatch(css, /\.telegram-login-widget|\.telegram-widget-loading|\.telegram-login-widget iframe/);
 });
 
 test("keeps vertical scrolling inside the Telegram Mini App", () => {
